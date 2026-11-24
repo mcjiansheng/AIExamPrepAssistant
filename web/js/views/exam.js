@@ -16,9 +16,11 @@ export async function mount(el, ctx) {
   let stopPoll = null;
   let edits = 0;          // 本地改动计数：轮询结果若早于本地改动，就丢弃，避免覆盖刚提交的作答
 
+  const generating = () => exam.status === 'generating' && !['done', 'failed'].includes(exam.job?.status);
+  const jobError = () => exam.status !== 'finished' && exam.job?.status === 'failed' ? exam.job.error : null;
   const live = () => exam.questions.filter((q) => q.status !== 'hidden');
   const graded = (q) => q.attempt?.state === 'graded';
-  const allDone = () => exam.status !== 'generating' && live().length > 0 && live().every(graded);
+  const allDone = () => exam.status !== 'generating' && exam.questions.length > 0 && live().every(graded);
   const firstOpen = () => Math.max(0, exam.questions.findIndex((q) => q.status !== 'hidden' && !graded(q)));
   idx = exam.status === 'finished' ? 0 : firstOpen();
 
@@ -33,6 +35,7 @@ export async function mount(el, ctx) {
 
   const render = () => {
     const q = exam.questions[idx];
+    const failure = jobError();
     setContext({ view: 'exam', exam_id: eid, question_id: q && q.status !== 'generating' ? q.id : undefined });
     const done = live().filter(graded).length;
     el.innerHTML = html`
@@ -40,14 +43,18 @@ export async function mount(el, ctx) {
         <div class="bar1">
           <button class="icon-btn" data-act="exit" aria-label="退出作答">✕</button>
           <div class="t">${exam.title}</div>
-          <div class="p">${exam.status === 'generating' ? '出题中，' : ''}已答 ${done} / ${live().length}</div>
+          <div class="p">${generating() ? '出题中，' : ''}已答 ${done} / ${live().length}</div>
           <button class="btn ghost small" data-act="ask">问助手</button>
         </div>
         <div class="dots" role="tablist" aria-label="题号">${exam.questions.map((x, i) => html`<button class="dot ${dotClass(x, i)}" data-act="jump" data-i="${i}" aria-label="第 ${i + 1} 题" aria-selected="${i === idx}">${i + 1}</button>`)}</div>
       </div>
       <div style="padding:16px">
         ${exam.format_basis === 'default' ? html`<p class="muted small" style="margin:0 4px 12px">题型分布为默认设置，未必与真实考试一致</p>` : ''}
-        <article class="panel q" aria-live="polite">${q ? question(q) : ''}</article>
+        ${failure ? html`<div class="notice" role="status">
+          <span class="grow">${failure.message}</span>
+          ${failure.retryable ? html`<button class="link" data-act="retry">重试</button>` : ''}
+        </div>` : exam.job?.status === 'done' && exam.job.stage?.includes('有限') ? html`<p class="muted small">${exam.job.stage}</p>` : ''}
+        ${q ? html`<article class="panel q" aria-live="polite">${question(q)}</article>` : ''}
       </div>
       <div class="exam-actions"><div class="in">
         <button class="btn ghost nav" data-act="prev" aria-label="上一题" ${idx === 0 ? 'disabled' : ''}>‹</button>
@@ -58,9 +65,14 @@ export async function mount(el, ctx) {
 
   const primary = (q) => {
     if (exam.status === 'finished') return html`<a class="btn" href="#/c/${cid}/exam/${eid}/result">查看结果</a>`;
-    if (!q || q.status === 'generating') return html`<button class="btn" disabled>出题中…</button>`;
+    if (!q || q.status === 'generating' || q.status === 'verifying') {
+      if (jobError() && !live().some((item) => item.status === 'ready' || item.status === 'disputed')) {
+        return html`<a class="btn" href="#/c/${cid}/practice">返回练习</a>`;
+      }
+      if (jobError()) return nextOrFinish();
+      return html`<button class="btn" disabled>${q?.status === 'verifying' ? '验证完就能作答' : '出题中…'}</button>`;
+    }
     if (q.status === 'hidden') return nextOrFinish();
-    if (q.status === 'verifying') return html`<button class="btn" disabled>验证完就能作答</button>`;
     if (!q.attempt) {
       const d = drafts[q.id];
       if (q.type === 'single') return html`<button class="btn" data-act="submit" ${d ? '' : 'disabled'}>提交</button>`;
@@ -84,9 +96,13 @@ export async function mount(el, ctx) {
         <div class="q-no">第 ${q.index} 题<span>${QTYPE[q.type]}，${q.score} 分</span></div>
         <div class="q-topic">${q.topic_title}</div></div>
       ${q.status !== 'generating' && q.status !== 'hidden' && exam.status !== 'finished' ? html`<button class="icon-btn" data-act="report" aria-label="报错" title="这道题有问题">⚑</button>` : ''}</div>`;
-    if (q.status === 'generating') return html`${head}<div class="skeleton" aria-label="出题中"><i style="width:92%"></i><i style="width:76%"></i><i style="width:84%"></i></div>
-      <p class="muted small">这道题还在出，好了会自动出现。可以先做别的题。</p>`;
-    if (q.status === 'hidden') return html`${head}<p class="muted">你报错了这道题，它已经隐藏，不计分。复查后会通知你。</p>`;
+    if (q.status === 'generating' || (q.status === 'verifying' && !q.stem.length)) {
+      if (jobError()) return html`${head}<p class="muted">这道题还没出好。</p>`;
+      const status = q.status === 'verifying' ? '验证中' : '出题中';
+      return html`${head}<div class="skeleton" aria-label="${status}"><i style="width:92%"></i><i style="width:76%"></i><i style="width:84%"></i></div>
+        <p class="muted small">${status}。可以先做其他题。</p>`;
+    }
+    if (q.status === 'hidden') return html`${head}<p class="muted">已记录报错，这道题已隐藏，不计分。</p>`;
 
     const tags = html`<div class="tags">
       ${q.refs.map(refTag)}
@@ -150,22 +166,29 @@ export async function mount(el, ctx) {
     </div>`;
   };
 
-  const refresh = async () => { exam = await api.exam(eid); render(); };
+  const setExam = (fresh) => {
+    const currentId = exam.questions[idx]?.id;
+    exam = fresh;
+    const index = exam.questions.findIndex((q) => q.id === currentId);
+    idx = index < 0 ? firstOpen() : index;
+  };
+  const refresh = async () => { setExam(await api.exam(eid)); render(); };
+  const snapshot = () => [exam.status, exam.job?.status, ...exam.questions.map((q) => `${q.id}:${q.status}`)].join();
   const ensurePoll = () => {
-    if (exam.status === 'generating' && !stopPoll) {
+    if (generating() && !stopPoll) {
       stopPoll = ctx.poll(async () => {
-        const before = exam.questions.map((q) => q.status).join();
+        const before = snapshot();
         const seen = edits;
         const fresh = await api.exam(eid);
         if (seen !== edits) return;
-        exam = fresh;
-        if (exam.questions.map((q) => q.status).join() !== before) {
+        setExam(fresh);
+        if (snapshot() !== before) {
           const active = document.activeElement;
           const keep = active?.matches('input, textarea') ? { v: active.value, s: active.selectionStart } : null;
           render();
           if (keep) { const f = el.querySelector('.q input, .q textarea'); if (f) { f.focus(); f.setSelectionRange?.(keep.s, keep.s); } }
         }
-        if (exam.status !== 'generating') { stopPoll(); stopPoll = null; }
+        if (!generating()) { stopPoll(); stopPoll = null; }
       });
     }
   };
@@ -174,6 +197,17 @@ export async function mount(el, ctx) {
 
   bind(el, {
     exit: () => ctx.go(`#/c/${cid}/practice`),
+    retry: async (button) => {
+      button.disabled = true;
+      edits++;
+      try {
+        await api.retryJob(exam.job.id);
+        await refresh();
+        ensurePoll();
+      } finally {
+        button.disabled = false;
+      }
+    },
     jump: (b) => go(+b.dataset.i),
     prev: () => go(idx - 1),
     next: () => go(idx + 1),
@@ -247,7 +281,7 @@ export async function mount(el, ctx) {
           await api.report(q.id, kind, s.el.querySelector('#rnote').value.trim());
           s.close();
           q.status = 'hidden';
-          toast('已隐藏这道题，复查后会通知你');
+          toast('已记录报错，这道题已隐藏');
           await refresh();
         },
       },

@@ -80,7 +80,8 @@ export async function mount(el, ctx) {
     const bits = [];
     if (m.pages) bits.push(`${m.pages} 页`);
     if (m.kp_count != null) bits.push(`${m.kp_count} 个知识点`);
-    return html`<div class="meta">${bits.join('，')}${m.vision === 'partial' ? html`<span class="state" style="margin-left:10px">图示补充中</span>` : ''}${m.vision === 'unsupported' ? html`<span class="state warn" style="margin-left:10px">图示未解析</span>` : ''}</div>`;
+    return html`<div class="meta">${bits.join('，')}${m.vision === 'partial' ? html`<span class="state" style="margin-left:10px">图示补充中</span>` : ''}${m.vision === 'unsupported' ? html`<span class="state warn" style="margin-left:10px">图示未解析</span>` : ''}
+      ${m.error ? html`<span class="state warn" style="display:block">${m.error.message}</span>` : ''}</div>`;
   };
 
   // 首次加载、每次轮询、上传和重试之后都走这一段：结算批次、处理替代、决定要不要继续轮询
@@ -113,7 +114,9 @@ export async function mount(el, ctx) {
   const batchDone = (mine) => {
     const ok = mine.filter((m) => m.status === 'ready').length;
     const bad = mine.filter((m) => m.status === 'failed').length;
-    if (!bad) toast(ok > 1 ? `资料整理好了，共 ${ok} 份` : '资料整理好了');
+    const partial = mine.filter((m) => m.status === 'ready' && m.error).length;
+    if (!bad && partial) toast(`已整理 ${ok} 份，其中 ${partial} 份有页面跳过`);
+    else if (!bad) toast(ok > 1 ? `资料整理好了，共 ${ok} 份` : '资料整理好了');
     else if (!ok) toast(`${bad} 份读取失败，可以换一份重新上传`, { tone: 'error' });
     else toast(`已整理 ${ok} 份，${bad} 份读取失败`, { tone: 'error' });
     ctx.refreshShell();
