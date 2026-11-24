@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 备考助手设计全景</title>
+<style>
+:root {
+  /* 布局思路：夜自习的书桌。深蓝侧栏是夜，暖黄是台灯，只照在“现在正在做的事”上；每个部分一屏，不向下滚动。 */
+  --night: #0e1830;
+  --night-2: #17254a;
+  --lamp: #ffb547;
+  --canvas: #eef1f7;
+  --card: #ffffff;
+  --ink: #111a2e;
+  --soft: #5c6a84;
+  --line: #dde3ee;
+  --model: #3d6bff;
+  --model-wash: #e9efff;
+  --data: #12a37a;
+  --data-wash: #e2f6ef;
+  --bad: #f0503f;
+  --bad-wash: #fdebe8;
+  --warn: #c7830a;
+  --warn-wash: #fff3db;
+  --sans: "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --num: "DIN Alternate", "Bahnschrift", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font-family: var(--sans); color: var(--ink); background: var(--canvas); font-size: 15px; line-height: 1.6; display: grid; grid-template-columns: 228px minmax(0, 1fr); overflow: hidden; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; border-radius: 6px; }
+h1, h2, h3, p { margin: 0; }
+code { font-family: var(--mono); font-size: 12.5px; background: var(--night); color: #e8eeff; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+.num { font-family: var(--num); font-variant-numeric: tabular-nums; }
+
+/* 侧栏 */
+aside { background: radial-gradient(420px 300px at 0% 0%, #20336a 0%, var(--night) 62%); color: #c8d3ec; display: flex; flex-direction: column; padding: 22px 14px 16px; gap: 6px; min-height: 0; }
+.brand { padding: 0 8px 16px; }
+.brand small { font-size: 11.5px; letter-spacing: .14em; color: #8494bb; }
+.brand b { display: block; font-size: 21px; color: #fff; letter-spacing: .02em; margin-top: 2px; }
+.brand span { display: block; font-size: 12.5px; color: #8fa0c8; margin-top: 4px; }
+.nav { display: flex; flex-direction: column; gap: 3px; }
+.nav button { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; text-align: left; padding: 10px 10px; border-radius: 10px; font-size: 15px; color: #b9c5e2; transition: background .2s, color .2s, transform .2s; }
+.nav button i { font-style: normal; font-family: var(--num); font-size: 13px; color: #6f81ab; }
+.nav button em { font-style: normal; width: 8px; height: 8px; border-radius: 50%; }
+.nav button em.fix { background: var(--lamp); }
+.nav button em.ok { background: #35d6a4; }
+.nav button em.run { background: #7fa0ff; animation: blink 1.4s infinite; }
+.nav button:hover { background: rgba(255, 255, 255, .06); color: #fff; }
+.nav button.on { background: rgba(255, 181, 71, .14); color: #fff; box-shadow: inset 3px 0 0 var(--lamp); }
+.nav button.on i { color: var(--lamp); }
+.live { margin-top: auto; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .08); border-radius: 12px; padding: 12px; font-size: 12.5px; }
+.live b { color: #fff; font-size: 13.5px; display: flex; align-items: center; gap: 7px; }
+.live b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lamp); animation: blink 1.4s infinite; }
+.live .track { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .12); margin: 9px 0 6px; overflow: hidden; }
+.live .track i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #ffd38a, var(--lamp)); transform-origin: left; animation: fill 1.4s cubic-bezier(.2, .7, .2, 1) both; }
+.foot { font-size: 11.5px; color: #6f81ab; padding: 8px 8px 0; }
+@keyframes blink { 50% { opacity: .3; } }
+@keyframes fill { from { transform: scaleX(.05); } }
+
+/* 主区 */
+main { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 14px; padding: 20px 26px 22px; min-height: 0; min-width: 0; }
+.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 40px; }
+.top h1 { font-size: 23px; font-weight: 700; letter-spacing: .01em; }
+.pill { font-size: 12.5px; padding: 2px 10px; border-radius: 99px; font-weight: 500; white-space: nowrap; }
+.pill.fix { background: var(--warn-wash); color: var(--warn); }
+.pill.ok { background: var(--data-wash); color: var(--data); }
+.pill.run { background: var(--model-wash); color: var(--model); }
+.pill.wait { background: #e8ecf3; color: var(--soft); }
+.tabs { margin-left: auto; display: flex; background: #e1e6f0; border-radius: 10px; padding: 3px; gap: 2px; }
+.tabs button { padding: 6px 14px; border-radius: 8px; font-size: 13.5px; color: var(--soft); transition: background .2s, color .2s; }
+.tabs button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(17, 26, 46, .12); }
+.stage { position: relative; min-height: 0; }
+.view, .pane { display: none; height: 100%; min-height: 0; }
+.view.on { display: block; }
+.pane.on { display: grid; animation: enter .45s cubic-bezier(.2, .7, .2, 1); }
+@keyframes enter { from { transform: translateY(14px); opacity: .4; } }
+.card { background: var(--card); border-radius: 16px; box-shadow: 0 1px 2px rgba(17, 26, 46, .05), 0 8px 24px rgba(17, 26, 46, .05); min-height: 0; }
+
+/* 图 + 说明 */
+.split { grid-template-columns: minmax(0, 1fr) 316px; gap: 14px; }
+.canvas { padding: 12px 14px 8px; display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+.canvas svg { width: 100%; height: 100%; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--soft); padding-top: 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid; display: inline-block; }
+.insp { padding: 18px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.insp .tag { align-self: flex-start; }
+.insp h3 { font-size: 19px; }
+.insp section h4 { margin: 0 0 3px; font-size: 12px; letter-spacing: .08em; color: var(--soft); font-weight: 600; }
+.insp section p { font-size: 14px; }
+.insp section.found { background: var(--bad-wash); border-radius: 10px; padding: 10px 12px; }
+.insp section.found h4 { color: var(--bad); }
+.insp section.change { background: var(--warn-wash); border-radius: 10px; padding: 10px 12px; }
+.insp section.change h4 { color: var(--warn); }
+.insp .hint { margin-top: auto; font-size: 12.5px; color: var(--soft); border-top: 1px dashed var(--line); padding-top: 10px; }
+
+svg text { font-family: var(--sans); }
+svg .t { font-size: 13.5px; font-weight: 700; fill: var(--ink); }
+svg .s { font-size: 11px; fill: var(--soft); }
+svg .lab { font-size: 11px; fill: var(--model); font-weight: 600; }
+svg .ln { fill: none; stroke: #9aa7c0; stroke-width: 1.3; }
+svg .dash { fill: none; stroke: #9aa7c0; stroke-width: 1.3; stroke-dasharray: 5 5; }
+svg .frame { fill: #f6f8fc; stroke: #c9d2e3; stroke-dasharray: 5 5; }
+svg .node { cursor: pointer; }
+svg .node rect { stroke-width: 1.4; transition: stroke-width .15s, filter .2s; }
+svg .node:hover rect { stroke-width: 2.4; }
+svg .node.sel rect { stroke: var(--lamp); stroke-width: 3; filter: drop-shadow(0 0 7px rgba(255, 181, 71, .75)); }
+svg .c rect { fill: #fff; stroke: #5c6a84; }
+svg .m rect { fill: var(--model-wash); stroke: var(--model); }
+svg .d rect { fill: var(--data-wash); stroke: var(--data); }
+svg .u rect { fill: var(--warn-wash); stroke: var(--warn); }
+svg .dot { fill: var(--model); }
+svg .dot.g { fill: var(--data); }
+svg .dot.r { fill: var(--bad); }
+svg .st { font-size: 10.5px; font-weight: 700; }
+svg .st.none { fill: #8b97ad; } svg .st.seed { fill: var(--warn); } svg .st.proto { fill: var(--data); } svg .st.new { fill: var(--model); }
+
+.canvas.short { grid-template-rows: auto minmax(0, 1fr) auto; }
+.canvas.short svg { height: auto; }
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-content: center; padding: 8px 0; }
+.facts div { background: var(--canvas); border-radius: 12px; padding: 12px 14px; animation: enter .5s both; }
+.facts b { font-family: var(--num); font-size: 24px; display: block; line-height: 1.2; }
+.facts span { font-size: 12.5px; color: var(--soft); display: block; line-height: 1.5; }
+.part ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.part li { padding-left: 14px; position: relative; }
+.part li::before { content: ""; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--lamp); }
+.part h4 { margin: 6px 0 0; font-size: 11.5px; letter-spacing: .08em; color: var(--soft); }
+.xp .crit { border-top: 1px dashed var(--line); padding-top: 6px; color: var(--ink); }
+
+/* 总览 */
+.over { grid-template-rows: auto auto auto minmax(0, 1fr); gap: 14px; }
+.hero { padding: 20px 24px; background: linear-gradient(120deg, var(--night) 0%, var(--night-2) 70%, #2a3d77 100%); color: #dbe4fb; position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; right: -60px; top: -80px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 181, 71, .5), rgba(255, 181, 71, 0) 68%); animation: glow 5s ease-in-out infinite; }
+@keyframes glow { 50% { transform: scale(1.12); opacity: .75; } }
+.hero h2 { font-size: 24px; color: #fff; max-width: 30em; text-wrap: balance; position: relative; z-index: 1; }
+.hero p { margin-top: 8px; max-width: 46em; font-size: 14.5px; position: relative; z-index: 1; }
+.steps5 { display: grid; grid-template-columns: repeat(5, 1fr); padding: 16px 22px; }
+.steps5 div { position: relative; padding-top: 18px; font-size: 12.5px; color: var(--soft); }
+.steps5 div b { display: block; color: var(--ink); font-size: 14.5px; }
+.steps5 div::before { content: ""; position: absolute; top: 4px; left: 0; right: 0; height: 4px; background: var(--line); }
+.steps5 div:first-child::before { border-radius: 2px 0 0 2px; } .steps5 div:last-child::before { border-radius: 0 2px 2px 0; }
+.steps5 div.done::before { background: var(--data); }
+.steps5 div.now::before { background: linear-gradient(90deg, var(--lamp), #ffd38a); }
+.steps5 div.now::after { content: ""; position: absolute; top: -1px; left: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--lamp); animation: ring 1.8s infinite; }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(255, 181, 71, .6); } 100% { box-shadow: 0 0 0 12px rgba(255, 181, 71, 0); } }
+.tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.tile { padding: 12px 14px; }
+.tile .num { font-size: 30px; font-weight: 700; line-height: 1.1; display: block; }
+.tile small { color: var(--soft); font-size: 12px; line-height: 1.4; display: block; margin-top: 3px; }
+.tile.bad .num { color: var(--bad); } .tile.good .num { color: var(--data); }
+.parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; min-height: 0; }
+.part { padding: 16px 18px; text-align: left; display: flex; flex-direction: column; gap: 6px; transition: transform .2s, box-shadow .2s; overflow: hidden; }
+.part:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(17, 26, 46, .12); }
+.part h3 { font-size: 17px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.part p { font-size: 13.5px; color: var(--soft); }
+.part span.go { margin-top: auto; font-size: 13px; color: var(--model); font-weight: 600; }
+
+/* 三栏清单 */
+.cols { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.col { padding: 14px 14px 6px; display: flex; flex-direction: column; min-height: 0; }
+.col h3 { font-size: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.col h3::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.col.prob h3 { color: var(--bad); } .col.rev h3 { color: var(--warn); } .col.ver h3 { color: var(--model); }
+.col ul { list-style: none; margin: 0; padding: 0 4px 8px 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.col li { border-left: 3px solid; padding: 5px 0 5px 11px; font-size: 13.5px; line-height: 1.55; animation: enter .5s both; }
+.col.prob li { border-color: var(--bad); } .col.rev li { border-color: var(--lamp); } .col.ver li { border-color: var(--model); }
+.col li b { display: block; font-size: 14px; }
+.col li span { color: var(--soft); }
+.col li em { font-style: normal; font-family: var(--num); font-weight: 700; color: var(--bad); font-size: 15px; }
+
+/* 三层主题 */
+.layers { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+.before-after { padding: 18px 20px; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px; }
+.ba { display: grid; grid-template-columns: 1fr auto 1.3fr; gap: 16px; align-items: center; min-height: 0; }
+.ba h4 { margin: 0 0 6px; font-size: 13px; color: var(--soft); font-weight: 600; }
+.dots { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; }
+.dots i { aspect-ratio: 1; border-radius: 2px; background: #c3ccde; animation: pop .5s both; }
+@keyframes pop { from { transform: scale(.2); } }
+.arrow { font-size: 26px; color: var(--lamp); animation: nudge 1.6s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: translateX(6px); } }
+.tree3 { display: flex; flex-direction: column; gap: 8px; }
+.tree3 .row { display: grid; grid-template-columns: 62px 1fr; gap: 8px; align-items: center; font-size: 12.5px; color: var(--soft); }
+.tree3 .row b { color: var(--ink); font-size: 14px; }
+.tree3 .bar { display: flex; gap: 4px; }
+.tree3 .bar i { height: 20px; border-radius: 4px; flex: 1; animation: pop .5s both; }
+.tree3 .ch i { background: var(--night); } .tree3 .tp i { background: var(--lamp); } .tree3 .kp i { background: #c3ccde; height: 12px; }
+.mini { display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.mini .card { padding: 13px 16px; overflow: auto; }
+.mini h3 { font-size: 15px; margin-bottom: 3px; }
+.mini p { font-size: 13px; color: var(--soft); }
+
+/* 先算后写 */
+.player { grid-template-rows: auto minmax(0, 1fr) auto; padding: 18px 22px; gap: 12px; }
+.player .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.player .head p { color: var(--soft); font-size: 13.5px; max-width: 44em; }
+.ctrl { margin-left: auto; display: flex; gap: 6px; }
+.ctrl button { border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; font-size: 13px; background: #fff; }
+.ctrl button:hover { border-color: var(--ink); }
+.lanes { display: grid; grid-template-rows: 1fr 1fr; gap: 12px; min-height: 0; }
+.lane { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: center; transition: border-color .3s, background .3s; }
+.lane.live-lane { border-color: var(--lamp); background: #fffaf0; }
+.lane > b { font-size: 15px; } .lane > b small { display: block; font-weight: 400; color: var(--soft); font-size: 12.5px; }
+.chain { display: flex; gap: 8px; align-items: stretch; }
+.chain .st { flex: 1; border: 1.4px solid #5c6a84; border-radius: 10px; padding: 9px 10px; font-size: 13px; line-height: 1.45; background: #fff; position: relative; transition: transform .35s, box-shadow .35s, opacity .35s; opacity: .55; }
+.chain .st.mdl { border-color: var(--model); background: var(--model-wash); }
+.chain .st.badst { border-color: var(--bad); background: var(--bad-wash); }
+.chain .st.past { opacity: 1; }
+.chain .st.cur { opacity: 1; transform: translateY(-5px); box-shadow: 0 0 0 3px var(--lamp), 0 12px 22px rgba(255, 181, 71, .35); }
+.chain .st small { display: block; font-size: 11px; color: var(--soft); }
+.caption { background: var(--night); color: #e6ecff; border-radius: 12px; padding: 12px 16px; font-size: 14px; min-height: 48px; display: flex; align-items: center; gap: 12px; }
+.caption b { color: var(--lamp); font-family: var(--num); font-size: 18px; white-space: nowrap; }
+
+/* 验证组 */
+.verify { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; }
+.verify .card { padding: 14px 18px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th { text-align: left; font-weight: 600; color: var(--soft); font-size: 12px; padding: 6px 8px; border-bottom: 1.5px solid var(--ink); }
+td { padding: 8px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.bar { display: flex; align-items: center; gap: 7px; }
+.bar i { display: block; height: 9px; border-radius: 5px; transform-origin: left; animation: fill 1s cubic-bezier(.2, .7, .2, 1) both; min-width: 3px; }
+.bar.hit i { background: var(--data); } .bar.miss i { background: var(--bad); } .bar.cost i { background: var(--night); }
+.bar .num { font-size: 13px; min-width: 2.9em; }
+.vd { font-size: 12px; padding: 2px 8px; border-radius: 99px; white-space: nowrap; font-weight: 500; }
+.vd.keep { background: var(--data-wash); color: var(--data); } .vd.cut { background: var(--bad-wash); color: var(--bad); } .vd.less { background: var(--warn-wash); color: var(--warn); }
+.note { font-size: 12.5px; color: var(--soft); margin-top: 10px; }
+.verify h3 { font-size: 15px; margin-bottom: 8px; }
+
+/* 交付与降级 */
+.deliver { grid-template-columns: 1fr 1fr; gap: 14px; }
+.deliver .card { padding: 16px 20px; overflow: auto; }
+.deliver h3 { font-size: 15px; margin-bottom: 10px; }
+.tl { display: flex; flex-direction: column; gap: 0; }
+.tl div { display: grid; grid-template-columns: 84px 1fr; gap: 12px; padding: 9px 0; border-left: 2px solid var(--line); padding-left: 14px; position: relative; font-size: 13.5px; animation: enter .5s both; }
+.tl div::before { content: ""; position: absolute; left: -6px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: var(--lamp); }
+.tl b { font-family: var(--num); font-size: 14px; } .tl span { color: var(--soft); }
+
+/* 实验 */
+.board { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.xp { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; animation: enter .5s both; }
+.xp .hd { display: flex; align-items: center; justify-content: space-between; }
+.xp .hd b { font-family: var(--num); font-size: 22px; }
+.xp h3 { font-size: 14.5px; line-height: 1.4; }
+.xp p { font-size: 12.5px; color: var(--soft); overflow: auto; }
+.xp code { margin-top: auto; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.xp.run { box-shadow: 0 0 0 2px var(--lamp), 0 10px 26px rgba(255, 181, 71, .25); }
+.xp .track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.xp .track i { display: block; height: 100%; background: var(--lamp); border-radius: 3px; transform-origin: left; animation: fill 1.2s both; }
+.e1 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 14px; }
+.e1 .card { padding: 16px 18px; overflow: auto; }
+.e1 h3 { font-size: 15px; margin-bottom: 8px; }
+.kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.kv div { background: var(--canvas); border-radius: 10px; padding: 9px 11px; }
+.kv .num { font-size: 22px; font-weight: 700; display: block; line-height: 1.15; } .kv small { font-size: 11.5px; color: var(--soft); }
+.find { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.find li { padding-left: 12px; border-left: 3px solid var(--lamp); } .find li.good { border-color: var(--data); } .find li.bad { border-color: var(--bad); }
+.find li span { color: var(--soft); }
+
+/* 订正记录 */
+.logv { grid-template-columns: 1fr; }
+.logv .card { padding: 20px 26px; overflow: auto; }
+.log { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
+.log li { position: relative; padding: 0 0 20px 22px; animation: enter .5s both; }
+.log li::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2.5px solid var(--night); }
+.log li:first-child::before { background: var(--lamp); border-color: var(--lamp); animation: ring 1.8s infinite; }
+.log time { font-family: var(--num); font-weight: 700; font-size: 15px; margin-right: 10px; }
+.log b { font-size: 15px; } .log span { display: block; color: var(--soft); font-size: 13.5px; max-width: 60em; }
+
+@media (max-width: 980px), (max-height: 600px) {
+  body { display: block; overflow: auto; }
+  aside { flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px; }
+  .brand { padding: 0 8px; } .brand span, .live, .foot { display: none; }
+  .nav { flex-direction: row; flex-wrap: wrap; }
+  main { display: block; padding: 14px; }
+  .top { margin-bottom: 12px; } .tabs { margin-left: 0; }
+  .view, .pane { height: auto; }
+  .split, .cols, .layers, .verify, .deliver, .e1, .parts { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: repeat(2, 1fr); } .board { grid-template-columns: 1fr 1fr; grid-template-rows: none; }
+  .canvas svg { min-width: 700px; height: auto; } .canvas { overflow-x: auto; }
+  .steps5 { grid-template-columns: 1fr; gap: 8px; } .chain { flex-direction: column; } .lane { grid-template-columns: 1fr; } .ba { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } svg .dot { display: none; } }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="brand"><small>HARMONY 课程项目</small><b>AI 备考助手</b><span id="b-ver"></span></div>
+  <nav class="nav" id="nav" aria-label="页面"></nav>
+  <div class="live" id="live"></div>
+  <div class="foot" id="foot"></div>
+</aside>
+
+<main>
+  <div class="top"><h1 id="title"></h1><span class="pill" id="status"></span><div class="tabs" id="tabs" role="tablist"></div></div>
+  <div class="stage">
+
+    <!-- 总览 -->
+    <div class="view" data-view="overview">
+      <div class="pane over on" data-pane="main">
+        <div class="card hero"><h2>把课件、作业和老师划的重点交给它，它告诉你剩下的时间该学什么、放弃什么。</h2>
+          <p>App 还没有开始写。前面做的是 Python 后端原型，用三门课的真实资料回答“技术上能不能成”。结论是成了一半，所以现在回到设计，改掉实测暴露的问题，再去写鸿蒙端。</p></div>
+        <div class="card steps5" id="steps5"></div>
+        <div class="tiles" id="tiles"></div>
+        <div class="parts" id="parts"></div>
+      </div>
+    </div>
+
+    <!-- 知识库 -->
+    <div class="view" data-view="kb">
+      <div class="pane split on" data-pane="map">
+        <div class="card canvas">
+          <svg viewBox="0 0 840 556" role="img" aria-label="知识库设计：资料经导入管线进入个人层，三层知识经权限判定后供检索、权重和解析使用" data-insp="kb-insp">
+            <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#9aa7c0" stroke-width="1.6"/></marker></defs>
+            <text class="s" x="10" y="16">导入管线：上传后几秒出版本判定，几分钟出第一版主题</text>
+            <path class="ln" d="M10 55H830"/>
+            <circle class="dot" r="4"><animateMotion dur="7s" repeatCount="indefinite" path="M10 55H830"/></circle>
+            <circle class="dot" r="4"><animateMotion dur="7s" begin="-2.3s" repeatCount="indefinite" path="M10 55H830"/></circle>
+            <circle class="dot" r="4"><animateMotion dur="7s" begin="-4.6s" repeatCount="indefinite" path="M10 55H830"/></circle>
+            <path class="dash" d="M350 82V108M520 126H630V88" marker-end="url(#a1)"/>
+            <circle class="dot g" r="3.5"><animateMotion dur="4.5s" repeatCount="indefinite" path="M350 82V126H630V86"/></circle>
+            <path class="ln" d="M770 82V168H128V190" marker-end="url(#a1)"/>
+            <circle class="dot" r="4"><animateMotion dur="5s" begin="-1s" repeatCount="indefinite" path="M770 82V168H128V192"/></circle>
+
+            <g class="node c" data-id="extract" tabindex="0"><rect x="10" y="28" width="120" height="54" rx="9"/><text class="t" x="70" y="51" text-anchor="middle">抽取与版本</text><text class="s" x="70" y="68" text-anchor="middle">代码 · 存疑问人</text></g>
+            <g class="node c" data-id="chapter" tabindex="0"><rect x="150" y="28" width="120" height="54" rx="9"/><text class="t" x="210" y="51" text-anchor="middle">识别章节</text><text class="s" x="210" y="68" text-anchor="middle">代码 · 新增</text></g>
+            <g class="node c" data-id="order" tabindex="0"><rect x="290" y="28" width="120" height="54" rx="9"/><text class="t" x="350" y="51" text-anchor="middle">页面排序</text><text class="s" x="350" y="68" text-anchor="middle">代码 · 有图优先</text></g>
+            <g class="node m" data-id="kp" tabindex="0"><rect x="430" y="28" width="120" height="54" rx="9"/><text class="t" x="490" y="51" text-anchor="middle">知识点抽取</text><text class="s" x="490" y="68" text-anchor="middle">模型 · 先用文字层</text></g>
+            <g class="node c" data-id="audit" tabindex="0"><rect x="570" y="28" width="120" height="54" rx="9"/><text class="t" x="630" y="51" text-anchor="middle">覆盖审计</text><text class="s" x="630" y="68" text-anchor="middle">代码 · 漏页补抽</text></g>
+            <g class="node m" data-id="topic" tabindex="0"><rect x="710" y="28" width="120" height="54" rx="9"/><text class="t" x="770" y="51" text-anchor="middle">分组成主题</text><text class="s" x="770" y="68" text-anchor="middle">模型 · 新增</text></g>
+            <g class="node m" data-id="vision" tabindex="0"><rect x="320" y="108" width="200" height="36" rx="9"/><text class="t" x="420" y="131" text-anchor="middle">图示转写 · 后台按优先级</text></g>
+
+            <g class="node d" data-id="personal" tabindex="0"><rect x="10" y="194" width="236" height="128" rx="12"/><text class="t" x="128" y="218" text-anchor="middle">个人层</text><text class="s" x="128" y="241" text-anchor="middle">资料原文、主题、知识点</text><text class="s" x="128" y="260" text-anchor="middle">老师重点、错题、掌握度</text><text class="s" x="128" y="279" text-anchor="middle">跨课程链接（永不外传）</text><text class="lab" x="128" y="306" text-anchor="middle">决定范围和主要权重</text></g>
+            <g class="node d" data-id="campus" tabindex="0"><rect x="302" y="194" width="236" height="128" rx="12"/><text class="t" x="420" y="218" text-anchor="middle">校内层</text><text class="s" x="420" y="241" text-anchor="middle">统计信号（至少 3 位贡献者）</text><text class="s" x="420" y="260" text-anchor="middle">题目质量：确认数与报错数</text><text class="s" x="420" y="279" text-anchor="middle">权利方允许的文本</text><text class="lab" x="420" y="306" text-anchor="middle">权重微调，最多 0.2</text></g>
+            <g class="node d" data-id="shared" tabindex="0"><rect x="594" y="194" width="236" height="128" rx="12"/><text class="t" x="712" y="218" text-anchor="middle">共享层</text><text class="s" x="712" y="241" text-anchor="middle">标准主题（跨校对齐的单位）</text><text class="s" x="712" y="260" text-anchor="middle">统计信号</text><text class="s" x="712" y="279" text-anchor="middle">开放许可文本</text><text class="lab" x="712" y="306" text-anchor="middle">权重微调，最多 0.1</text></g>
+            <path class="ln" d="M246 262H300" marker-end="url(#a1)"/><path class="ln" d="M538 262H592" marker-end="url(#a1)"/>
+            <g class="node" data-id="policy" tabindex="0"><rect x="250" y="236" width="48" height="18" rx="9" fill="#fff" stroke="none"/><text class="s" x="274" y="249" text-anchor="middle" style="fill:var(--warn);font-weight:700">策略放行</text></g>
+            <g class="node" data-id="policy" tabindex="0"><rect x="542" y="236" width="48" height="18" rx="9" fill="#fff" stroke="none"/><text class="s" x="566" y="249" text-anchor="middle" style="fill:var(--warn);font-weight:700">策略放行</text></g>
+
+            <path class="ln" d="M128 322V352" marker-end="url(#a1)"/><path class="ln" d="M420 322V352" marker-end="url(#a1)"/><path class="ln" d="M712 322V352" marker-end="url(#a1)"/>
+            <circle class="dot g" r="3.5"><animateMotion dur="3s" repeatCount="indefinite" path="M128 324V428"/></circle>
+            <circle class="dot g" r="3.5"><animateMotion dur="3s" begin="-1s" repeatCount="indefinite" path="M420 324V428"/></circle>
+            <circle class="dot r" r="3.5"><animateMotion dur="3s" begin="-2s" repeatCount="indefinite" path="M712 324V354"/></circle>
+            <g class="node c" data-id="perm" tabindex="0"><rect x="10" y="356" width="820" height="44" rx="9"/><text class="t" x="420" y="383" text-anchor="middle">权限判定（代码）：内容进入模型上下文之前，先算出当前用户的可读范围</text></g>
+            <path class="ln" d="M128 400V428" marker-end="url(#a1)"/><path class="ln" d="M420 400V428" marker-end="url(#a1)"/><path class="ln" d="M712 400V428" marker-end="url(#a1)"/>
+            <g class="node m" data-id="retr" tabindex="0"><rect x="10" y="432" width="236" height="52" rx="9"/><text class="t" x="128" y="454" text-anchor="middle">检索 agent → 证据包</text><text class="s" x="128" y="472" text-anchor="middle">每页标注来自哪一层</text></g>
+            <g class="node c" data-id="weight" tabindex="0"><rect x="302" y="432" width="236" height="52" rx="9"/><text class="t" x="420" y="454" text-anchor="middle">三级权重合并</text><text class="s" x="420" y="472" text-anchor="middle">个人为主，信号微调</text></g>
+            <g class="node m" data-id="cross" tabindex="0"><rect x="594" y="432" width="236" height="52" rx="9"/><text class="t" x="712" y="454" text-anchor="middle">跨课程解析</text><text class="s" x="712" y="472" text-anchor="middle">只进解析，不能变成考点</text></g>
+            <rect class="frame" x="10" y="506" width="820" height="38" rx="9"/><text class="s" x="420" y="529" text-anchor="middle" style="font-size:12px">反馈回流到个人层：批改结果 → 掌握度；一键报错 → 题目质量；用户确认的跨课程链接才生效</text>
+          </svg>
+          <div class="legend"><span><i style="color:var(--model);background:var(--model-wash)"></i>模型调用</span><span><i style="color:#5c6a84"></i>代码</span><span><i style="color:var(--data);background:var(--data-wash)"></i>数据</span><span>红点：被权限判定拦下，进不了模型上下文</span><span>点击任意方框看细节</span></div>
+        </div>
+        <div class="card insp" id="kb-insp"></div>
+      </div>
+      <div class="pane layers" data-pane="layers">
+        <div class="card before-after">
+          <div><h3 style="font-size:17px">在知识点之上加一层“主题”</h3><p style="color:var(--soft);font-size:13.5px">现在的知识点平均 1.6 页一个，61% 只对应一页，其实是页摘要。计划、掌握度和跨用户聚合需要更大的单位。</p></div>
+          <div class="ba">
+            <div><h4>之前：1138 个平铺的知识点</h4><div class="dots" id="dots"></div></div>
+            <div class="arrow" aria-hidden="true">→</div>
+            <div><h4>之后：三层</h4>
+              <div class="tree3">
+                <div class="row"><b>章</b><div class="bar ch"><i></i><i></i><i></i></div></div>
+                <div class="row"><b>主题</b><div class="bar tp" id="tp"></div></div>
+                <div class="row"><b>知识点</b><div class="bar kp" id="kpbar"></div></div>
+                <div class="row"><span></span><span>主题约 8 个知识点，一门课 50 个左右，只用于展示和排期。重点级别和掌握度记在知识点上。</span></div>
+              </div></div>
+          </div>
+        </div>
+        <div class="mini">
+          <div class="card"><h3>标准主题：三层之间的连接点</h3><p>校内和共享层按标准主题聚合信号。它与个人主题同级，按课程维护；个人主题向它映射，至少共享一个术语才接受。对不上的留在个人层，不影响使用。</p></div>
+          <div class="card"><h3>掌握度：三态 + 作答事件</h3><p>未学、不稳、掌握。做错一次进入“不稳”；在两道不同的题上做对，或做对一次并自己标记，进入“掌握”。保存的是事件，规则以后可以改。</p></div>
+          <div class="card"><h3>资料更新：按页哈希传播失效</h3><p>新版本到来时逐页比较。没变的页，知识点沿用；改了的页只重抽这几页。题目先用引用核对重查，原文不在了就标为“待复查”。</p></div>
+        </div>
+      </div>
+      <div class="pane cols" data-pane="issues"></div>
+    </div>
+
+    <!-- 工作流 -->
+    <div class="view" data-view="flow">
+      <div class="pane split on" data-pane="map">
+        <div class="card canvas short">
+          <svg viewBox="0 0 840 390" role="img" aria-label="工作流五个阶段：资料解析、复习计划、出题与验证、组卷排版、批改与调整，批改结果回流到计划和出题" data-insp="flow-insp">
+            <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#9aa7c0" stroke-width="1.6"/></marker></defs>
+            <path class="ln" d="M2 159H838"/>
+            <circle class="dot" r="4.5"><animateMotion dur="8s" repeatCount="indefinite" path="M2 159H838"/></circle>
+            <circle class="dot" r="4.5"><animateMotion dur="8s" begin="-2.7s" repeatCount="indefinite" path="M2 159H838"/></circle>
+            <circle class="dot" r="4.5"><animateMotion dur="8s" begin="-5.4s" repeatCount="indefinite" path="M2 159H838"/></circle>
+            <path class="dash" d="M822 234V350H248V240" marker-end="url(#a2)"/><path class="dash" d="M420 350V240" marker-end="url(#a2)"/>
+            <circle class="dot g" r="4"><animateMotion dur="6s" repeatCount="indefinite" path="M822 234V350H248V240"/></circle>
+            <circle class="dot r" r="4"><animateMotion dur="6s" begin="-3s" repeatCount="indefinite" path="M822 234V350H420V240"/></circle>
+            <g class="node" data-id="loopA" tabindex="0"><rect x="268" y="356" width="134" height="24" rx="12" fill="var(--data-wash)" stroke="none"/><text class="s" x="335" y="372" text-anchor="middle" style="fill:var(--data);font-weight:700">掌握度 → 重排计划</text></g>
+            <g class="node" data-id="loopB" tabindex="0"><rect x="552" y="356" width="140" height="24" rx="12" fill="var(--bad-wash)" stroke="none"/><text class="s" x="622" y="372" text-anchor="middle" style="fill:var(--bad);font-weight:700">报错 → 复查、重出</text></g>
+
+            <g class="node u" data-id="in1" tabindex="0"><rect x="2" y="20" width="148" height="32" rx="16"/><text class="s" x="76" y="40" text-anchor="middle" style="fill:var(--ink)">课件 · 作业</text></g>
+            <path class="ln" d="M76 52V80" marker-end="url(#a2)"/>
+            <g class="node u" data-id="in2" tabindex="0"><rect x="174" y="20" width="148" height="32" rx="16"/><text class="s" x="248" y="40" text-anchor="middle" style="fill:var(--ink)">重点 · 考试形式 · 时间</text></g>
+            <path class="ln" d="M248 52V80" marker-end="url(#a2)"/>
+
+            <g class="node c" data-id="s1" tabindex="0"><rect x="2" y="84" width="148" height="150" rx="12"/><text class="t" x="76" y="110" text-anchor="middle">① 资料解析</text><text class="lab" x="14" y="140">模型</text><text class="s" x="14" y="158">转写 · 抽取 · 分主题</text><text class="s" x="14" y="186" style="font-weight:700">代码</text><text class="s" x="14" y="204">版本 · 排序 · 审计</text></g>
+            <g class="node c" data-id="s2" tabindex="0"><rect x="174" y="84" width="148" height="150" rx="12"/><text class="t" x="248" y="110" text-anchor="middle">② 复习计划</text><text class="lab" x="186" y="140">模型</text><text class="s" x="186" y="158">重点映射与分级</text><text class="s" x="186" y="186" style="font-weight:700">代码</text><text class="s" x="186" y="204">权重 · 取舍 · 排期</text></g>
+            <g class="node c" data-id="s3" tabindex="0"><rect x="346" y="84" width="148" height="150" rx="12"/><text class="t" x="420" y="110" text-anchor="middle">③ 出题与验证</text><text class="lab" x="358" y="140">模型</text><text class="s" x="358" y="158">检索 · 出题 · 检查</text><text class="s" x="358" y="186" style="font-weight:700">代码</text><text class="s" x="358" y="204">沙箱 · 回读 · 裁决</text></g>
+            <g class="node c" data-id="s4" tabindex="0"><rect x="518" y="84" width="148" height="150" rx="12"/><text class="t" x="592" y="110" text-anchor="middle">④ 组卷排版</text><text class="lab" x="530" y="140">模型</text><text class="s" x="530" y="158">不参与</text><text class="s" x="530" y="186" style="font-weight:700">代码</text><text class="s" x="530" y="204">检查 · 组卷 · HTML</text></g>
+            <g class="node c" data-id="s5" tabindex="0"><rect x="690" y="84" width="148" height="150" rx="12"/><text class="t" x="764" y="110" text-anchor="middle">⑤ 批改与调整</text><text class="lab" x="702" y="140">模型</text><text class="s" x="702" y="158">评分建议（可选）</text><text class="s" x="702" y="186" style="font-weight:700">代码</text><text class="s" x="702" y="204">判分 · 掌握度 · 重排</text></g>
+
+            <path class="ln" d="M592 234V264" marker-end="url(#a2)"/>
+            <g class="node u" data-id="out" tabindex="0"><rect x="528" y="268" width="128" height="32" rx="16"/><text class="s" x="592" y="288" text-anchor="middle" style="fill:var(--ink)">试卷 · 出处 · 提示</text></g>
+            <path class="ln" d="M750 268V240" marker-end="url(#a2)"/>
+            <g class="node u" data-id="ans" tabindex="0"><rect x="700" y="268" width="100" height="32" rx="16"/><text class="s" x="750" y="288" text-anchor="middle" style="fill:var(--ink)">作答 · 报错</text></g>
+          </svg>
+          <div class="facts"><div><b>10</b><span>个模型角色，都是同一个模型的独立调用</span></div><div><b>1</b><span>个自主 agent：只有检索需要边查边决定</span></div><div><b>2</b><span>处回流：掌握度改计划，报错改题目</span></div><div><b>约 3 万</b><span>token 每题，先算后写的初步数字；旧流程仅验证就约 8 万</span></div></div>
+          <div class="legend"><span><i style="color:var(--warn);background:var(--warn-wash)"></i>用户的输入和拿到的结果</span><span>绿点：掌握度回流</span><span>红点：报错回流</span><span>点击任意方框看细节</span></div>
+        </div>
+        <div class="card insp" id="flow-insp"></div>
+      </div>
+      <div class="pane player card" data-pane="compute">
+        <div class="head"><div><h3 style="font-size:17px">计算题：从“先写后验”到“先算后写”</h3><p>58 道题答案全对，错都出在解析和中间表格。与其让模型写完再找错，不如不让模型抄写数字。</p></div>
+          <div class="ctrl"><button id="p-prev">上一步</button><button id="p-play">暂停</button><button id="p-next">下一步</button></div></div>
+        <div class="lanes" id="lanes"></div>
+        <div class="caption"><b id="cap-n"></b><span id="cap-t"></span></div>
+      </div>
+      <div class="pane verify" data-pane="verify">
+        <div class="card"><h3>七项检查各自的收益和成本</h3>
+          <table><thead><tr><th>检查</th><th>拦下问题题</th><th>误报正常题</th><th>占验证开销</th><th>第 2 版的决定</th></tr></thead><tbody id="checks"></tbody></table>
+          <p class="note">最后三轮回归评测合计：问题题 30 题次，正常题 72 题次。样本小，数字只说明方向。V3 三轮没有判过一次失败，却用掉四分之一的开销。</p></div>
+        <div class="card"><h3>第 2 版：按题目类别选跑</h3>
+          <table><thead><tr><th>题目类别</th><th>运行的检查</th></tr></thead><tbody>
+            <tr><td><b>计算类</b><br><span style="color:var(--soft);font-size:12px">先算后写</span></td><td>题干回读、V4、V7、自写数值计数</td></tr>
+            <tr><td><b>证明、推导</b></td><td>V5、V4、V7、V3 一次</td></tr>
+            <tr><td><b>概念单选</b></td><td>选项形式、V6、V4、V7、V3 一次</td></tr>
+            <tr><td><b>简答、论述</b></td><td>V4、V7、V3 一次、V5 完整性</td></tr></tbody></table>
+          <h3 style="margin-top:14px">裁决分三档</h3>
+          <table><tbody>
+            <tr><td><span class="vd cut">硬失败</span></td><td>代码判定：原文不存在、格式不合格、回读对不上。退回修订，最多 2 次。</td></tr>
+            <tr><td><span class="vd less">软失败</span></td><td>模型判定。只修订 1 次，仍被标记就带提示发布。</td></tr>
+            <tr><td><span class="vd keep">提示</span></td><td>不修订，随题展示。</td></tr></tbody></table></div>
+      </div>
+      <div class="pane cols" data-pane="issues"></div>
+    </div>
+
+    <!-- 架构 -->
+    <div class="view" data-view="arch">
+      <div class="pane split on" data-pane="map">
+        <div class="card canvas short">
+          <svg viewBox="0 0 840 440" role="img" aria-label="项目架构：鸿蒙客户端调用后端 API，其下是知识库服务、工作流编排、后台任务和数据契约，再往下是存储、模型网关和验算沙箱" data-insp="arch-insp">
+            <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#9aa7c0" stroke-width="1.6"/></marker></defs>
+            <rect class="frame" x="10" y="14" width="820" height="100" rx="14"/><text class="t" x="24" y="36">鸿蒙客户端</text><text class="s" x="106" y="36">只负责展示和采集</text>
+            <rect class="frame" x="10" y="224" width="820" height="104" rx="14"/><text class="t" x="24" y="246">后端核心</text>
+            <path class="ln" d="M420 100V142M420 196V258M142 312V366M420 312V366M698 312V366"/>
+            <circle class="dot" r="4.5"><animateMotion dur="5s" repeatCount="indefinite" path="M420 100V246H318V340H420V370"/></circle>
+            <circle class="dot" r="4.5"><animateMotion dur="5s" begin="-2.5s" repeatCount="indefinite" path="M420 100V246H318V340H420V370"/></circle>
+            <circle class="dot g" r="4"><animateMotion dur="5s" begin="-1.2s" repeatCount="indefinite" path="M142 366V340H118V246H420V196V100"/></circle>
+            <g class="node c" data-id="arkui" tabindex="0"><rect x="24" y="48" width="388" height="52" rx="9"/><text class="t" x="38" y="70">ArkTS / ArkUI 页面</text><text class="s" x="38" y="88">课程、上传、计划、答题、自评、报错</text><text class="st none" x="400" y="70" text-anchor="end">○ 未开始</text></g>
+            <g class="node c" data-id="arkweb" tabindex="0"><rect x="428" y="48" width="388" height="52" rx="9"/><text class="t" x="442" y="70">ArkWeb 试卷页</text><text class="s" x="442" y="88">KaTeX 渲染服务端生成的 HTML</text><text class="st none" x="804" y="70" text-anchor="end">○ 未开始</text></g>
+            <g class="node c" data-id="api" tabindex="0"><rect x="10" y="142" width="820" height="54" rx="9"/><text class="t" x="24" y="165">后端 API 服务</text><text class="s" x="24" y="183">上传资料 · 课程与主题 · 生成计划 · 生成试卷 · 提交答案 · 报错 · 任务进度</text><text class="st seed" x="816" y="165" text-anchor="end">◐ 只有雏形</text></g>
+            <g class="node c" data-id="kbsvc" tabindex="0"><rect x="24" y="258" width="188" height="54" rx="9"/><text class="t" x="36" y="280">知识库服务</text><text class="s" x="36" y="298">导入、版本、权限</text><text class="st proto" x="202" y="280" text-anchor="end">● 原型已有</text></g>
+            <g class="node c" data-id="flowsvc" tabindex="0"><rect x="224" y="258" width="188" height="54" rx="9"/><text class="t" x="236" y="280">工作流编排</text><text class="s" x="236" y="298">固定流程、按类别选跑</text><text class="st proto" x="402" y="280" text-anchor="end">● 原型已有</text></g>
+            <g class="node c" data-id="jobs" tabindex="0"><rect x="424" y="258" width="188" height="54" rx="9"/><text class="t" x="436" y="280">后台任务</text><text class="s" x="436" y="298">建库、转写、验证可续跑</text><text class="st new" x="602" y="280" text-anchor="end">＋ 新增</text></g>
+            <g class="node c" data-id="schema" tabindex="0"><rect x="624" y="258" width="192" height="54" rx="9"/><text class="t" x="636" y="280">数据契约</text><text class="s" x="636" y="298">格式逐步校验</text><text class="st proto" x="806" y="280" text-anchor="end">● v0.2</text></g>
+            <g class="node d" data-id="store" tabindex="0"><rect x="10" y="366" width="264" height="60" rx="9"/><text class="t" x="24" y="391">存储</text><text class="s" x="24" y="409">文本库、图片库、题库、作答事件</text><text class="st proto" x="262" y="391" text-anchor="end">● 原型已有</text></g>
+            <g class="node m" data-id="gateway" tabindex="0"><rect x="288" y="366" width="264" height="60" rx="9"/><text class="t" x="302" y="391">模型网关</text><text class="s" x="302" y="409">单一模型，按档位调参，记预算</text><text class="st seed" x="540" y="391" text-anchor="end">◐ 缺预算</text></g>
+            <g class="node c" data-id="sandbox" tabindex="0"><rect x="566" y="366" width="264" height="60" rx="9"/><text class="t" x="580" y="391">验算沙箱</text><text class="s" x="580" y="409">白名单检查 + 隔离进程</text><text class="st proto" x="818" y="391" text-anchor="end">● 原型已有</text></g>
+          </svg>
+          <div class="facts"><div><b>0</b><span>个模型密钥进客户端，模型生成的代码也只在沙箱里跑</span></div><div><b>383 万</b><span>token 建三门课的知识库，所以需要后台任务</span></div><div><b>3</b><span>处还没开始：鸿蒙页面、试卷页、正式 API</span></div><div><b>v0.3</b><span>数据契约的升级清单已列好，等实验结果</span></div></div>
+          <div class="legend"><span>蓝点：一次“生成试卷”请求向下走到模型</span><span>绿点：结果从存储返回客户端</span><span>○ 未开始　◐ 只有雏形　● 原型已有　＋ 新增设计</span></div>
+        </div>
+        <div class="card insp" id="arch-insp"></div>
+      </div>
+      <div class="pane deliver" data-pane="deliver">
+        <div class="card"><h3>用户要等多久：渐进交付</h3><div class="tl">
+          <div><b>几秒</b><span>资料列表、版本判定和存疑项。纯代码。</span></div>
+          <div><b>几分钟</b><span>用文字层抽出的第一版主题和复习计划。</span></div>
+          <div><b>后台</b><span>图示转写按优先级进行，计划逐步更新。</span></div>
+          <div><b>点“出题”</b><span>一次 10 道，逐题出现；验证在后台，题目先显示“验证中”。</span></div></div>
+          <p class="note">依据：三门课建库用了约 383 万 token，平均每份资料约 11 万，不能让用户同步等待。</p></div>
+        <div class="card"><h3>出问题时怎么降级</h3><table><tbody>
+          <tr><td><b>格式多次不合格</b></td><td>把任务拆小重试，仍失败则跳过并记录</td></tr>
+          <tr><td><b>模型不支持图片</b></td><td>跳过转写，含图的页标为“图示未解析”</td></tr>
+          <tr><td><b>求解代码反复失败</b></td><td>该知识点改出简答题</td></tr>
+          <tr><td><b>预算用完</b></td><td>只保留代码检查，题目标注“未经模型检查”</td></tr>
+          <tr><td><b>服务中断</b></td><td>每一步都落盘，恢复后从断点继续</td></tr></tbody></table></div>
+      </div>
+      <div class="pane cols" data-pane="issues"></div>
+    </div>
+
+    <!-- 实验 -->
+    <div class="view" data-view="experiments">
+      <div class="pane board on" data-pane="board" id="board"></div>
+      <div class="pane e1" data-pane="e1">
+        <div class="card"><h3>三轮实验的结果</h3><div class="kv" id="e1kv"></div><ul class="find" id="e1find"></ul>
+          <p class="note" id="e1note"></p></div>
+        <div class="card"><h3>E1：旧流程的 5 道问题题，在新流程里怎样了</h3><table><thead><tr><th>题目</th><th>结果</th><th>说明</th></tr></thead><tbody id="e1rows"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- 订正记录 -->
+    <div class="view" data-view="changes">
+      <div class="pane logv on" data-pane="main"><div class="card"><ul class="log" id="log"></ul></div></div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+/* 以后更新这一页，主要改这个对象。 */
+const DATA = {
+  version: "设计第 2 版（修订稿）",
+  date: "2026-11-23",
+  live: { title: "第 5 轮实验待运行", done: 4, total: 8, note: "E3e 第一步召回优先 · E10 证据（模型版）" },
+  views: [
+    { id: "overview", name: "总览", status: ["run", "设计修订 + 实验验证"], tabs: [] },
+    { id: "kb", name: "知识库", dot: "fix", status: ["fix", "修订中，主题只作分组"], tabs: [["map", "结构图"], ["layers", "三层主题"], ["issues", "问题与修订"]] },
+    { id: "flow", name: "工作流", dot: "fix", status: ["fix", "修订中，先算后写已采用"], tabs: [["map", "五个阶段"], ["compute", "先算后写"], ["verify", "验证组"], ["issues", "问题与修订"]] },
+    { id: "arch", name: "项目架构", dot: "ok", status: ["ok", "基本稳定"], tabs: [["map", "分层图"], ["deliver", "交付与降级"], ["issues", "问题与修订"]] },
+    { id: "experiments", name: "实验", dot: "run", status: ["run", "四轮完成，第 5 轮待运行"], tabs: [["board", "看板"], ["e1", "已有结果"]] },
+    { id: "changes", name: "订正记录", status: ["wait", "最近更新 11-23，原型按证据修改"], tabs: [] }
+  ],
+  stages: [["后端原型", "三门课建库、出题", "done"], ["验证组评测", "三轮回归，已冻结", "done"], ["设计修订", "知识库与工作流 v2", "now"], ["实验验证", "四轮完成，第 5 轮待跑", "now"], ["API 与鸿蒙开发", "尚未开始", ""]],
+  tiles: [[42, "", "份真实课件和作业", ""], [1138, "", "个知识点，1.6 页一个", ""], [58, "/58", "道题答案正确", "good"], [15, "%", "的题解析或表格有缺陷", "bad"], [43, "%", "的问题题被自查拦下", "bad"], [8, " 万", "token，每题验证开销", "bad"]],
+  parts: [
+    ["kb", "一、知识库", "fix", "修订中", "资料能建成带权限的知识库。但抽出的知识点太碎，撑不起复习计划，三层之间也没有对齐的办法。"],
+    ["flow", "二、工作流", "fix", "修订中", "出题能跑通，答案都对。解析约 15% 有缺陷，模型自查只拦住四成；计划和批改几乎是空的。"],
+    ["arch", "三、项目架构", "ok", "基本稳定", "分层没有发现问题。鸿蒙端和正式 API 还没开始，新增了后台任务和预算两处设计。"]
+  ],
+  intro: {
+    kb: ["知识库", "把课件变成模型能用的材料：每页的文字、图示的文字描述、抽出的知识点，再加上谁能看什么的规则。资料上传后一律先进个人层，向上流动和向下读取都由代码把关。"],
+    flow: ["工作流", "从资料到试卷的流水线。假设用户只有一个模型，所以“多个 agent”是同一个模型在互相看不到的上下文里各做一件事。流程由代码编排，没有总管 agent；用户只出现在两端。"],
+    arch: ["项目架构", "鸿蒙端只负责展示和收集输入。模型调用、验算代码执行和排版检查都在服务端，模型密钥不进客户端。"]
+  },
+  nodes: {
+    extract: ["抽取与版本判定", "代码", "把 PDF、PPT、Word 抽成按页文本，遮蔽作业里的姓名学号；重复和多版本按证据判定最终版，模型不参与。", "文件名会误导：标着 2026 的课件，内嵌日期其实是 2024。从证据判出的最终版与人工确认一致。", "给每页加内容哈希，供资料更新时逐页比较。"],
+    chapter: ["识别章节", "代码 · 新增", "从文件名和目录页识别“章”，作为三层结构的最上层。", "", "识别不出时由模型建议、用户确认。"],
+    order: ["页面排序", "代码", "决定图示转写的先后：含内嵌图片或文字很少的页优先。", "原设想是只转写挑出的页。实测只看文字量等于随机；看内嵌图片能覆盖 75% 的有效转写，仍漏约两成。", "从“过滤”改为“排序”：所有页最终都转写，预算不够时从队尾截断并标注。"],
+    kp: ["知识点抽取", "模型", "从一份课件里抽出可考查的知识点，带页码和中英文术语。", "三门课 1138 个，61% 只对应一页；64% 被评为 4 分或 5 分，重要度没有区分度。", "先只用文字层出第一版，转写结果到达后增量补充。重要度只作次要依据。"],
+    audit: ["覆盖审计", "代码", "找出有内容却没被任何知识点引用的页，退回补抽。", "实测漏页 8.6%，《设备管理》一章漏了 27%。", "保留。转写补完后再审计一次。"],
+    topic: ["分组成主题", "模型 + 代码校验 · 新增", "把一章的知识点分成 10 到 40 分钟能学完的主题，并建议主题之间的前置关系。", "两轮实验的一致率都是 83%，没到 90% 的判定线。给定数量后大小合适了（平均 6.8 个知识点），一致性没有提高。不一致的知识点 95% 在主题边界附近，核心是稳定的。", "主题只用于展示和排期；重点级别、掌握度这些需要精确的信息记在知识点上。判定标准换成下游一致率，看实验 E3c。"],
+    vision: ["图示转写", "模型", "把页面图片里的图表、公式、表格转成文字，结果标注“由模型识别，未经核对”。", "1904 页全部转写，只有 42% 补充了内容，却是建库开销的大头。", "放到后台按优先级进行。模型不支持图片时跳过，含图的页标为“图示未解析”。"],
+    personal: ["个人层", "数据", "用户自己的资料、主题、知识点、老师重点、错题、掌握度和跨课程链接。决定考试范围和主要权重。", "目前唯一有真实数据的一层。", "新增掌握度三态和作答事件；资料更新时按页哈希传播失效。"],
+    campus: ["校内层", "数据", "同课程同学贡献的统计信号，权利方允许时可以包含文本。最多把权重调整 0.2。", "只有模拟数据。信号至少需要 3 位贡献者，现在只有一位用户。", "新增“题目质量”信号：被确认无误的题目数和被报错的次数。本期只做到规则真实、数据模拟。"],
+    shared: ["共享层", "数据", "跨学校的标准主题、统计信号和开放许可资料。最多把权重调整 0.1。", "原设计的“标准知识点”没有说明从哪来，不同人的碎知识点对不上。", "标准主题落在主题一级，按课程维护。同一个新主题出现在 3 位用户的资料里才升为标准主题。"],
+    policy: ["策略放行", "代码", "学校、院系、教师的分享策略决定资料能否向上流动。多条命中取最严；只有已验证的策略能放行，待审核的只能收紧。", "", "文本进入校内或共享层之前增加一项扫描：出现面向模型的指令句式就转人工。共享文本是别人的模型上下文的输入，要当作不可信内容。"],
+    perm: ["权限判定", "代码", "每次读取前先算出当前用户的可读范围。模型只能看到用户本来就有权看的内容，提示词里的“不要输出原文”不算隔离。", "已实现并有测试：撤销授权、待审核、外校用户等场景都覆盖。", ""],
+    retr: ["检索 agent", "模型 · 唯一自主的 agent", "只有三个只读工具。边查边判断证据够不够，输出证据包和缺口清单，缺口原样交给出题，避免补出资料里没有的内容。", "现在用固定规则选页。检索第一条命中 23/28。", "证据包按主题缓存，资料不变就不重查。"],
+    weight: ["三级权重合并", "代码", "个人资料和老师重点决定主要权重，校内和共享信号只做微调。", "现有公式里老师重点几乎不起作用：最高权重只有中位数的 1.61 倍。", "改为“重点分级倍数”，见工作流的复习计划。"],
+    cross: ["跨课程解析", "模型", "用另一门课里熟悉的概念帮助解释，例如 Java 接口与 C++ 抽象类。", "模型建议的链接约一半有学习价值，其余牵强。", "用户确认后才生效；只能出现在解析里，永远不能扩大考试范围。"],
+    in1: ["课件和作业", "用户输入", "上传后几秒就能看到资料列表和版本判定。证据不足的版本请用户确认。", "", ""],
+    in2: ["重点、考试形式、时间", "用户输入", "老师最后一节课划的重点；考试形式（题型、题量、分值、时长）；考试日期和每天可用时间。", "原来的题型比例是代码写死的，与真实考试无关。", "“考试形式”是新增输入。蓝图的每个字段都记录依据：老师说的、往年卷、校内信号或默认。"],
+    s1: ["① 资料解析", "模型 + 代码", "把资料变成知识库。模型做转写、抽取、分主题；代码做版本、排序、审计。", "三门课建库用了约 383 万 token。", "渐进交付：几秒出版本判定，几分钟出第一版主题，转写在后台补。"],
+    s2: ["② 复习计划", "模型 + 代码", "模型把老师重点映射到主题并分级；代码算权重、估时间、做取舍、排日程。", "3 天的计划 68 个条目里 48 个只有 5 分钟，还丢掉了 116 个最高分知识点且不说原因。", "重点分四级（不考 ×0、未提及 ×1、提及 ×2.5、强调 ×4，暂定）。按主题取舍，输出必学、有时间再学、本次放弃，每项写明理由。实验发现级别停在主题会波及没提到的内容（“RAID 不考”把磁盘高速缓存也标成不考），所以改成两步：先映射到主题，再选出知识点。"],
+    s3: ["③ 出题与验证", "模型 + 代码", "蓝图定题型和分值，检索证据，出题，检查，最后由代码裁决。", "答案全对，约 15% 的题解析有缺陷；七项检查只拦住约 43%，每题约 8 万 token。", "计算题先算后写（实验 E1 已验证：19 道数值无误，开销约为原来的三分之一）；检查按题目类别选跑；裁决分三档。逐步核对的范围扩大到题干里的定义。"],
+    s4: ["④ 组卷排版", "代码", "模型不生成任何排版。代码做公式编译检查、组卷，输出同一套 HTML 给 ArkWeb 展示和导出 PDF。", "原型现在只输出 Markdown。", "每道题带出处页码、原页截图、验证提示和报错入口。"],
+    s5: ["⑤ 批改与调整", "代码 + 模型（可选）", "选择和填空由代码判分；主观题对照评分点自评；模型评分只是可选的建议。", "第 1 版只有一句话，没有设计。", "出题时同时生成评分点。结果写回掌握度，并重排剩余天数的计划。"],
+    out: ["试卷、出处、提示", "用户拿到的结果", "试卷、答案和解析。每道题带出处页码、原页截图和验证提示。", "", "不承诺题目一定正确。原页截图是最便宜的验证。"],
+    ans: ["作答、自评、报错", "用户输入", "作答后对照评分点逐条勾选；发现问题可以一键报错，选类型并写一句说明。", "手机上输入公式和证明很困难。", "所以主观题默认自评，不强迫打字。"],
+    loopA: ["掌握度回流", "回流到复习计划", "每次批改后更新掌握度（未学、不稳、掌握），重排剩余天数的计划。", "", "用户可以把某个主题固定为“必学”或“放弃”，固定的项不被重排改动。"],
+    loopB: ["报错回流", "回流到出题", "题目立即对该用户隐藏。系统把用户的说明当作线索，重跑相关检查。", "研究结论：模型没有外部反馈很难自我纠错。用户的说明正是外部反馈。", "确认有问题就修订并通知；无法确认就标为“有争议”，把双方说法都摆出来。"],
+    arkui: ["ArkTS / ArkUI 页面", "未开始", "课程管理、文件选择、计划页、答题和自评、报错入口。", "团队没有鸿蒙真机，只能用 DevEco 模拟器。", "原计划“真机完整可用”的验收标准要改成模拟器。第一周先验证文件选择上传。"],
+    arkweb: ["ArkWeb 试卷页", "未开始", "只负责试卷和公式渲染，复用 KaTeX。HTML 由服务端生成。", "", "第一周验证能否渲染带公式和表格的结构化题目。"],
+    api: ["后端 API 服务", "只有雏形", "鸿蒙端和后端之间的唯一接口。", "目前只有一个本机调试网页，接口清单还没有列。", "新增“任务进度”接口，配合后台任务。定下接口后鸿蒙端和后端才能并行。"],
+    kbsvc: ["知识库服务", "原型已有", "导入、版本判定、权限判定、检索。", "", "增加主题、掌握度和失效传播。"],
+    flowsvc: ["工作流编排", "原型已有", "固定流程由代码编排，没有总管 agent。", "", "检查从“按风险全跑”改为“按题目类别选跑”。"],
+    jobs: ["后台任务", "新增设计", "建库、图示转写和题目验证都在后台运行，可以中断后续跑。", "建库太贵，不能让用户同步等待。", "用户先拿到第一版计划，后台结果到达后逐步更新。"],
+    schema: ["数据契约", "v0.2，待升级", "各阶段之间只传结构化数据，由代码校验格式。", "", "v0.3 清单已列：主题、作答事件、评分点、报错等对象。等实验结果后再改文件。"],
+    store: ["存储", "原型已有", "课件文本库、页面图片库、题库和作答事件。", "", "按内容哈希缓存转写、知识点和证据包。"],
+    gateway: ["模型网关", "缺预算", "单一模型。模型越弱，单次任务越小、采样越多，流程不变。", "原型不限用量。输出的 token 里约 93% 是思考过程。", "按课程设预算；简单检查尝试缩短思考（待实验 E6）。"],
+    sandbox: ["验算沙箱", "原型已有", "运行模型生成的求解代码：先做语法树白名单检查，再在隔离进程里执行。", "", "先算后写之后，它从“检查工具”变成出题的必经步骤。产品阶段放进无网络的容器。"]
+  },
+  issues: {
+    kb: {
+      prob: [["几乎没有重要度证据", "三门课分别只有 <em>3%</em>、<em>1%</em>、<em>6%</em> 的知识点有笔记、作业或复习题作依据。"], ["备注栏三种内容混在一起", "判断（“不会单独考察”）、讲解、模板文字都被当成正文，考法信息丢了。"], ["知识点太碎", "<em>61%</em> 只对应一页，按标题归并只合并了 <em>2.3%</em>。"], ["重要度没有区分度", "<em>64%</em> 的知识点拿了 4 分或 5 分。"], ["有漏页", "<em>8.6%</em> 有内容的页没被引用，个别课件 <em>27%</em>。"], ["三层怎么对齐没有定义", "碎知识点在不同人的资料里对不上。"], ["掌握度、资料更新只有名字", "第 1 版没有设计。"]],
+      rev: [["重要度改由“证据”汇总（原型已改）", "备注栏另存并分类；新增证据表、关系表；级别和考法由证据算出。正文暂不去掉备注，免得已有知识点重抽。"], ["考法单列", "记忆、理解、计算、设计、证明、联动、大题。流向出题和计划。"], ["课程内的知识点关系", "前置、联动、应用、同一内容、易混。"], ["加一层主题，但只作分组", "约 8 个知识点一个，数量由代码给定；精确信息记在知识点上。"], ["标准主题落在主题一级", "按课程维护，个人主题向它映射。"], ["掌握度三态 + 作答事件", "规则从事件算状态。"], ["按页哈希做失效传播", "课件更新只重抽改动的页。"], ["页面分类改为页面排序", "全部转写，只排先后。"], ["共享文本当作不可信输入", "进入共享前扫描指令句式。"]],
+      ver: [["E2、E2b：一致率 83%，两轮都未达标", "给定数量只解决了粒度。不一致的知识点 95% 在主题边界附近。"], ["E3d：分组的影响只来自第一步漏选", "多数表决后同一分组 87%、不同分组 71% 和 72%。不同分组多出的分歧全在“管程”一句：第一步只选了一个主题，漏了霍尔管程。主题层保留。"], ["E10 证据的模型版", "备注分类、复习题用到的课件方法、作业对应、联动建议。规则版已跑，模型版第 5 轮代跑。"], ["E7 PPT 页面的排序信号", "34 份课件里多数是 PPT，上次只测了 PDF。"]]
+    },
+    flow: {
+      prob: [["真实的重点不是“一句话”", "第一份真实重点是 17 道例题的复习课讲义，其中十多道在平时课件里找不到对应内容。"], ["解析会错，模型自己查不出来", "拦住 <em>43%</em>，误报 <em>12%</em>，三次结论一致的只有 <em>78%</em>。"], ["检查很贵", "每题约 <em>16</em> 次调用；输出里 <em>93%</em> 是思考。"], ["老师重点几乎不起作用", "<em>47%</em> 的知识点都“命中”，最高权重仅为中位数的 <em>1.61</em> 倍。"], ["计划是 5 分钟的碎片", "68 个条目里 <em>48</em> 个只有 5 分钟。"], ["蓝图没有依据", "题型比例是写死的。"], ["批改和报错只有一句话", "没有设计。"]],
+      rev: [["计算题先算后写（已采用）", "代码出结果，模型只叙述。E1：19 道数值无误。"], ["验证组做减法", "删 V2，V3 降为一次，V5 只用于证明题。"], ["裁决分三档", "模型的判断只修订一次，之后作为提示。"], ["重做计划", "重点分四级并落到知识点，按主题取舍，写明理由。"], ["重点映射：多数表决 + 第一步宁可多", "第二步选 3 次取过半数（78% → 87%）；第一步不再“宁可少”。"], ["重点分两种形式", "口头重点指向课件；复习题讲义本身就是内容，直接记为强调，并作为出题依据。考试范围 = 课件 + 老师的重点材料。"], ["新增“考试形式”输入", "蓝图每个字段记录依据。"], ["批改默认自评", "出题时生成评分点。"], ["一键报错的处理流程", "带线索复查，修订或标记争议。"]],
+      ver: [["E1 的 19 道题待人工复核", "三处要对照课件：强规则、B(T)、数据立方体的层数。"], ["E3e 第一步宁可多", "召回优先的提示词 + 代码按核心词补主题；评测加“应当选上”。脚本就绪，第 5 轮代跑。"], ["边界知识点交给用户", "“低级调度算不算进程调度”这类两种选法都说得通，不再追求一致，计划里标为“可能也包括”。"], ["E4 题干回读（模型版）", "纯代码版发现率 80%，但误报 7/19，只能当提示。"], ["E5 E6", "模型评分与自评的差距；缩短思考的影响。"], ["E8 计划有没有用", "需要真实期末卷。全项目最重要的指标。"]]
+    },
+    arch: {
+      prob: [["鸿蒙端和正式 API 都没开始", "只有一个本机调试网页。"], ["没有鸿蒙真机", "只能用模拟器，验收标准要改。"], ["原型不限用量，产品不行", "三门课建库约 <em>383 万</em> token。"]],
+      rev: [["新增后台任务", "用户先拿到第一版计划。"], ["预算、缓存和降级", "五种失败情况各有处理办法。"], ["数据契约升级到 v0.3", "清单已列，等实验结果后改文件。"]],
+      ver: [["模拟器上的文件选择上传", "写鸿蒙端第一周验证。"], ["ArkWeb 渲染公式和表格", "同上。架构本身暂时不需要实验。"]]
+    }
+  },
+  checks: [["V1 程序验算", 6, 2, 0, "并入先算后写", "less"], ["V2 盲解代码", 3, 4, 11.6, "删除，改为题干回读", "cut"], ["V3 独立作答", 0, 0, 25.6, "降为 1 次", "less"], ["V4 逐步核对", 3, 0, 15.9, "保留", "keep"], ["V5 推导连贯", 3, 2, 28.7, "只用于证明题", "less"], ["V6 选项反驳", 3, 2, 18.2, "保留，仅选择题", "keep"], ["V7 引用核对", 2, 1, 0, "保留", "keep"]],
+  lanes: [
+    { name: "第 1 版", sub: "先写后验", steps: [
+      ["mdl", "模型一次写出题干、解析、表格、验算代码", "数字由模型抄写，表格里就可能抄错一格。"],
+      ["", "沙箱运行验算代码", "只能比对模型主动列出的中间量，没列的查不到。"],
+      ["badst", "七项检查找错", "三轮平均拦住约 43%，误报约 12%。"],
+      ["badst", "退回修订", "每题约 16 次调用、8 万 token。"]] },
+    { name: "第 2 版", sub: "先算后写", steps: [
+      ["mdl", "模型只写题干和求解代码", "不写解析，不碰任何结果数字。"],
+      ["", "沙箱执行", "答案、每个中间量、每张表都由代码算出。"],
+      ["mdl", "题干回读", "另一次调用只看题干抽出条件，代码逐项比对，防止“代码算的不是题干问的”。纯代码版已试过，误报偏多；模型版尚未实现。"],
+      ["mdl", "模型写解析", "数值写成占位符，表格只写表名。"],
+      ["", "代码填入真实结果", "解析里的数字没有经过模型的手。实验 E1 的 19 道里没有发现算错。"]] }
+  ],
+  experiments: [
+    ["E1", "先算后写能不能减少计算题的解析缺陷", "ok", "已完成 · 采用", "19 道全部完成，格式失败 0 道。数值和表格核对无误；平均每题 2.3 次调用、2.8 万 token。", "python3 workflow/compute_first.py", 1, "结论：消除了数值和表格类错误。定义和说法类问题仍要靠逐步核对。待人工复核。"],
+    ["E2", "主题分组稳不稳定", "fix", "两轮 83% · 未达标", "不给数量：83%，主题太碎（平均 3.3 个知识点）。给定数量（E2b）：大小合适（平均 6.8 个），一致率仍是 83%。", "", 0, "结论：主题只作大致分组，精确信息记在知识点上；判定标准换成下游一致率（E3c）。"],
+    ["E3", "重点映射与分级准不准", "fix", "E3d：一致率 87% · 未达标", "两步做法波及为 0。多数表决把单次 78% 提到同一分组 87%；不同分组 71%、72%，多出的分歧全是“管程”一句第一步漏了霍尔管程的主题。去掉这句，不同分组 83% 到 84%，与同一分组相当。", "python3 workflow/focus_kp.py --votes 3 --attempts 1 1 2", 0, "结论：主题层保留；边界知识点交给用户确认，判定线不下调。下一步 E3e：第一步召回优先，评测加漏选检查（第 5 轮）。"],
+    ["E4", "题干回读能不能发现条件对不上", "fix", "纯代码版完成", "比较题干数值和代码常量：改错一个数值，365 种改法发现 292 种（80%）；19 道正常题误报 7 道。", "python3 workflow/given_check.py", 0, "结论：纯代码版只能当提示。模型版脚本待写。"],
+    ["E5", "模型评分与自评差多少", "wait", "脚本待写", "10 道简答题各写一个好答案和一个差答案。", "", 0, "用来决定模型评分是否值得作为可选功能。"],
+    ["E6", "缩短思考会不会降低检查质量", "wait", "脚本待写", "三项简单检查，开关思考各跑一遍回归集。", "", 0, "看结论不变的比例和 token 降幅。输出里约 93% 是思考。"],
+    ["E7", "PPT 页面的排序信号", "wait", "脚本待写", "不需要模型。读每页的图片和图形数量。", "", 0, "用来定排序规则。"],
+    ["E9", "重要度证据：现状与整理", "run", "规则版完成 · 模型版待跑", "E9：三门课只有 3%、1%、6% 的知识点有证据。原型已改：备注另存并分类，证据表算出级别和考法。规则版：商务智能 33 个有证据（31 个来自标题页的“一道大题”），操作系统 2 个作业考过，高级算法 21 道复习题。", "python3 workflow/evidence.py --model --db out/evidence-model/kb.sqlite", 0, "E10（第 5 轮）：模型做备注分类、复习题和作业的对应、联动建议，人工抽查。"],
+    ["E8", "新计划比按章节学多覆盖多少分值", "wait", "缺数据", "需要一门课的真实期末卷和老师划的重点。趁期末前收集。", "", 0, "全项目最重要的指标：同样时间下覆盖的分值。"]
+  ],
+  e1: {
+    kv: [["19/19", "E1 完成，失败 0"], ["9 → 0", "E3c 波及的知识点"], ["78 → 87%", "E3d 多数表决后的一致率"]],
+    find: [
+      ["good", "E1：数值和表格类错误消失，采用", "19 道题的答案和关键中间量逐题手算核对，没有发现错误；212 处数值、53 张表格由代码填入。平均每题 2.3 次调用、2.8 万 token，旧流程仅验证就约 8 万。"],
+      ["bad", "E1：定义和说法类问题没有解决", "这类问题先算后写管不到。所以逐步核对保留，并且范围要扩大到题干里的定义。"],
+      ["bad", "E2、E2b：一致率两轮都是 83%，没有达标", "给定主题数量后大小合适了，一致性没有提高。分界点 66% 完全重合，不一致的知识点 95% 在边界附近。所以主题只作大致分组，精确信息改记在知识点上。"],
+      ["good", "E3c：落到知识点后，波及从 9 个降到 0", "“不考”的 25 个知识点两次运行完全相同，这是最危险的一类错误。"],
+      ["bad", "E3c：一致率 65%，没有达标", "60 个分歧位置全是“一次选了、一次没选”。银行家算法一句，候选完全相同，一次选 2 个、一次选 5 个。窄的一次常常是错的：移臂调度有一次漏掉了全部 8 个算法。下一步用多数表决。"],
+      ["less", "E3d：多数表决有效但不够，分组只经第一步影响下游", "单次选择 78%，表决后同一分组 87%。不同分组 71% 和 72%，多出的 9 处分歧全在“管程今年不作要求”：第一步只选了“管程”主题，漏了“霍尔管程实现与求解”。原因是第一步提示词沿用了“宁可少”。剩下的分歧在边界知识点上，两种选法都说得通，没有一处错标“不考”。"],
+      ["less", "复习课讲义：10 条里 4 到 5 条映射到课件", "没映射上的是最长公共子串、回文子序列、钢条切割等，课件里确实没有。低分是评测问错了问题，反倒印证了“复习题要作为新知识点导入”。"]
+    ],
+    note: "实验由 Antigravity 在本机代跑，调用的模型是 LongCat-2.5。“核对”是设计方的手算核对，团队成员还没有人工复核。主题的判定标准已从“分组一致率”换成“下游一致率”，这是更换标准，不是达标。E3d 也没有达到 90%，判定线不下调；这一步改为修第一步的召回，边界知识点交给用户确认。",
+    rows: [
+      ["最长公共子串", "已消除", "旧题表格算错一格；新题表格由代码生成", "keep"],
+      ["开地址哈希", "已消除", "旧题把单次结果与平均值上界直接比较；新题没有", "keep"],
+      ["关键路径", "不适用", "旧题是选项形式不当；新题改成了计算题", "less"],
+      ["关联规则", "仍存在", "“强规则”的说法与课件不同", "cut"],
+      ["哈夫曼编码", "仍存在", "题干把 B(T) 重新定义成了平均码长，课件里是带权路径长度", "cut"],
+      ["数据立方体（新）", "待确认", "疑似把维度的取值个数当成层数", "less"]
+    ]
+  },
+  log: [
+    ["11-23", "原型按证据修改；第 5 轮就绪", "备注栏导入时另存并分成判断、讲解、其他；新增证据表、关系表和资料角色表，级别和考法由证据算出，证据只属于本人。“不会单独考察”只记考法、不降级；标题页的“一道大题”记为整份课件的考法。E3e：第一步召回优先，代码按核心词补主题，评测加漏选检查。测试 104 项通过。交接文档更新为第 5 轮。"],
+    ["11-23", "第 4 轮实验完成：分组不是主因", "E3d：多数表决把一致率从 78% 提到 87%，仍未达标。不同分组之间多出的分歧全部来自第一步漏选一个主题（管程一句漏了霍尔管程），原因是沿用了旧提示词的“宁可少”。主题层保留；第一步改为宁可多（E3e）；边界知识点交给用户确认。评测要增加“应当选上”的检查。"],
+    ["11-23", "个人知识库：来源、证据与关系", "按讨论新增设计：个人知识库包括课件、笔记、作业、错题等；重要度改由证据汇总，考法单列，课程内建立知识点关系。离线检查发现备注栏混着判断、讲解和模板文字，三门课只有 1% 到 6% 的知识点有证据。"],
+    ["11-23", "第 3 轮实验完成：波及解决，一致率未达标", "E3c：重点落到知识点后，波及从 9 个降到 0，“不考”集合两次完全相同；一致率 65%，原因是模型每次选多选少不同，不是分组。复习课讲义只有 4 到 5 条映射到课件，印证了复习题应作为新知识点导入。修正了评分口径（级别正确以找对为前提）。新增多数表决，交接文档更新为第 4 轮。"],
+    ["11-17", "拿到第一份真实重点", "高级算法的复习课讲义（17 道例题）。它不是口头划重点，而是一组例题，而且大部分内容课件里没有。设计补充：区分重点的两种形式；考试范围包括老师的重点材料；复习题直接作为强调的知识点和出题依据。第 3 轮实验运行中。"],
+    ["11-17", "第 2 轮实验完成：主题这一层降级", "E2b：给定主题数量后大小合适，一致率仍是 83%，两轮都没达到判定线；用小节标题当主题的退路也查过，走不通。E3 重跑发现级别会波及主题里没提到的内容。决定：主题只用于展示和排期，重点级别和掌握度记在知识点上；判定标准换成下游一致率。新增 E3c 脚本，交接文档更新为第 3 轮。"],
+    ["11-17 晚", "第 1 轮实验完成，设计同步更新", "E1 先算后写：19 道数值无误，采用。E2 主题分组：一致率 83%，未达标，原因是粒度没有约束，改为由代码给定主题数量，新增 E2b。E3 重点分级：示例上 11/11。新增不用模型的题干数值检查（发现率 80%，误报 7/19）。交接文档更新为第 2 轮。"],
+    ["11-17", "网页改为本地一屏分页", "不再是一长页：左侧切换六个部分，每部分内再分页签；图里的方框可以点击看细节。E1 第一批 10 道完成，写入初步结果，并按发现的表达问题修改了脚本。新增交接文档，剩余实验可交给其他 agent 运行。"],
+    ["11-16", "设计修订 v2", "用原型数据做离线实测，发现知识点过碎、重点不起作用、V3 零触发。修订知识库和工作流，补完计划、批改、报错和成本设计。新增 E1 到 E3 三个实验脚本。"],
+    ["11-08", "验证组三轮回归评测", "对因拦截平均约 43%，误报约 12%。结论：单一模型的自查只能当提示，不能当关卡。冻结验证组。"],
+    ["11-07", "验证组 V1 到 V7 实现", "结构化题目、沙箱验算、七项检查、代码裁决。完成工作流设计第 1 版。"],
+    ["11-06", "三门课建库，两轮出题", "35 份最终版、1138 个知识点、1904 页图示转写。58 道题答案全对，9 道有解析类缺陷，旧复核全部放行。完成项目计划书和数据结构 v0.2。"]
+  ]
+};
+
+const $ = id => document.getElementById(id);
+const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const state = { view: "overview", pane: {} };
+
+/* 侧栏 */
+$("b-ver").textContent = DATA.version;
+$("foot").textContent = "更新于 " + DATA.date;
+$("live").innerHTML = `<b>${DATA.live.title}</b><div class="track"><i style="width:${DATA.live.done / DATA.live.total * 100}%"></i></div>${DATA.live.note}`;
+DATA.views.forEach((v, i) => { const b = h("button", "", `<i>0${i + 1}</i><span>${v.name}</span>${v.dot ? `<em class="${v.dot}"></em>` : ""}`); b.dataset.go = v.id; $("nav").append(b); });
+
+/* 总览 */
+DATA.stages.forEach(s => $("steps5").append(h("div", s[2], `<b>${s[0]}</b>${s[1]}`)));
+DATA.tiles.forEach(t => $("tiles").append(h("div", "card tile " + t[3], `<span class="num" data-n="${t[0]}" data-suf="${t[1]}">${t[0]}${t[1]}</span><small>${t[2]}</small>`)));
+DATA.parts.forEach(p => { const b = h("button", "card part", `<h3>${p[1]}<span class="pill ${p[2]}">${p[3]}</span></h3><p>${p[4]}</p><h4>正在修订</h4><ul>${DATA.issues[p[0]].rev.slice(0, 4).map(r => `<li>${r[0]}</li>`).join("")}</ul><span class="go">进入 →</span>`); b.dataset.go = p[0]; $("parts").append(b); });
+
+/* 三栏清单 */
+["kb", "flow", "arch"].forEach(k => {
+  const pane = document.querySelector(`[data-view="${k}"] [data-pane="issues"]`);
+  [["prob", "遇到的问题"], ["rev", "正在修订"], ["ver", "等待验证"]].forEach(([key, title]) => {
+    const col = h("div", "card col " + key, `<h3>${title}</h3>`), ul = h("ul");
+    DATA.issues[k][key].forEach((r, i) => { const li = h("li", "", `<b>${r[0]}</b><span>${r[1]}</span>`); li.style.animationDelay = i * 60 + "ms"; ul.append(li); });
+    col.append(ul); pane.append(col);
+  });
+});
+
+/* 说明面板 */
+function inspect(panelId, key, id) {
+  const p = $(panelId);
+  if (!id) { const it = DATA.intro[key]; p.innerHTML = `<span class="pill run tag">这一部分</span><h3>${it[0]}</h3><section><p>${it[1]}</p></section><p class="hint">点击图中的方框，这里会显示它做什么、实测发现了什么、第 2 版怎么改。</p>`; return; }
+  const n = DATA.nodes[id];
+  p.innerHTML = `<span class="pill wait tag">${n[1]}</span><h3>${n[0]}</h3><section><h4>做什么</h4><p>${n[2]}</p></section>` +
+    (n[3] ? `<section class="found"><h4>实测与问题</h4><p>${n[3]}</p></section>` : "") + (n[4] ? `<section class="change"><h4>第 2 版</h4><p>${n[4]}</p></section>` : "") + `<p class="hint">点击其他方框继续看。</p>`;
+}
+document.querySelectorAll("svg[data-insp]").forEach(svg => {
+  const panel = svg.dataset.insp, key = panel.split("-")[0];
+  inspect(panel, key);
+  const pick = g => { svg.querySelectorAll(".node.sel").forEach(x => x.classList.remove("sel")); svg.querySelectorAll(`.node[data-id="${g.dataset.id}"]`).forEach(x => x.classList.add("sel")); inspect(panel, key, g.dataset.id); };
+  svg.querySelectorAll(".node").forEach(g => { g.setAttribute("role", "button"); g.addEventListener("click", () => pick(g)); g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(g); } }); });
+});
+
+/* 三层主题的小图 */
+for (let i = 0; i < 112; i++) { const d = h("i"); d.style.animationDelay = i * 6 + "ms"; $("dots").append(d); }
+for (let i = 0; i < 7; i++) { const d = h("i"); d.style.animationDelay = 300 + i * 70 + "ms"; $("tp").append(d); }
+for (let i = 0; i < 28; i++) { const d = h("i"); d.style.animationDelay = 700 + i * 20 + "ms"; $("kpbar").append(d); }
+
+/* 验证组 */
+DATA.checks.forEach(c => {
+  const bar = (k, v, max, txt) => `<div class="bar ${k}"><span class="num">${txt}</span><i style="width:${Math.round(v / max * 90)}px"></i></div>`;
+  $("checks").append(h("tr", "", `<td><b>${c[0]}</b></td><td>${bar("hit", c[1], 6, c[1] + " 次")}</td><td>${bar("miss", c[2], 6, c[2] + " 次")}</td><td>${c[3] ? bar("cost", c[3], 30, c[3] + "%") : '<span style="color:var(--soft);font-size:12.5px">代码，0</span>'}</td><td><span class="vd ${c[5]}">${c[4]}</span></td>`));
+});
+
+/* 先算后写播放器 */
+const flat = [];
+DATA.lanes.forEach((l, li) => {
+  const lane = h("div", "lane", `<b>${l.name}<small>${l.sub}</small></b>`), chain = h("div", "chain");
+  l.steps.forEach((s, si) => { const st = h("div", "st " + s[0], `<small>${si + 1}</small>${s[1]}`); chain.append(st); flat.push({ el: st, lane, text: s[2], label: `${l.name} · 第 ${si + 1} 步` }); });
+  lane.append(chain); $("lanes").append(lane);
+});
+let step = 0, timer = null;
+function showStep(i) {
+  step = (i + flat.length) % flat.length;
+  const cur = flat[step];
+  flat.forEach((f, k) => { f.el.classList.toggle("cur", k === step); f.el.classList.toggle("past", f.lane === cur.lane && k < step); f.lane.classList.toggle("live-lane", f.lane === cur.lane); });
+  $("cap-n").textContent = cur.label; $("cap-t").textContent = cur.text;
+}
+function play(on) { clearInterval(timer); timer = on ? setInterval(() => showStep(step + 1), 2600) : null; $("p-play").textContent = on ? "暂停" : "播放"; }
+$("p-prev").onclick = () => { play(false); showStep(step - 1); };
+$("p-next").onclick = () => { play(false); showStep(step + 1); };
+$("p-play").onclick = () => play(!timer);
+showStep(0);
+
+/* 实验 */
+DATA.experiments.forEach((x, i) => {
+  const c = h("div", "card xp " + x[2], `<div class="hd"><b>${x[0]}</b><span class="pill ${x[2]}">${x[3]}</span></div><h3>${x[1]}</h3>${x[6] ? `<div class="track"><i style="width:${x[6] * 100}%"></i></div>` : ""}<p>${x[4]}</p><p class="crit">${x[7]}</p>${x[5] ? `<code title="${x[5]}">${x[5]}</code>` : ""}`);
+  c.style.animationDelay = i * 50 + "ms"; $("board").append(c);
+});
+DATA.e1.kv.forEach(k => $("e1kv").append(h("div", "", `<span class="num">${k[0]}</span><small>${k[1]}</small>`)));
+DATA.e1.find.forEach(f => $("e1find").append(h("li", f[0], `<b>${f[1]}</b><br><span>${f[2]}</span>`)));
+$("e1note").textContent = DATA.e1.note;
+DATA.e1.rows.forEach(r => $("e1rows").append(h("tr", "", `<td><b>${r[0]}</b></td><td><span class="vd ${r[3] || "keep"}">${r[1]}</span></td><td style="color:var(--soft)">${r[2] || "无"}</td>`)));
+
+/* 订正记录 */
+DATA.log.forEach((l, i) => { const li = h("li", "", `<time>${l[0]}</time><b>${l[1]}</b><span>${l[2]}</span>`); li.style.animationDelay = i * 80 + "ms"; $("log").append(li); });
+
+/* 切换 */
+function countUp() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.querySelectorAll(".tile .num").forEach(el => {
+    const n = +el.dataset.n, suf = el.dataset.suf, t0 = performance.now();
+    const tick = t => { const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(n * e) + suf; if (k < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+}
+function setPane(view, pane) {
+  state.pane[view] = pane;
+  document.querySelectorAll(`[data-view="${view}"] .pane`).forEach(p => p.classList.toggle("on", p.dataset.pane === pane));
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.pane === pane));
+  if (view === "flow") play(pane === "compute");
+}
+function go(id) {
+  const v = DATA.views.find(x => x.id === id) || DATA.views[0];
+  state.view = v.id;
+  document.querySelectorAll(".view").forEach(e => e.classList.toggle("on", e.dataset.view === v.id));
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.go === v.id));
+  $("title").textContent = v.name; $("status").className = "pill " + v.status[0]; $("status").textContent = v.status[1];
+  $("tabs").innerHTML = ""; $("tabs").style.display = v.tabs.length ? "" : "none";
+  v.tabs.forEach(t => { const b = h("button", "", t[1]); b.dataset.pane = t[0]; b.onclick = () => setPane(v.id, t[0]); $("tabs").append(b); });
+  const first = document.querySelector(`[data-view="${v.id}"] .pane`).dataset.pane;
+  setPane(v.id, state.pane[v.id] || first);
+  if (v.id === "overview") countUp();
+  if (v.id !== "flow") play(false);
+  try { history.replaceState(null, "", "#" + v.id); } catch (e) {}
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
+addEventListener("hashchange", () => go(location.hash.slice(1)));
+go(location.hash.slice(1) || "overview");
+</script>
+</body>
+</html>

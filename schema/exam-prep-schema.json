@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exam-prep/schema/v0.2.json",
+  "title": "AI 备考项目核心数据结构 v0.2",
+  "description": "三级知识：个人、校内、共享。进入模型上下文的内容，必须是当前用户本来就有权直接看到的内容。跨对象规则见 validate_exam_prep.py。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "users", "course_offerings", "enrollments", "course_links", "sharing_policies", "materials", "knowledge_points", "personal_links", "signals", "exam_blueprints", "questions"],
+  "properties": {
+    "schema_version": { "const": "0.2" },
+    "users": { "type": "array", "items": { "$ref": "#/$defs/User" } },
+    "course_offerings": { "type": "array", "items": { "$ref": "#/$defs/CourseOffering" } },
+    "enrollments": { "type": "array", "items": { "$ref": "#/$defs/Enrollment" } },
+    "course_links": { "type": "array", "items": { "$ref": "#/$defs/CourseLink" } },
+    "sharing_policies": { "type": "array", "items": { "$ref": "#/$defs/SharingPolicy" } },
+    "materials": { "type": "array", "items": { "$ref": "#/$defs/Material" } },
+    "knowledge_points": { "type": "array", "items": { "$ref": "#/$defs/KnowledgePoint" } },
+    "personal_links": { "type": "array", "items": { "$ref": "#/$defs/PersonalLink" } },
+    "signals": { "type": "array", "items": { "$ref": "#/$defs/Signal" } },
+    "exam_blueprints": { "type": "array", "items": { "$ref": "#/$defs/ExamBlueprint" } },
+    "questions": { "type": "array", "items": { "$ref": "#/$defs/Question" } }
+  },
+  "$defs": {
+    "Id": { "type": "string", "pattern": "^[a-z]+_[A-Za-z0-9_-]+$" },
+    "Timestamp": { "type": "string", "format": "date-time" },
+    "Tier": { "enum": ["personal", "campus", "shared"] },
+    "MaterialKind": { "enum": ["slides", "notes", "teacher_focus", "past_exam", "assignment", "other"] },
+    "QuestionType": {
+      "enum": ["single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer", "calculation", "proof", "programming", "essay"]
+    },
+    "Audience": {
+      "description": "校内知识的可见范围，都限定在来源学校内。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "ref"],
+      "properties": {
+        "scope": { "enum": ["offering", "course", "instructor", "major"] },
+        "ref": { "type": "string", "minLength": 1 }
+      }
+    },
+    "User": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "institution", "department", "verification"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "institution": { "type": "string", "minLength": 1 },
+        "department": { "type": "string", "minLength": 1 },
+        "major": { "type": "string" },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "status"],
+          "properties": {
+            "method": { "enum": ["campus_sso", "student_status_check", "edu_email", "self_declared"] },
+            "status": { "enum": ["verified", "pending", "expired", "rejected"] },
+            "verified_at": { "$ref": "#/$defs/Timestamp" },
+            "expires_at": { "$ref": "#/$defs/Timestamp" }
+          }
+        }
+      }
+    },
+    "CourseOffering": {
+      "description": "一门课在某校某学期的一次开设。课程名相同不代表内容相同。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "institution", "course_name", "term"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "institution": { "type": "string", "minLength": 1 },
+        "department": { "type": "string" },
+        "course_name": { "type": "string", "minLength": 1 },
+        "course_code": { "type": "string" },
+        "instructor": { "type": "string" },
+        "term": { "type": "string", "pattern": "^[0-9]{4}-(spring|summer|fall|winter)$" },
+        "textbook": { "type": "string" }
+      }
+    },
+    "Enrollment": {
+      "description": "用户与课程的关系，校内可见范围和个人跨课程网络都依赖它。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["user_id", "offering_id", "status"],
+      "properties": {
+        "user_id": { "$ref": "#/$defs/Id" },
+        "offering_id": { "$ref": "#/$defs/Id" },
+        "status": { "enum": ["verified", "self_declared"] }
+      }
+    },
+    "CourseLink": {
+      "description": "两次开设之间的关联，决定共享信号能否流向目标课程。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "offering_a", "offering_b", "scope", "overlap_score", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "offering_a": { "$ref": "#/$defs/Id" },
+        "offering_b": { "$ref": "#/$defs/Id" },
+        "scope": { "enum": ["same_course_same_institution", "similar_course_same_institution", "partial_overlap_cross_institution"] },
+        "overlap_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "status": { "enum": ["candidate", "confirmed", "rejected"] }
+      }
+    },
+    "SharingPolicy": {
+      "description": "学校、院系、专业、课程或教师给出的外传上限。多条命中时取最严。只有 verified 能放行，pending 只能收紧。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "institution", "scope_type", "applies_to_kinds", "max_signal_tier", "max_text_tier", "decided_by_role", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "institution": { "type": "string", "minLength": 1 },
+        "scope_type": { "enum": ["institution", "department", "major", "course", "instructor", "offering"] },
+        "scope_value": { "type": "string", "minLength": 1 },
+        "applies_to_kinds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/MaterialKind" } },
+        "max_signal_tier": { "$ref": "#/$defs/Tier" },
+        "max_text_tier": { "$ref": "#/$defs/Tier" },
+        "decided_by_role": { "enum": ["institution", "department", "instructor"] },
+        "status": { "enum": ["verified", "pending", "revoked"] },
+        "evidence_ref": { "type": "string" },
+        "expires_at": { "$ref": "#/$defs/Timestamp" }
+      },
+      "if": {
+        "properties": { "scope_type": { "const": "institution" } },
+        "required": ["scope_type"]
+      },
+      "else": { "required": ["scope_value"] }
+    },
+    "Material": {
+      "description": "原始资料。sharing 只是上传者的申请，实际上限由校验规则和策略共同决定。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "owner_user_id", "offering_id", "kind", "exam_status", "storage_key", "sharing"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "owner_user_id": { "$ref": "#/$defs/Id" },
+        "offering_id": { "$ref": "#/$defs/Id" },
+        "kind": { "$ref": "#/$defs/MaterialKind" },
+        "exam_status": { "enum": ["not_exam", "historical", "current_term", "unknown"] },
+        "storage_key": { "type": "string", "minLength": 1 },
+        "sharing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tier", "form", "rights_basis", "review_status"],
+          "properties": {
+            "tier": { "$ref": "#/$defs/Tier" },
+            "form": { "enum": ["none", "signal", "text"] },
+            "audience": { "$ref": "#/$defs/Audience" },
+            "rights_basis": { "enum": ["own_work", "instructor_permission", "open_license", "unknown"] },
+            "attestation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["confirmed", "terms_version", "confirmed_at"],
+              "properties": {
+                "confirmed": { "const": true },
+                "terms_version": { "type": "string", "minLength": 1 },
+                "confirmed_at": { "$ref": "#/$defs/Timestamp" }
+              }
+            },
+            "review_status": { "enum": ["not_required", "pending", "approved", "rejected", "taken_down"] }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "tier": { "const": "personal" } }, "required": ["tier"] },
+              "then": { "properties": { "form": { "const": "none" } } },
+              "else": {
+                "required": ["attestation"],
+                "properties": {
+                  "form": { "enum": ["signal", "text"] },
+                  "rights_basis": { "enum": ["own_work", "instructor_permission", "open_license"] },
+                  "review_status": { "const": "approved" }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "tier": { "const": "campus" } }, "required": ["tier"] },
+              "then": { "required": ["audience"] },
+              "else": { "not": { "required": ["audience"] } }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "exam_status": { "enum": ["current_term", "unknown"] } }, "required": ["exam_status"] },
+          "then": { "properties": { "sharing": { "properties": { "tier": { "const": "personal" } } } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "past_exam" } }, "required": ["kind"] },
+          "then": {
+            "properties": {
+              "exam_status": { "enum": ["historical", "current_term", "unknown"] },
+              "sharing": { "properties": { "rights_basis": { "not": { "const": "own_work" } } } }
+            }
+          },
+          "else": { "properties": { "exam_status": { "const": "not_exam" } } }
+        }
+      ]
+    },
+    "SourceRef": {
+      "description": "只能指向当前用户有权直接查看的资料。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["material_id"],
+      "properties": {
+        "material_id": { "$ref": "#/$defs/Id" },
+        "page": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "KnowledgePoint": {
+      "description": "某用户在某门课下的知识点。canonical_topic_id 把各级知识串起来。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "owner_user_id", "offering_id", "canonical_topic_id", "title", "weight", "weight_basis", "source_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "owner_user_id": { "$ref": "#/$defs/Id" },
+        "offering_id": { "$ref": "#/$defs/Id" },
+        "canonical_topic_id": { "$ref": "#/$defs/Id" },
+        "title": { "type": "string", "minLength": 1 },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "weight_basis": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["teacher_focus", "own_past_exam", "slide_share", "authorized_text", "campus_signal", "shared_signal", "web_signal"] }
+        },
+        "source_refs": { "type": "array", "items": { "$ref": "#/$defs/SourceRef" } }
+      }
+    },
+    "PersonalLink": {
+      "description": "个人知识网络的一条跨课程边，只属于该用户，不参与共享，也不扩大考试范围。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "user_id", "from_knowledge_point_id", "to_knowledge_point_id", "relation", "status", "origin"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "user_id": { "$ref": "#/$defs/Id" },
+        "from_knowledge_point_id": { "$ref": "#/$defs/Id" },
+        "to_knowledge_point_id": { "$ref": "#/$defs/Id" },
+        "relation": { "enum": ["same_concept", "analogous", "contrast", "prerequisite"] },
+        "status": { "enum": ["candidate", "confirmed", "rejected"] },
+        "origin": { "enum": ["ai_suggested", "user_created"] }
+      }
+    },
+    "Signal": {
+      "description": "跨用户流通的统计结构，没有任何文本字段。derived_from_material_ids 仅供服务端追溯和撤回，不得返回给客户端。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "tier", "status", "canonical_topic_id", "offering_ids", "contributor_count", "frequency_bucket", "question_types", "max_weight_delta", "derived_from_material_ids"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "tier": { "enum": ["campus", "shared"] },
+        "status": { "enum": ["active", "revoked"] },
+        "audience": { "$ref": "#/$defs/Audience" },
+        "canonical_topic_id": { "$ref": "#/$defs/Id" },
+        "offering_ids": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/Id" } },
+        "contributor_count": { "type": "integer", "minimum": 3, "description": "贡献者少于 3 人时不生成信号，避免反推出单一来源。" },
+        "frequency_bucket": { "enum": ["low", "medium", "high"] },
+        "question_types": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/QuestionType" } },
+        "max_weight_delta": { "type": "number", "minimum": 0, "maximum": 0.2 },
+        "derived_from_material_ids": { "type": "array", "minItems": 3, "uniqueItems": true, "items": { "$ref": "#/$defs/Id" } }
+      },
+      "if": { "properties": { "tier": { "const": "campus" } }, "required": ["tier"] },
+      "then": { "required": ["audience"] },
+      "else": {
+        "not": { "required": ["audience"] },
+        "properties": { "max_weight_delta": { "maximum": 0.1 } }
+      }
+    },
+    "ExamBlueprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "user_id", "offering_id", "duration_minutes", "total_score", "sections", "signal_ids_used"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "user_id": { "$ref": "#/$defs/Id" },
+        "offering_id": { "$ref": "#/$defs/Id" },
+        "duration_minutes": { "type": "integer", "minimum": 1 },
+        "total_score": { "type": "number", "exclusiveMinimum": 0 },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["question_type", "count", "score_each", "knowledge_point_ids"],
+            "properties": {
+              "question_type": { "$ref": "#/$defs/QuestionType" },
+              "count": { "type": "integer", "minimum": 1 },
+              "score_each": { "type": "number", "exclusiveMinimum": 0 },
+              "knowledge_point_ids": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/Id" } }
+            }
+          }
+        },
+        "signal_ids_used": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/Id" } }
+      }
+    },
+    "Question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "blueprint_id", "knowledge_point_id", "question_type", "stem_md", "answer_md", "explanation_md", "source_refs", "verification"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "blueprint_id": { "$ref": "#/$defs/Id" },
+        "knowledge_point_id": { "$ref": "#/$defs/Id" },
+        "question_type": { "$ref": "#/$defs/QuestionType" },
+        "stem_md": { "type": "string", "minLength": 1 },
+        "options": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 1 } },
+        "answer_md": { "type": "string", "minLength": 1 },
+        "explanation_md": { "type": "string", "minLength": 1 },
+        "cross_course_note": {
+          "description": "跨课程内容只能出现在解析里，不能作为考点。",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["personal_link_id", "note_md"],
+          "properties": {
+            "personal_link_id": { "$ref": "#/$defs/Id" },
+            "note_md": { "type": "string", "minLength": 1 }
+          }
+        },
+        "source_refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/SourceRef" } },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "method"],
+          "properties": {
+            "status": { "enum": ["pending", "passed", "failed", "user_reported"] },
+            "method": { "enum": ["independent_model", "same_model_review", "code_execution", "human_review", "none"] }
+          }
+        }
+      }
+    }
+  }
+}

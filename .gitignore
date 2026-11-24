@@ -1,0 +1,41 @@
+# 资料和密钥相关的条目，改动前须用户确认（见 AGENTS.md）。
+
+# 本地内容：课件资料、API key、截图、交接文档和代跑报告
+local/
+
+# 课程资料与数据：有版权和隐私限制，任何时候都不提交
+*.sqlite
+*.sqlite-*
+*.db
+uploads/
+# 课件和作业的常见格式。确需提交时用 git add -f，并在 PR 里说明
+*.ppt
+*.pptx
+*.pdf
+*.doc
+*.docx
+
+# 密钥与签名材料
+.env
+.env.*
+api_key/
+*.key
+*.p12
+*.p7b
+*.cer
+*.csr
+
+# DevEco / hvigor / ohpm 产物
+.hvigor/
+oh_modules/
+build/
+.preview/
+local.properties
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# 系统文件
+.DS_Store

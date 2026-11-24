@@ -1,0 +1,65 @@
+{
+  "schema_version": "0.2",
+  "users": [
+    { "id": "user_a", "institution": "南京大学", "department": "软件学院", "major": "软件工程", "verification": { "method": "campus_sso", "status": "verified" } },
+    { "id": "user_b", "institution": "南京大学", "department": "计算机学院", "major": "计算机科学与技术", "verification": { "method": "campus_sso", "status": "verified" } },
+    { "id": "user_c", "institution": "南京大学", "department": "计算机学院", "major": "计算机科学与技术", "verification": { "method": "edu_email", "status": "verified" } },
+    { "id": "user_d", "institution": "东南大学", "department": "计算机学院", "major": "计算机科学与技术", "verification": { "method": "edu_email", "status": "verified" } }
+  ],
+  "course_offerings": [
+    { "id": "offering_nju_math_se", "institution": "南京大学", "department": "软件学院", "course_name": "高等数学", "instructor": "教师甲", "term": "2026-fall" },
+    { "id": "offering_nju_math_cs", "institution": "南京大学", "department": "计算机学院", "course_name": "高等数学", "instructor": "教师甲", "term": "2026-fall" },
+    { "id": "offering_seu_math_cs", "institution": "东南大学", "department": "计算机学院", "course_name": "高等数学", "instructor": "教师丙", "term": "2026-fall" },
+    { "id": "offering_nju_java", "institution": "南京大学", "department": "软件学院", "course_name": "Java 程序设计", "instructor": "教师乙", "term": "2026-fall" },
+    { "id": "offering_nju_cpp", "institution": "南京大学", "department": "软件学院", "course_name": "C++ 程序设计", "instructor": "教师丁", "term": "2026-fall" }
+  ],
+  "enrollments": [
+    { "user_id": "user_a", "offering_id": "offering_nju_math_se", "status": "verified" },
+    { "user_id": "user_a", "offering_id": "offering_nju_java", "status": "verified" },
+    { "user_id": "user_a", "offering_id": "offering_nju_cpp", "status": "verified" },
+    { "user_id": "user_b", "offering_id": "offering_nju_math_cs", "status": "verified" },
+    { "user_id": "user_c", "offering_id": "offering_nju_math_cs", "status": "verified" },
+    { "user_id": "user_d", "offering_id": "offering_seu_math_cs", "status": "verified" }
+  ],
+  "course_links": [
+    { "id": "link_nju_math", "offering_a": "offering_nju_math_se", "offering_b": "offering_nju_math_cs", "scope": "same_course_same_institution", "overlap_score": 0.9, "status": "confirmed" },
+    { "id": "link_nju_seu_math", "offering_a": "offering_nju_math_cs", "offering_b": "offering_seu_math_cs", "scope": "partial_overlap_cross_institution", "overlap_score": 0.6, "status": "confirmed" }
+  ],
+  "sharing_policies": [
+    { "id": "policy_math_slides", "institution": "南京大学", "scope_type": "instructor", "scope_value": "教师甲", "applies_to_kinds": ["slides"], "max_signal_tier": "shared", "max_text_tier": "campus", "decided_by_role": "instructor", "status": "verified", "evidence_ref": "placeholder/policy-math-slides" },
+    { "id": "policy_cpp_exam_deny", "institution": "南京大学", "scope_type": "instructor", "scope_value": "教师丁", "applies_to_kinds": ["past_exam"], "max_signal_tier": "personal", "max_text_tier": "personal", "decided_by_role": "instructor", "status": "verified", "evidence_ref": "placeholder/policy-cpp-exam" }
+  ],
+  "materials": [
+    { "id": "material_a_notes", "owner_user_id": "user_a", "offering_id": "offering_nju_math_se", "kind": "notes", "exam_status": "not_exam", "storage_key": "private/user_a/notes.pdf", "sharing": { "tier": "shared", "form": "signal", "rights_basis": "own_work", "attestation": { "confirmed": true, "terms_version": "2026-11", "confirmed_at": "2026-11-06T08:00:00Z" }, "review_status": "approved" } },
+    { "id": "material_b_notes", "owner_user_id": "user_b", "offering_id": "offering_nju_math_cs", "kind": "notes", "exam_status": "not_exam", "storage_key": "private/user_b/notes.pdf", "sharing": { "tier": "shared", "form": "signal", "rights_basis": "own_work", "attestation": { "confirmed": true, "terms_version": "2026-11", "confirmed_at": "2026-11-06T08:10:00Z" }, "review_status": "approved" } },
+    { "id": "material_c_notes", "owner_user_id": "user_c", "offering_id": "offering_nju_math_cs", "kind": "notes", "exam_status": "not_exam", "storage_key": "private/user_c/notes.pdf", "sharing": { "tier": "shared", "form": "signal", "rights_basis": "own_work", "attestation": { "confirmed": true, "terms_version": "2026-11", "confirmed_at": "2026-11-06T08:20:00Z" }, "review_status": "approved" } },
+    { "id": "material_b_slides", "owner_user_id": "user_b", "offering_id": "offering_nju_math_cs", "kind": "slides", "exam_status": "not_exam", "storage_key": "private/user_b/slides.pdf", "sharing": { "tier": "campus", "form": "text", "audience": { "scope": "instructor", "ref": "教师甲" }, "rights_basis": "instructor_permission", "attestation": { "confirmed": true, "terms_version": "2026-11", "confirmed_at": "2026-11-06T08:30:00Z" }, "review_status": "approved" } },
+    { "id": "material_d_slides", "owner_user_id": "user_d", "offering_id": "offering_seu_math_cs", "kind": "slides", "exam_status": "not_exam", "storage_key": "private/user_d/slides.pdf", "sharing": { "tier": "personal", "form": "none", "rights_basis": "unknown", "review_status": "not_required" } },
+    { "id": "material_a_java", "owner_user_id": "user_a", "offering_id": "offering_nju_java", "kind": "slides", "exam_status": "not_exam", "storage_key": "private/user_a/java.pdf", "sharing": { "tier": "personal", "form": "none", "rights_basis": "unknown", "review_status": "not_required" } },
+    { "id": "material_a_cpp", "owner_user_id": "user_a", "offering_id": "offering_nju_cpp", "kind": "slides", "exam_status": "not_exam", "storage_key": "private/user_a/cpp.pdf", "sharing": { "tier": "personal", "form": "none", "rights_basis": "unknown", "review_status": "not_required" } },
+    { "id": "material_a_cpp_exam", "owner_user_id": "user_a", "offering_id": "offering_nju_cpp", "kind": "past_exam", "exam_status": "historical", "storage_key": "private/user_a/cpp-exam.pdf", "sharing": { "tier": "personal", "form": "none", "rights_basis": "unknown", "review_status": "not_required" } }
+  ],
+  "knowledge_points": [
+    { "id": "kp_d_taylor", "owner_user_id": "user_d", "offering_id": "offering_seu_math_cs", "canonical_topic_id": "topic_taylor_series", "title": "泰勒展开", "weight": 0.25, "weight_basis": ["slide_share", "shared_signal"], "source_refs": [{ "material_id": "material_d_slides", "page": 12 }] },
+    { "id": "kp_c_taylor", "owner_user_id": "user_c", "offering_id": "offering_nju_math_cs", "canonical_topic_id": "topic_taylor_series", "title": "泰勒展开", "weight": 0.3, "weight_basis": ["authorized_text", "campus_signal"], "source_refs": [{ "material_id": "material_b_slides", "page": 8 }, { "material_id": "material_c_notes" }] },
+    { "id": "kp_a_java_interface", "owner_user_id": "user_a", "offering_id": "offering_nju_java", "canonical_topic_id": "topic_abstract_interface", "title": "Java 接口", "weight": 0.2, "weight_basis": ["slide_share"], "source_refs": [{ "material_id": "material_a_java", "page": 20 }] },
+    { "id": "kp_a_cpp_pure_virtual", "owner_user_id": "user_a", "offering_id": "offering_nju_cpp", "canonical_topic_id": "topic_abstract_interface", "title": "纯虚函数与抽象类", "weight": 0.3, "weight_basis": ["slide_share"], "source_refs": [{ "material_id": "material_a_cpp", "page": 31 }] }
+  ],
+  "personal_links": [
+    { "id": "plink_a_interface", "user_id": "user_a", "from_knowledge_point_id": "kp_a_java_interface", "to_knowledge_point_id": "kp_a_cpp_pure_virtual", "relation": "analogous", "status": "confirmed", "origin": "ai_suggested" }
+  ],
+  "signals": [
+    { "id": "signal_taylor_shared", "tier": "shared", "status": "active", "canonical_topic_id": "topic_taylor_series", "offering_ids": ["offering_nju_math_se", "offering_nju_math_cs"], "contributor_count": 3, "frequency_bucket": "high", "question_types": ["calculation"], "max_weight_delta": 0.05, "derived_from_material_ids": ["material_a_notes", "material_b_notes", "material_c_notes"] },
+    { "id": "signal_taylor_campus", "tier": "campus", "status": "active", "audience": { "scope": "course", "ref": "高等数学" }, "canonical_topic_id": "topic_taylor_series", "offering_ids": ["offering_nju_math_se", "offering_nju_math_cs"], "contributor_count": 3, "frequency_bucket": "high", "question_types": ["calculation"], "max_weight_delta": 0.1, "derived_from_material_ids": ["material_a_notes", "material_b_notes", "material_c_notes"] }
+  ],
+  "exam_blueprints": [
+    { "id": "blueprint_d_math", "user_id": "user_d", "offering_id": "offering_seu_math_cs", "duration_minutes": 120, "total_score": 100, "sections": [{ "question_type": "calculation", "count": 10, "score_each": 10, "knowledge_point_ids": ["kp_d_taylor"] }], "signal_ids_used": ["signal_taylor_shared"] },
+    { "id": "blueprint_c_math", "user_id": "user_c", "offering_id": "offering_nju_math_cs", "duration_minutes": 120, "total_score": 100, "sections": [{ "question_type": "calculation", "count": 10, "score_each": 10, "knowledge_point_ids": ["kp_c_taylor"] }], "signal_ids_used": ["signal_taylor_campus"] },
+    { "id": "blueprint_a_cpp", "user_id": "user_a", "offering_id": "offering_nju_cpp", "duration_minutes": 120, "total_score": 100, "sections": [{ "question_type": "short_answer", "count": 10, "score_each": 10, "knowledge_point_ids": ["kp_a_cpp_pure_virtual"] }], "signal_ids_used": [] }
+  ],
+  "questions": [
+    { "id": "question_d_1", "blueprint_id": "blueprint_d_math", "knowledge_point_id": "kp_d_taylor", "question_type": "calculation", "stem_md": "求 $f(x)=e^x$ 在 $x=0$ 处的二阶泰勒多项式。", "answer_md": "$1+x+\\frac{x^2}{2}$", "explanation_md": "$f(0)=f'(0)=f''(0)=1$，代入泰勒公式即可。", "source_refs": [{ "material_id": "material_d_slides", "page": 12 }], "verification": { "status": "passed", "method": "code_execution" } },
+    { "id": "question_c_1", "blueprint_id": "blueprint_c_math", "knowledge_point_id": "kp_c_taylor", "question_type": "calculation", "stem_md": "求 $\\sin x$ 在 $x=0$ 处的三阶麦克劳林多项式。", "answer_md": "$x-\\frac{x^3}{6}$", "explanation_md": "$\\sin x$ 在 $0$ 处的一阶导数为 $1$，二阶导数为 $0$，三阶导数为 $-1$。", "source_refs": [{ "material_id": "material_b_slides", "page": 8 }], "verification": { "status": "passed", "method": "code_execution" } },
+    { "id": "question_a_1", "blueprint_id": "blueprint_a_cpp", "knowledge_point_id": "kp_a_cpp_pure_virtual", "question_type": "short_answer", "stem_md": "含有纯虚函数的 C++ 类能否直接实例化？为什么？", "answer_md": "不能。它是抽象类，派生类要实现全部纯虚函数后才能实例化。", "explanation_md": "类中存在未被覆盖的纯虚函数时，该类就是抽象类，只能作为基类使用。", "cross_course_note": { "personal_link_id": "plink_a_interface", "note_md": "可以类比 Java 接口不能直接 new，但 C++ 抽象类可以有数据成员，Java 接口不能有实例字段。" }, "source_refs": [{ "material_id": "material_a_cpp", "page": 31 }], "verification": { "status": "passed", "method": "human_review" } }
+  ]
+}
