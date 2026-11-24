@@ -129,6 +129,10 @@ function tick() {
       for (const mid of j.material_ids) {
         const m = S.materials[mid];
         if (!m || m.status === 'failed') continue;
+        if (m._broken && p >= 0.2) {
+          Object.assign(m, { status: 'failed', stage: null, progress: null, pages: null, error: { message: '文件已损坏或不是有效的文档，换一份再上传', retryable: false } });
+          continue;
+        }
         m.progress = Math.round(p * 100) / 100;
         m.status = p < 0.2 ? 'reading' : 'extracting';
         m.stage = p < 0.2 ? '读取文字' : '整理知识点';
@@ -152,6 +156,10 @@ function complete(j) {
     for (const mid of j.material_ids) {
       const m = S.materials[mid];
       if (!m || m.status === 'failed') continue;
+      if (m._broken) {
+        Object.assign(m, { status: 'failed', stage: null, progress: null, pages: null, error: { message: '文件已损坏或不是有效的文档，换一份再上传', retryable: false } });
+        continue;
+      }
       Object.assign(m, { status: 'ready', stage: null, progress: null, kp_count: 4 + (m.title.length % 9) * 3 });
       if (/\.pptx?$/i.test(m.title)) { m.vision = 'partial'; m.vision_done_at = now() + 20000; }
       else m.vision = 'done';
@@ -292,7 +300,7 @@ function courseView(c) {
 }
 
 function materialView(m) {
-  const { course_id, vision_done_at, ...rest } = m;
+  const { course_id, vision_done_at, _broken, ...rest } = m;
   return clone(rest);
 }
 
@@ -585,7 +593,7 @@ export const routes = [
     const created = files.map((f) => {
       const mid = id('m');
       const kind = /作业|homework|hw/i.test(f.name) ? 'homework' : /笔记|note/i.test(f.name) ? 'notes' : /往年|试卷|真题/.test(f.name) ? 'past_paper' : /\.(pptx?|pdf)$/i.test(f.name) ? 'slides' : 'other';
-      const m = { id: mid, course_id: cid, title: f.name, kind, pages: 6 + (f.name.length * 7) % 80, status: 'reading', stage: '读取文字', progress: 0, kp_count: null, vision: 'none', superseded_by: null, error: null, uploaded_at: iso() };
+      const m = { id: mid, course_id: cid, title: f.name, kind, pages: 6 + (f.name.length * 7) % 80, status: 'reading', stage: '读取文字', progress: 0, kp_count: null, vision: 'none', superseded_by: null, error: null, uploaded_at: iso(), _broken: fileOk.get(`${f.name}|${f.size}`) === false };
       S.materials[mid] = m;
       if (/复习|提纲|review/i.test(f.name)) {
         const sid = id('s');
@@ -713,7 +721,17 @@ export const internal = {
 export const registerRoutes = (list) => routes.push(...list);
 
 /** 与真实后端相同的调用方式：失败时抛出带 message 的错误 */
+const MAGIC = { pdf: '%PDF', docx: 'PK', pptx: 'PK' };
+const fileOk = new Map();   // “文件名|大小” → 文件头是否像真的（演示用：损坏的文件在整理时记为失败）
+
 export async function mockRequest(method, path, body) {
+  if (body instanceof FormData) {
+    for (const f of body.getAll('files')) {
+      const ext = (f.name.match(/\.(\w+)$/)?.[1] || '').toLowerCase();
+      const head = new TextDecoder('latin1').decode(await f.slice(0, 4).arrayBuffer());
+      fileOk.set(`${f.name}|${f.size}`, !MAGIC[ext] || head.startsWith(MAGIC[ext]));
+    }
+  }
   await new Promise((r) => setTimeout(r, 80 + Math.random() * 160));
   tick();
   const clean = path.split('?')[0];

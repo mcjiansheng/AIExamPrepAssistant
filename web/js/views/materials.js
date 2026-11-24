@@ -11,6 +11,7 @@ export async function mount(el, ctx) {
   let data = { materials: [], suggestions: [] };
   let showAllSugg = false;
   let stopPoll = null;
+  let batch = new Set();   // 这一批正在处理的资料；全部结束时按实际结果提示
 
   const load = async () => { data = await api.materials(cid); };
 
@@ -61,7 +62,10 @@ export async function mount(el, ctx) {
     if (busy(m)) return html`<div class="meta" style="display:flex;flex-direction:column;gap:6px">
       <span class="state run">${m.stage || '处理中'} ${m.progress != null ? pct(m.progress) : ''}</span>
       <div class="bar"><i style="width:${pct(m.progress)}"></i></div></div>`;
-    if (m.status === 'failed') return html`<div class="meta"><span class="state bad">${m.error?.message || '读取失败'}</span></div>`;
+    if (m.status === 'failed') return html`<div class="meta fail-meta">
+      <span class="state bad">读取失败：${m.error?.message || '文件没能读出内容'}</span>
+      <label class="link reupload" tabindex="0" data-act="pick" data-on="keydown">重新上传<input type="file" accept="${ACCEPT}" hidden data-act="replace" data-mid="${m.id}"></label>
+    </div>`;
     const bits = [];
     if (m.pages) bits.push(`${m.pages} 页`);
     if (m.kp_count != null) bits.push(`${m.kp_count} 个知识点`);
@@ -69,26 +73,46 @@ export async function mount(el, ctx) {
   };
 
   const ensurePoll = () => {
+    for (const m of data.materials) if (busy(m)) batch.add(m.id);
     const active = data.materials.some((m) => busy(m) || m.vision === 'partial');
     if (active && !stopPoll) {
       stopPoll = ctx.poll(async () => {
-        const wasBusy = data.materials.some(busy);
         await load(); render();
-        if (wasBusy && !data.materials.some(busy)) { toast('资料整理好了'); ctx.refreshShell(); }
+        for (const m of data.materials) if (busy(m)) batch.add(m.id);
+        const mine = data.materials.filter((m) => batch.has(m.id));
+        if (batch.size && !mine.some(busy)) { batchDone(mine); batch = new Set(); }
         if (!data.materials.some((m) => busy(m) || m.vision === 'partial')) { stopPoll(); stopPoll = null; }
       });
     }
   };
 
+  // 设计 §3 第 7 条：按实际结果提示，失败的不能说成“整理好了”
+  const batchDone = (mine) => {
+    const ok = mine.filter((m) => m.status === 'ready').length;
+    const bad = mine.filter((m) => m.status === 'failed').length;
+    if (!bad) toast(ok > 1 ? `资料整理好了，共 ${ok} 份` : '资料整理好了');
+    else if (!ok) toast(`${bad} 份读取失败，可以换一份重新上传`, { tone: 'error' });
+    else toast(`已整理 ${ok} 份，${bad} 份读取失败`, { tone: 'error' });
+    ctx.refreshShell();
+  };
+
   const upload = async (files) => {
-    if (!files.length) return;
+    if (!files.length) return null;
     const r = await api.upload(cid, files);
+    for (const m of r.materials) batch.add(m.id);
     toast(`已上传 ${r.materials.length} 份，正在整理`);
     await load(); render(); ensurePoll(); ctx.refreshShell();
+    return r;
   };
 
   bind(el, {
     files: (input) => upload([...input.files]),
+    // 失败行的“重新上传”：传新文件，成功收到后删掉失败的那条记录（它没有任何内容）
+    replace: async (input) => {
+      const failedId = input.dataset.mid;
+      const r = await upload([...input.files]);
+      if (r) { await api.deleteMaterial(failedId); await load(); render(); }
+    },
     pick: (lbl, e) => { if (e.key === 'Enter' || e.key === ' ') lbl.querySelector('input').click(); },
     moreSugg: () => { showAllSugg = true; render(); },
     answer: async (b) => {

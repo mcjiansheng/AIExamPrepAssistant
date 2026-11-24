@@ -527,3 +527,6 @@ body.immersive .fab, body.assist-open .fab { display: none; }
 .course-li { display: flex; align-items: center; }
 .course-li .course-row { flex: 1; min-width: 0; }
 .course-li .course-menu { margin-right: 8px; }
+.fail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.fail-meta .reupload { padding: 0; font-size: 13px; cursor: pointer; }
+@media (max-width: 959px) { body.has-assist:not(.immersive) #toasts { bottom: calc(var(--tabbar-h) + 72px); } }
