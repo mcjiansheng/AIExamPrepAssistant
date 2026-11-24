@@ -126,9 +126,14 @@ function tick() {
     if (j.status !== 'running') continue;
     const p = Math.min(1, (t - j.started) / j.duration);
     if (j.kind === 'ingest') {
-      for (const mid of j.material_ids) {
+      for (const mid of (j.retry_ids || j.material_ids)) {
         const m = S.materials[mid];
         if (!m || m.status === 'failed') continue;
+        if (m._failOnce && p >= 0.6) {
+          m._failOnce = false;
+          Object.assign(m, { status: 'failed', stage: null, progress: null, error: { message: '分组成主题时模型超时，已保留读出的内容', retryable: true } });
+          continue;
+        }
         if (m._broken && p >= 0.2) {
           Object.assign(m, { status: 'failed', stage: null, progress: null, pages: null, error: { message: '文件已损坏或不是有效的文档，换一份再上传', retryable: false } });
           continue;
@@ -153,7 +158,7 @@ function complete(j) {
     const course = S.courses[j.target_id];
     if (!course) return;
     if (!course.chapters.length) buildStructure(course);
-    for (const mid of j.material_ids) {
+    for (const mid of (j.retry_ids || j.material_ids)) {
       const m = S.materials[mid];
       if (!m || m.status === 'failed') continue;
       if (m._broken) {
@@ -300,7 +305,7 @@ function courseView(c) {
 }
 
 function materialView(m) {
-  const { course_id, vision_done_at, _broken, ...rest } = m;
+  const { course_id, vision_done_at, _broken, _failOnce, ...rest } = m;
   return clone(rest);
 }
 
@@ -554,7 +559,16 @@ const OK_EXT = /\.(pdf|pptx?|docx?|txt|md)$/i;
 export const routes = [
   ['GET', /^\/health$/, () => ({ ok: true, model: '演示模型', mock_model: true })],
   ['GET', /^\/jobs\/([^/]+)$/, ([jid]) => jobView(S.jobs[jid] || (() => { throw notFound('任务'); })())],
-  ['POST', /^\/jobs\/([^/]+)\/retry$/, ([jid]) => { const j = S.jobs[jid]; if (!j) throw notFound('任务'); j.status = 'running'; j.started = now(); j.applied = false; return jobView(j); }],
+  ['POST', /^\/jobs\/([^/]+)\/retry$/, ([jid]) => {
+    const j = S.jobs[jid]; if (!j) throw notFound('任务');
+    if (j.kind === 'ingest') {
+      // 只重跑可重试的失败资料，资料 id 不变；成功的不动
+      j.retry_ids = j.material_ids.filter((mid) => S.materials[mid]?.status === 'failed' && S.materials[mid].error?.retryable);
+      for (const mid of j.retry_ids) Object.assign(S.materials[mid], { status: 'extracting', stage: '分组成主题', progress: 0.6, error: null });
+    }
+    j.status = 'running'; j.started = now(); j.applied = false;
+    return jobView(j);
+  }],
 
   ['GET', /^\/courses$/, () => S.order.map((cid) => courseView(S.courses[cid])).sort((a, b) => (a.exam_date || '9999') < (b.exam_date || '9999') ? -1 : 1)],
   ['POST', /^\/courses$/, (_, b) => {
@@ -593,7 +607,7 @@ export const routes = [
     const created = files.map((f) => {
       const mid = id('m');
       const kind = /作业|homework|hw/i.test(f.name) ? 'homework' : /笔记|note/i.test(f.name) ? 'notes' : /往年|试卷|真题/.test(f.name) ? 'past_paper' : /\.(pptx?|pdf)$/i.test(f.name) ? 'slides' : 'other';
-      const m = { id: mid, course_id: cid, title: f.name, kind, pages: 6 + (f.name.length * 7) % 80, status: 'reading', stage: '读取文字', progress: 0, kp_count: null, vision: 'none', superseded_by: null, error: null, uploaded_at: iso(), _broken: fileOk.get(`${f.name}|${f.size}`) === false };
+      const m = { id: mid, course_id: cid, title: f.name, kind, pages: 6 + (f.name.length * 7) % 80, status: 'reading', stage: '读取文字', progress: 0, kp_count: null, vision: 'none', superseded_by: null, error: null, uploaded_at: iso(), _broken: fileOk.get(`${f.name}|${f.size}`) === false, _failOnce: f.name.includes('可重试') };
       S.materials[mid] = m;
       if (/复习|提纲|review/i.test(f.name)) {
         const sid = id('s');

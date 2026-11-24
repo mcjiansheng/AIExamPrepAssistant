@@ -11,7 +11,16 @@ export async function mount(el, ctx) {
   let data = { materials: [], suggestions: [] };
   let showAllSugg = false;
   let stopPoll = null;
-  let batch = new Set();   // 这一批正在处理的资料；全部结束时按实际结果提示
+  let batch = new Set();        // 这一批等待结果的资料 id；全部有结果时提示一次
+  const retrying = new Set();   // 点了“重试”、还没结束的 Job id
+  const replacing = new Map();  // 替代资料 id → 被替代的失败资料 id；替代资料 ready 后才删旧的
+  const JOBS_KEY = `examprep-upload-jobs-${cid}`;
+  let jobOf = new Map();        // 资料 id → 上传时的 Job id，用于“重试”
+  try { jobOf = new Map(JSON.parse(sessionStorage.getItem(JOBS_KEY) || '[]')); } catch { /* 存储不可用就只记在内存里 */ }
+  const rememberJob = (ids, jobId) => {
+    for (const id of ids) jobOf.set(id, jobId);
+    try { sessionStorage.setItem(JOBS_KEY, JSON.stringify([...jobOf])); } catch { /* 同上 */ }
+  };
 
   const load = async () => { data = await api.materials(cid); };
 
@@ -64,7 +73,9 @@ export async function mount(el, ctx) {
       <div class="bar"><i style="width:${pct(m.progress)}"></i></div></div>`;
     if (m.status === 'failed') return html`<div class="meta fail-meta">
       <span class="state bad">读取失败：${m.error?.message || '文件没能读出内容'}</span>
-      <label class="link reupload" tabindex="0" data-act="pick" data-on="keydown">重新上传<input type="file" accept="${ACCEPT}" hidden data-act="replace" data-mid="${m.id}"></label>
+      ${m.error?.retryable && jobOf.has(m.id)
+        ? html`<button class="link reupload" data-act="retry" data-mid="${m.id}">重试</button>`
+        : html`<label class="link reupload" tabindex="0" data-act="pick" data-on="keydown">重新上传<input type="file" accept="${ACCEPT}" hidden data-act="replace" data-mid="${m.id}"></label>`}
     </div>`;
     const bits = [];
     if (m.pages) bits.push(`${m.pages} 页`);
@@ -72,18 +83,30 @@ export async function mount(el, ctx) {
     return html`<div class="meta">${bits.join('，')}${m.vision === 'partial' ? html`<span class="state" style="margin-left:10px">图示补充中</span>` : ''}${m.vision === 'unsupported' ? html`<span class="state warn" style="margin-left:10px">图示未解析</span>` : ''}</div>`;
   };
 
-  const ensurePoll = () => {
+  // 首次加载、每次轮询、上传和重试之后都走这一段：结算批次、处理替代、决定要不要继续轮询
+  let queue = Promise.resolve();
+  const refresh = () => (queue = queue.then(doRefresh, doRefresh));   // 串行：轮询和手动刷新不会同时结算，避免重复提示
+  const doRefresh = async () => {
+    await load();
     for (const m of data.materials) if (busy(m)) batch.add(m.id);
-    const active = data.materials.some((m) => busy(m) || m.vision === 'partial');
-    if (active && !stopPoll) {
-      stopPoll = ctx.poll(async () => {
-        await load(); render();
-        for (const m of data.materials) if (busy(m)) batch.add(m.id);
-        const mine = data.materials.filter((m) => batch.has(m.id));
-        if (batch.size && !mine.some(busy)) { batchDone(mine); batch = new Set(); }
-        if (!data.materials.some((m) => busy(m) || m.vision === 'partial')) { stopPoll(); stopPoll = null; }
-      });
+    for (const jobId of [...retrying]) {
+      const j = await api.job(jobId);
+      if (j.status === 'done' || j.status === 'failed') retrying.delete(jobId);
     }
+    for (const [newId, oldId] of [...replacing]) {
+      const n = data.materials.find((m) => m.id === newId);
+      if (n?.status === 'ready') { replacing.delete(newId); await api.deleteMaterial(oldId); await load(); }
+      else if (!n || n.status === 'failed') replacing.delete(newId);   // 替代失败：旧记录留着
+    }
+    render();
+    const mine = data.materials.filter((m) => batch.has(m.id));
+    if (batch.size && !mine.some(busy) && !retrying.size) {
+      batch = new Set();
+      if (mine.length) batchDone(mine);
+    }
+    const active = data.materials.some((m) => busy(m) || m.vision === 'partial') || retrying.size > 0 || replacing.size > 0;
+    if (active && !stopPoll) stopPoll = ctx.poll(refresh);
+    if (!active && stopPoll) { stopPoll(); stopPoll = null; }
   };
 
   // 设计 §3 第 7 条：按实际结果提示，失败的不能说成“整理好了”
@@ -100,18 +123,34 @@ export async function mount(el, ctx) {
     if (!files.length) return null;
     const r = await api.upload(cid, files);
     for (const m of r.materials) batch.add(m.id);
+    rememberJob(r.materials.map((m) => m.id), r.job.id);
     toast(`已上传 ${r.materials.length} 份，正在整理`);
-    await load(); render(); ensurePoll(); ctx.refreshShell();
+    ctx.refreshShell();
+    await refresh();
     return r;
   };
 
   bind(el, {
     files: (input) => upload([...input.files]),
-    // 失败行的“重新上传”：传新文件，成功收到后删掉失败的那条记录（它没有任何内容）
+    // 坏文件“重新上传”：替代资料整理成功（ready）后才删掉旧的失败记录
     replace: async (input) => {
       const failedId = input.dataset.mid;
-      const r = await upload([...input.files]);
-      if (r) { await api.deleteMaterial(failedId); await load(); render(); }
+      const files = [...input.files];
+      if (!files.length) return;
+      const r = await api.upload(cid, files);
+      for (const m of r.materials) { batch.add(m.id); replacing.set(m.id, failedId); }
+      rememberJob(r.materials.map((m) => m.id), r.job.id);
+      toast('已重新上传，正在整理');
+      await refresh();
+    },
+    // 可重试的失败：继续原来的 Job，资料 id 不变
+    retry: async (b) => {
+      const jobId = jobOf.get(b.dataset.mid);
+      await api.retryJob(jobId);
+      retrying.add(jobId);
+      batch.add(b.dataset.mid);
+      toast('正在重试');
+      await refresh();
     },
     pick: (lbl, e) => { if (e.key === 'Enter' || e.key === ' ') lbl.querySelector('input').click(); },
     moreSugg: () => { showAllSugg = true; render(); },
@@ -151,5 +190,5 @@ export async function mount(el, ctx) {
   el.addEventListener('dragleave', (e) => { if (!el.contains(e.relatedTarget)) el.querySelector('#drop')?.classList.remove('over'); });
   el.addEventListener('drop', (e) => { e.preventDefault(); el.querySelector('#drop')?.classList.remove('over'); upload([...e.dataTransfer.files]).catch((err) => toast(err.message, { tone: 'error' })); });
 
-  await load(); render(); ensurePoll();
+  await refresh();
 }
