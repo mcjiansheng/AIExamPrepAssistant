@@ -564,6 +564,7 @@ export const routes = [
     for (const m of Object.values(S.materials)) if (m.course_id === cid) delete S.materials[m.id];
     for (const s of Object.values(S.suggestions)) if (s.course_id === cid) delete S.suggestions[s.id];
     for (const e of c.exams) delete S.exams[e];
+    if (S.chats) delete S.chats[cid];
     delete S.courses[cid]; S.order = S.order.filter((x) => x !== cid);
     return null;
   }],
