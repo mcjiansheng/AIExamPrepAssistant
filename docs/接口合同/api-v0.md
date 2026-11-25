@@ -1,6 +1,6 @@
 # 后端 API 合同 v0
 
-状态：草案 v0，2026-11-24，待两端负责人确认（AGENTS.md「接口变更」）。前端 `web/js/mock/` 按本文实现了一份演示后端，可作为每个接口的可运行样例。
+状态：v0.1，2026-11-24。v0 由后端实现于 PR #1；v0.1 新增“出题失败”（用户确认），见第 9 节，并补充 `ready` 资料可带 `error`（第 5 节）。前端 `web/js/mock/` 按本文实现了一份演示后端，可作为每个接口的可运行样例。
 
 本期是**本机单用户**：用户固定为 `user_me`，没有登录、没有鉴权、不做限流。后端同源提供 `web/` 静态页，所以也不需要 CORS。
 
@@ -51,7 +51,7 @@ Job {
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/jobs/{job_id}` | 查询 |
-| POST | `/jobs/{job_id}/retry` | 失败后重试，返回同一个或新的 Job |
+| POST | `/jobs/{job_id}/retry` | `retryable: true` 的失败后重试，返回同一个 Job（回到 `queued`）。各类任务只重做失败的部分：资料只重跑可重试的失败资料；重点只重新分析失败的句子；出题只重出没出成的题 |
 
 `needs_input` 表示任务在等用户回答某张建议卡（第 5 节），回答后自动继续。
 
@@ -108,7 +108,7 @@ Material {
   kp_count: number | null
   vision: "none" | "partial" | "done" | "unsupported"   // 图示转写进度；partial 时前端显示“图示补充中”
   superseded_by: string | null       // 被新版本取代时指向最终版
-  error: { message: string, retryable: boolean } | null
+  error: { message: string, retryable: boolean } | null   // failed 时是失败原因；ready 时非空表示部分页被跳过（retryable 为 false），资料仍可用
   uploaded_at: string
 }
 
@@ -233,7 +233,8 @@ PlanItem {
 | 方法 | 路径 | 请求 | 响应 |
 |---|---|---|---|
 | GET | `/courses/{cid}/exams` | | `ExamSummary[]`，新的在前 |
-| POST | `/courses/{cid}/exams` | `{ "count": 10, "scope": "plan" \| "all" \| "mistakes" }` | `Exam`（`status: generating`，`job` 非空） |
+| POST | `/courses/{cid}/exams` | `{ "count": 10, "scope": "plan" \| "all" \| "mistakes" }` | `Exam`（`status: generating`，`job` 非空）。范围里没有可出题的知识点、或考试形式的题量全为 0 时返回 409，`message` 写明原因，不创建试卷 |
+| DELETE | `/exams/{eid}` | | `204`，连同作答记录删除，掌握度按剩余记录重算 |
 | GET | `/exams/{eid}` | | `Exam` |
 | POST | `/exams/{eid}/finish` | | `ExamResult`（重复调用返回同一结果） |
 | GET | `/exams/{eid}/result` | | `ExamResult`；未完成时 409 |
@@ -242,10 +243,10 @@ PlanItem {
 | POST | `/questions/{qid}/report` | `{ "kind": ReportKind, "note": "..." }` | `{ status: "hidden" }` |
 
 ```ts
-ExamSummary { id, title, created_at, status, question_count, answered, score, total }   // question_count 不含被报错隐藏的题
+ExamSummary { id, title, created_at, status, question_count, answered, score, total }   // question_count 不含被报错隐藏的题和没出成的题
 Exam {
   id, title, created_at
-  status: "generating" | "ready" | "finished"
+  status: "generating" | "ready" | "finished" | "failed"
   job: Job | null
   format_basis: ExamFormat["basis"]  // default 时前端标“题型分布为默认设置”
   questions: Question[]              // 渐进：出好一道追加一道
@@ -288,6 +289,19 @@ MasteryChange { kp_id, title, from: "new"|"shaky"|"mastered", to: "new"|"shaky"|
 ExamResult { exam: Exam, mastery_changes: MasteryChange[], plan_stale: boolean }
 ReportKind = "wrong_answer" | "wrong_solution" | "out_of_scope" | "unclear" | "wrong_ref"
 ```
+
+试卷状态：
+
+| status | 含义 | job |
+|---|---|---|
+| `generating` | 出题任务在排队或运行（包括重试中） | `queued` / `running` |
+| `ready` | 至少有一道题可作答，出题任务已结束 | `done`；或 `failed`，表示还有题没出成，`error` 写原因，`retryable` 为 true 时可以“继续出题” |
+| `failed` | 出题任务已结束，没有一道可作答的题 | `failed`，`error` 写原因 |
+| `finished` | 用户完成了本套 | 任意 |
+
+- 重试（`POST /jobs/{job_id}/retry`）把试卷改回 `generating`，只重出没出成的题，已出好的题和作答不动。
+- `ready` 时点“完成本套”：没出成的题从试卷里去掉，不计入总分。
+- `failed` 的试卷不能完成（`finish` 返回 409），可以重试或删除。
 
 判分规则（v2 3.5）：
 
