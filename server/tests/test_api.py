@@ -1,5 +1,6 @@
 import http.client
 import json
+import re
 import sys
 import tempfile
 import threading
@@ -534,6 +535,40 @@ class ReviewFixesTest(ApiCase):
         self.assertEqual(done["questions"][0]["attempt"]["response"], "A")
         self.assertEqual(done["total"], 6)
 
+    def test_flaky_calls_fail_the_job_only_after_five_in_a_row(self):
+        from core import RetryLater
+        self.lessons("矩阵：数字的有序排列", "向量：一组有序的数字")
+        seen = []
+        def replace(step, system, user):   # 每一步都先失败两次再成功：累计失败超过 5 次，但从未连续 5 次
+            seen.append(step)
+            if seen.count(step) <= 2:
+                raise RetryLater("LongCat 连接或响应暂时异常")
+            return None
+        self.patch_model(replace)
+        self.exam(1)
+        for _ in range(30):
+            with self.app.db(write=True) as db:
+                db.execute("UPDATE jobs SET retry_at=0")
+            job = self.run_job()
+            if job["status"] != "queued":
+                break
+        self.assertGreaterEqual(len(set(seen)), 3)
+        self.assertEqual(job["status"], "done", job)
+
+    def test_option_letters_are_not_repeated_in_option_text(self):
+        self.lessons("矩阵：数字的有序排列", "向量：一组有序的数字")
+        def replace(step, system, user):
+            if step != "question":
+                return None
+            draft = json.loads(original(step, system, user))
+            draft["options"] = [f"{letter}. {text}" for letter, text in zip("ABCD", draft["options"])]
+            return json.dumps(draft, ensure_ascii=False)
+        original = self.patch_model(replace)
+        exam = self.exam(1)
+        self.assertEqual(self.run_job()["status"], "done")
+        options = self.request("GET", "/exams/" + exam["id"])[1]["questions"][0]["options"]
+        self.assertTrue(all(not re.match(r"[A-D][.、]", o["text"]) for o in options), options)
+
     def test_model_failures_never_disable_the_client(self):
         import io
         import os
@@ -592,6 +627,8 @@ class ReviewFixesTest(ApiCase):
         self.assertTrue(reveals_answer("答案是 A", "single", "A", options, ""))
         self.assertTrue(reveals_answer("A 是正确的", "single", "A", options, ""))
         self.assertFalse(reveals_answer("先看选项 A 和 B 的说法有什么不同", "single", "A", options, ""))
+        self.assertTrue(reveals_answer("B 把概念说反了，C 讲的是另一场景，D 与定义矛盾", "single", "A", options, ""))
+        self.assertFalse(reveals_answer("比较 B 和 C，看哪个符合定义", "single", "A", options, ""))
         self.assertTrue(reveals_answer("一共缺页 10 次", "fill", "10", None, "引用串 7,0,1,2"))
         self.assertFalse(reveals_answer("引用串里有 7 个不同页面", "fill", "10", None, "引用串 7,0,1,2"))
         answer = "由输入井和输出井、输入缓冲区和输出缓冲区、输入进程和输出进程组成"

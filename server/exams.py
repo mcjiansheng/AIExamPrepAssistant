@@ -263,7 +263,8 @@ class Exams:
 
         def save():
             with self.app.db(write=True) as db:
-                db.execute("UPDATE jobs SET payload=?,stage=? WHERE id=?",
+                # 有进展就清零失败计数：“连续 5 次没有成功”只算中间没有任何成功调用的失败
+                db.execute("UPDATE jobs SET payload=?,stage=?,failures=0 WHERE id=?",
                            (dump(task), f"整理第 {spec['position']} 道题", jid))
 
         comments = data.setdefault("comments", [])

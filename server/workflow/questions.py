@@ -1,4 +1,6 @@
 """Structured question generation and independent verification."""
+import re
+
 from core import dump
 from model import DATA_RULE, call_json, require
 from workflow import compute_first as cf, items, sandbox
@@ -15,10 +17,10 @@ EXPLAIN_CALC = DATA_RULE + """按题干和给出的求解结果写解析。输�
 评分点 2 到 6 条，总分必须是题目分值，step 从 1 开始。"""
 
 DRAFT = DATA_RULE + """按指定题型、知识点和分值出一道有出处的问题。
-输出 {"stem":[{"kind":"text","text":"题干"}],"options":null或["选项A","选项B"],"answer":"答案",
+输出 {"stem":[{"kind":"text","text":"题干"}],"options":null或["第一个选项的内容","第二个选项的内容"],"answer":"答案",
 "steps":[{"blocks":[{"kind":"text","text":"解析"}],"refs":[{"material_id":"资料ID","page":1,"quote":"逐字摘抄"}]}],
 "rubric":null或[{"point":"评分点","score":分值,"step":1}]}。
-至少有一个真实资料引用。单选给 4 个不同选项和字母答案。填空只有一个明确答案。主观题给 2 到 6 个评分点且分值和等于满分，step 从 1 开始。
+至少有一个真实资料引用。单选给 4 个不同选项和字母答案，选项只写内容，不要加“A.”之类的字母。填空只有一个明确答案。主观题给 2 到 6 个评分点且分值和等于满分，step 从 1 开始。
 可用文本、公式、代码块和表格（{"kind":"table","header":[],"rows":[[]]}）。"""
 
 
@@ -88,6 +90,10 @@ def draft(client, spec, comments, saved, save):
         if kind == "single":
             require(isinstance(options, list) and len(options) == 4 and all(isinstance(s, str) and s.strip() for s in options),
                     "单选题应有四个文字选项")
+            # 模型有时仍给选项带上“A. ”，界面另有字母标记，去掉重复的前缀
+            marks = [re.match(rf"\s*[(（]?{letter}[)）.、．:：]\s*", text) for letter, text in zip("ABCD", options)]
+            if all(marks):
+                options[:] = [text[mark.end():] for text, mark in zip(options, marks)]
             require(len(set(map(items.norm_text, options))) == 4, "单选选项内容不得重复")
             require(data["answer"] in items.letters(len(options)), "单选答案应为选项字母")
         else:

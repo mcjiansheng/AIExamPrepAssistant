@@ -345,9 +345,10 @@ class Materials:
         try:
             self.process_documents(jid, task)
         except RetryLater as error:
-            if job["failures"] >= 4:
-                with self.app.db(write=True) as db:
-                    saved = load(self.app.job(db, jid)["payload"])
+            with self.app.db(write=True) as db:
+                current = self.app.job(db, jid)
+                if current["failures"] >= 4:
+                    saved = load(current["payload"])
                     mid = saved["materials"][saved["pos"]]
                     db.execute("UPDATE documents SET status='failed', error=?, stage=NULL WHERE material_id=?",
                                (dump({"message": str(error), "retryable": True}), mid))

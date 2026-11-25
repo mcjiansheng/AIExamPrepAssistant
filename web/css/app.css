@@ -157,6 +157,9 @@ body.immersive #view { padding: 0 0 120px; max-width: 760px; }
 .list > li:first-child .row-link { border-radius: var(--r-panel) var(--r-panel) 0 0; }
 .list > li:last-child .row-link { border-radius: 0 0 var(--r-panel) var(--r-panel); }
 .list > li:only-child .row-link { border-radius: var(--r-panel); }
+/* 行内有独立操作按钮时：链接占满左侧，按钮在右 */
+.list > li.split { display: flex; align-items: center; padding-right: 8px; }
+.list > li.split .row-link { flex: 1; min-width: 0; }
 
 /* ---------- 按钮与输入 ---------- */
 
