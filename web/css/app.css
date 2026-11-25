@@ -524,3 +524,9 @@ body.immersive .fab, body.assist-open .fab { display: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .chip { border: 1px solid var(--line); background: var(--sheet); padding: 7px 12px; border-radius: 999px; font-size: 14px; color: var(--ink-2); text-align: left; }
 .chip:hover { border-color: var(--pen); color: var(--pen); }
+.course-li { display: flex; align-items: center; }
+.course-li .course-row { flex: 1; min-width: 0; }
+.course-li .course-menu { margin-right: 8px; }
+.fail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.fail-meta .reupload { padding: 0; font-size: 13px; cursor: pointer; }
+@media (max-width: 959px) { body.has-assist:not(.immersive) #toasts { bottom: calc(var(--tabbar-h) + 72px); } }

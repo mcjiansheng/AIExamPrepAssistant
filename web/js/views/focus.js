@@ -10,10 +10,13 @@ export async function mount(el, ctx) {
 
   const load = async () => { [focus, format] = await Promise.all([api.focus(cid), api.examFormat(cid)]); if (!dirty) draft = structuredClone(format); };
 
+  const ACTIVE = new Set(['queued', 'running']);   // 合同第 3 节：排队和运行中都要继续轮询
+  const active = () => !!focus.job && ACTIVE.has(focus.job.status);
   const kpActive = (k) => (k.user_choice === null ? k.certainty === 'sure' : k.user_choice);
 
   const render = () => {
-    const running = focus.job && focus.job.status !== 'done' && focus.job.status !== 'failed';
+    const running = active();
+    const queued = running && focus.job.status === 'queued';
     const text = textDraft ?? focus.text;
     const changed = text.trim() !== (focus.text || '').trim();
     el.innerHTML = html`<div class="page">
@@ -24,8 +27,8 @@ export async function mount(el, ctx) {
         <div class="panel pad" style="display:flex;flex-direction:column;gap:12px">
           <textarea class="textarea" data-act="text" data-on="input" placeholder="例如：银行家算法一定考大题。RAID 了解一下，不考。" aria-label="老师说的重点">${text}</textarea>
           ${running ? html`<div style="display:flex;flex-direction:column;gap:6px">
-              <span class="state run">${focus.job.stage || '分析中'} ${pct(focus.job.progress)}</span>
-              <div class="bar"><i style="width:${pct(focus.job.progress)}"></i></div></div>`
+              <span class="state run">${focus.job.stage || (queued ? '排队中，马上开始' : '分析中')}${focus.job.progress != null ? ` ${pct(focus.job.progress)}` : ''}</span>
+              <div class="bar ${focus.job.progress == null ? 'indet' : ''}"><i style="width:${pct(focus.job.progress)}"></i></div></div>`
             : focus.job?.status === 'failed' ? html`<div class="notice"><span class="grow">${focus.job.error?.message || '分析没有完成'}</span><button class="link" data-act="retry">重试</button></div>`
             : html`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
               <span class="muted small">${focus.analyzed_at && !changed ? '已分析，改了内容后再分析一次' : '每句话会对应到课件里的知识点'}</span>
@@ -82,12 +85,12 @@ export async function mount(el, ctx) {
   </div>`;
 
   const ensurePoll = () => {
-    if (focus.job && focus.job.status === 'running' && !stopPoll) {
+    if (active() && !stopPoll) {
       stopPoll = ctx.poll(async () => {
         focus = await api.focus(cid);
-        if (!focus.job || focus.job.status !== 'running') {
+        if (!active()) {
           stopPoll(); stopPoll = null;
-          if (!focus.job) toast('重点已分析');
+          if (!focus.job || focus.job.status === 'done') toast('重点已分析');
           ctx.refreshShell();
         }
         render();
@@ -106,7 +109,7 @@ export async function mount(el, ctx) {
       textDraft = null;
       render(); ensurePoll(); ctx.refreshShell();
     },
-    retry: async () => { await api.retryJob(focus.job.id); await load(); render(); ensurePoll(); },
+    retry: async () => { await api.retryJob(focus.job.id); await load(); render(); ensurePoll(); ctx.refreshShell(); },
     toggle: async (b) => {
       const kid = b.dataset.kp;
       const wasOn = b.dataset.onState === 'true';

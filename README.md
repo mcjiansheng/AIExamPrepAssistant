@@ -15,6 +15,12 @@
 
 当前进度和下一步见 `STATE.md`，已定的设计见 `docs/设计/设计摘要.md`。
 
+## 本机运行
+
+执行 `python3 server/app.py --mock-model`，打开 [127.0.0.1:8765](http://127.0.0.1:8765)。这会启动真实 HTTP 和 SQLite，模型使用离线模拟。去掉 `--mock-model` 时，服务从 `LONGCAT_API_KEY` 或 `local/api_key/` 读取配置。上传原件、数据库和模型调用用量记录保存在被忽略的 `local/data/`。
+
+后端离线测试命令为 `python3 -m unittest discover -s server/tests`。
+
 ## 目录
 
 | 位置 | 内容 |
@@ -28,7 +34,8 @@
 | `docs/展示网页/` | 设计全景展示页，浏览器直接打开 |
 | `schema/` | 数据结构 v0.2 和校验脚本 |
 | `docs/接口合同/` | 后端 API 合同 v0（`api-v0.md`） |
-| `web/` | WebUI 前端；没有后端时自动用演示数据，见 `web/README.md` |
+| `web/` | WebUI 前端，没有后端时自动用演示数据，见 `web/README.md` |
+| `server/` | Python 标准库后端和离线测试 |
 | `docs/实施记录/` | 已完成任务的过程与验证记录 |
 | `docs/协作/` | 任务合同、验证者提示词、实施记录、本地交接的模板 |
 | `local/` | 课件资料、API key、含课件内容的评测报告、截图、交接文档。只在本机，被 git 忽略 |
@@ -42,4 +49,4 @@
 | AI 工具 | 参与内容 |
 |---|---|
 | Claude | 设计、文档、开发（WebUI 前端）、测试（前端走查） |
-| Codex | 设计、文档 |
+| Codex | 设计、文档、开发（后端与 WebUI 联调）、测试 |

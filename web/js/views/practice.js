@@ -19,7 +19,7 @@ export async function mount(el, ctx) {
           <div class="meta">${fmtDate(e.created_at)}，${e.question_count} 道题</div></div>
         ${e.status === 'finished'
           ? html`<span class="serif" style="font-size:17px;font-weight:600">${e.score}<span class="muted small"> / ${e.total} 分</span></span>`
-          : html`<span class="state run">${e.status === 'generating' ? '出题中' : `做到 ${e.answered} / ${e.question_count}`}</span>`}
+          : html`<span class="state run">${e.status === 'generating' ? '查看出题进度' : `做到 ${e.answered} / ${e.question_count}`}</span>`}
       </a></li>`)}</ul>`
     : hasTopics ? html`<div class="panel empty"><h2>做一套题检验一下</h2>
         <p>题目按你的计划和老师的重点出，每道题都标出处。做完会更新掌握情况，计划跟着调整。</p>
