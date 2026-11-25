@@ -269,6 +269,7 @@ class Exams:
         comments = data.setdefault("comments", [])
         hard_tries = data.setdefault("hard_tries", 0)
         soft_used = data.setdefault("soft_used", False)
+        swapped = data.setdefault("swapped", False)
         while True:
             try:
                 if "draft" not in data:
@@ -285,20 +286,30 @@ class Exams:
                 comments[:] = ["求解程序多次运行失败，请改出理解类简答题"]
                 hard_tries, soft_used = 0, False
                 data.clear()
-                data.update(comments=comments, hard_tries=hard_tries, soft_used=soft_used, fallback=True)
+                data.update(comments=comments, hard_tries=hard_tries, soft_used=soft_used, fallback=True, swapped=swapped)
                 save()
                 continue
             except OutputError:
                 hard, soft, notes, checked = ["题目多次未通过格式或出处核对"], [], [], False
 
             if hard and hard_tries >= 2:
-                replacement = next((entry for entry in task["spares"] if entry["topic_title"] == spec["topic_title"]), None)
-                if replacement is None and task["spares"]:
-                    replacement = task["spares"][0]
+                replacement = None
+                if not swapped:
+                    replacement = next((entry for entry in task["spares"] if entry["topic_title"] == spec["topic_title"]), None)
+                    if replacement is None and task["spares"]:
+                        replacement = task["spares"][0]
                 if replacement:
                     task["spares"].remove(replacement)
                     spec.update(replacement)
+                    hard_tries, soft_used, swapped = 0, False, True
+                elif spec["type"] == "calc":
+                    spec["type"] = "short"
+                    comments[:] = ["计算题多次未通过核对，请改出理解类简答题"]
                     hard_tries, soft_used = 0, False
+                    data.clear()
+                    data.update(comments=comments, hard_tries=hard_tries, soft_used=soft_used, fallback=True, swapped=swapped)
+                    save()
+                    continue
                 else:
                     with self.app.db(write=True) as db:
                         db.execute("DELETE FROM questions WHERE id=?", (qid,))
@@ -324,7 +335,7 @@ class Exams:
             fallback = data.get("fallback", False)
             data.clear()
             comments = hard or soft
-            data.update(hard_tries=hard_tries, soft_used=soft_used, comments=comments, fallback=fallback)
+            data.update(hard_tries=hard_tries, soft_used=soft_used, comments=comments, fallback=fallback, swapped=swapped)
             save()
 
     @staticmethod

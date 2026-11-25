@@ -39,6 +39,7 @@ def verify(client, kind, draft, pages, saved, save, code=None):
             result = ask("readback", "readback", {**public, "code": code})
             if not result["ok"]:
                 hard.append("题干与求解过程的条件不一致")
+                return hard, soft, hints, True
         for n, step in enumerate(draft["steps"], 1):
             review = {**public, "step": step}
             first = ask(f"v4_{n}", "v4", review)

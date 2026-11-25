@@ -597,3 +597,25 @@ class ReviewFixesTest(ApiCase):
         answer = "由输入井和输出井、输入缓冲区和输出缓冲区、输入进程和输出进程组成"
         self.assertTrue(reveals_answer("它由输入井和输出井、输入缓冲区和输出缓冲区组成", "short", answer, None, ""))
         self.assertFalse(reveals_answer("想想数据先放在磁盘上的哪里", "short", answer, None, ""))
+
+    def test_hard_failure_swaps_spare_at_most_once_and_calc_falls_back_to_short(self):
+        self.lessons("一：定义甲", "二：定义乙", "三：定义丙", "四：定义丁", "五：定义戊", "六：定义己")
+        seen = {"readback": 0, "v4_on_calc": 0}
+        original = self.app.materials.model.complete
+
+        def replace(step, system, user):
+            if step == "readback":
+                seen["readback"] += 1
+                return json.dumps({"ok": False, "reason": "条件不一致"})
+            if step == "v4" and "cfproblem" not in user and "\"table\"" in user:
+                seen["v4_on_calc"] += 1
+            return None
+
+        self.patch_model(replace)
+        exam = self.exam(1, kind="calc")
+        self.assertEqual(self.run_job()["status"], "done")
+        q = self.request("GET", "/exams/" + exam["id"])[1]["questions"][0]
+        self.assertEqual(q["type"], "short")
+        self.assertIn("已改为简答题", q["hints"][0])
+        self.assertEqual(seen["readback"], 6)
+        self.assertEqual(seen["v4_on_calc"], 0)
