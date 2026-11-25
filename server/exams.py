@@ -294,8 +294,9 @@ class Exams:
                 data.update(comments=comments, hard_tries=hard_tries, soft_used=soft_used, fallback=True, swapped=swapped)
                 save()
                 continue
-            except OutputError:
-                hard, soft, notes, checked = ["题目多次未通过格式或出处核对"], [], [], False
+            except OutputError as error:
+                # 带上具体原因：重写时模型才知道上一版错在哪
+                hard, soft, notes, checked = [f"上一版多次没有通过格式或出处核对，最后一次的问题：{error}"], [], [], False
 
             if hard and hard_tries >= 2:
                 replacement = None

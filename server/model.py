@@ -2,6 +2,7 @@
 import base64
 import http.client
 import json
+import logging
 import os
 import re
 import threading
@@ -32,7 +33,8 @@ def call_json(client, step, system, user, check, images=None):
             check(data)
             return data
         except (ValueError, KeyError, TypeError, AttributeError) as error:
-            last_error = str(error)
+            last_error = f"缺少字段 {error}" if isinstance(error, KeyError) else str(error)
+            logging.warning("%s 输出未通过校验：%s", step, last_error)
             prompt = f"{user}\n\n上次输出未通过校验：{last_error}\n请按这个错误修正输出。"
     raise OutputError(last_error)
 

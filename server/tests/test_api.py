@@ -586,6 +586,27 @@ class ReviewFixesTest(ApiCase):
         self.assertEqual(second["hints"][0], "资料里没有适合出计算题的知识点，这道按简答题出")
         self.assertEqual(steps.count("cfproblem"), 1)
 
+    def test_rejected_explanation_is_told_exactly_what_was_wrong(self):
+        self.lessons("矩阵乘法：按行列相乘求和")
+        prompts = []
+        def replace(step, system, user):
+            if step != "cfexplain":
+                return None
+            prompts.append(user)
+            reply = json.loads(original(step, system, user))
+            if len(prompts) == 1:
+                reply["steps"][0]["md"] += " {{不存在的量}}"
+            return json.dumps(reply, ensure_ascii=False)
+        original = self.patch_model(replace)
+        self.exam(1, kind="calc")
+        with self.assertLogs(level="WARNING") as logs:
+            self.assertEqual(self.run_job()["status"], "done")
+        self.assertEqual(len(prompts), 2)
+        feedback = prompts[1].split("上次输出未通过校验：", 1)[1]
+        self.assertIn("{{不存在的量}} 不是求解结果里的量", feedback)
+        self.assertIn("{{answer}}", feedback)
+        self.assertTrue(any("cfexplain 输出未通过校验" in line for line in logs.output))
+
     def test_model_failures_never_disable_the_client(self):
         import io
         import os

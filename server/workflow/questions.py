@@ -56,12 +56,13 @@ def refs_check(refs, pages):
     for ref in refs:
         require(isinstance(ref, dict) and type(ref["page"]) is int, "出处应为资料 ID、整数页码和引文")
         key = ref["material_id"], ref["page"]
-        require(key in pages, "引用的页不在这道题可用的资料里")
+        require(key in pages, f"引用了第 {ref['page']} 页，这道题只能引用这些页：{'、'.join(str(p) for _, p in sorted(pages))}")
         valid_text(ref["quote"], "引文")
         normalized = items.norm_text(ref["quote"])
         source = pages[key]
         require(normalized and (normalized in items.norm_text(source["text"])
-                                or normalized in items.norm_text(source["vision"] or "")), "引用原文没有出现在对应页")
+                                or normalized in items.norm_text(source["vision"] or "")),
+                f"引文“{ref['quote'][:40]}”没有逐字出现在第 {ref['page']} 页，引文要从该页原文里原样摘一句，不要改写")
 
 
 def rubric_check(rubric, kind, score, steps):
@@ -71,9 +72,12 @@ def rubric_check(rubric, kind, score, steps):
     require(isinstance(rubric, list) and 2 <= len(rubric) <= 6, "应有 2 到 6 个评分点")
     for row in rubric:
         valid_text(row["point"], "评分要点")
-        require(type(row["score"]) in (int, float) and 0 <= row["score"] <= score, "评分点分值不正确")
-        require(type(row["step"]) is int and 1 <= row["step"] <= len(steps), "评分点引用的步骤不存在")
-    require(abs(sum(row["score"] for row in rubric) - score) < 1e-8, "评分点分值之和必须等于题目分值")
+        require(type(row["score"]) in (int, float) and 0 <= row["score"] <= score,
+                f"评分点“{row['point'][:20]}”的分值 {row['score']} 不对，应是 0 到 {score} 之间的数")
+        require(type(row["step"]) is int and 1 <= row["step"] <= len(steps),
+                f"评分点“{row['point'][:20]}”引用了第 {row['step']} 步，解析只有 {len(steps)} 步")
+    total = sum(row["score"] for row in rubric)
+    require(abs(total - score) < 1e-8, f"评分点分值之和是 {total:g}，要等于题目分值 {score:g}")
 
 
 def draft(client, spec, comments, saved, save):
@@ -139,10 +143,15 @@ def calculation(client, spec, pages, saved, save):
     def check_explain(data):
         steps = data["steps"]
         require(isinstance(steps, list) and steps, "计算解析应有步骤")
+        allowed = sorted(checks) + ["answer"]
         for step in steps:
             valid_text(step["md"], "解析步骤")
-            require(set(cf.PLACEHOLDER.findall(step["md"])) <= set(checks) | {"answer"}, "引用了不存在的求解量")
-            require(step["table"] is None or step["table"] in tables, "引用了不存在的表格")
+            unknown = sorted(set(cf.PLACEHOLDER.findall(step["md"])) - set(allowed))
+            require(not unknown, f"解析里的 {'、'.join('{{' + name + '}}' for name in unknown)} 不是求解结果里的量，"
+                                 f"占位符只能用：{'、'.join('{{' + name + '}}' for name in allowed)}")
+            require(step["table"] is None or step["table"] in tables,
+                    f"解析引用的表格 {step['table']} 不在求解结果里，"
+                    + (f"可用的表格：{'、'.join(tables)}" if tables else "这道题没有表格，table 填 null"))
             refs_check(step["refs"], pages)
         require(any(step["refs"] for step in steps), "解析至少要引用一段资料原文")
         rubric_check(data["rubric"], "calc", spec["score"], steps)
