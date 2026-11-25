@@ -569,6 +569,23 @@ class ReviewFixesTest(ApiCase):
         options = self.request("GET", "/exams/" + exam["id"])[1]["questions"][0]["options"]
         self.assertTrue(all(not re.match(r"[A-D][.、]", o["text"]) for o in options), options)
 
+    def test_calc_needs_a_computable_point_or_is_asked_as_short(self):
+        self.lessons("矩阵：数字的有序排列", "向量：一组有序的数字", "矩阵乘法：按行列相乘求和")
+        steps = []
+        self.patch_model(lambda step, system, user: steps.append(step))
+        exam = self.exam(2, kind="calc")
+        self.assertEqual(self.run_job()["status"], "done")
+        first, second = self.request("GET", "/exams/" + exam["id"])[1]["questions"]
+        from kb.store import KnowledgeBase
+        with self.app.db() as db:
+            titles = {kp["id"]: kp["title"] for kp in KnowledgeBase(db, self.course["id"]).points()}
+            kp_of = dict(db.execute("SELECT id, kp_id FROM questions WHERE exam_id=?", (exam["id"],)).fetchall())
+        self.assertEqual((first["type"], titles[kp_of[first["id"]]]), ("calc", "矩阵乘法"))
+        self.assertEqual(second["type"], "short")
+        self.assertEqual(second["score"], 2)
+        self.assertEqual(second["hints"][0], "资料里没有适合出计算题的知识点，这道按简答题出")
+        self.assertEqual(steps.count("cfproblem"), 1)
+
     def test_model_failures_never_disable_the_client(self):
         import io
         import os
@@ -636,7 +653,7 @@ class ReviewFixesTest(ApiCase):
         self.assertFalse(reveals_answer("想想数据先放在磁盘上的哪里", "short", answer, None, ""))
 
     def test_hard_failure_swaps_spare_at_most_once_and_calc_falls_back_to_short(self):
-        self.lessons("一：定义甲", "二：定义乙", "三：定义丙", "四：定义丁", "五：定义戊", "六：定义己")
+        self.lessons("一：计算甲", "二：计算乙", "三：计算丙", "四：计算丁", "五：计算戊", "六：计算己")
         seen = {"readback": 0, "v4_on_calc": 0}
         original = self.app.materials.model.complete
 

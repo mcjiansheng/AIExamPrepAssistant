@@ -178,7 +178,8 @@ class MockClient:
                 for line in lines:
                     points.append({
                         "title": line.partition("：")[0][:40], "summary": line,
-                        "pages": [row["page"]], "importance": 3, "terms": [], "modes": [],
+                        "pages": [row["page"]], "importance": 3, "terms": [],
+                        "modes": ["compute"] if re.search(r"计算|求解|相加|相乘|乘法", line) else [],
                     })
             return dump({"knowledge_points": points})
         if task == "topics":
