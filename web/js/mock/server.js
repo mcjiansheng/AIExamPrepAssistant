@@ -1,6 +1,7 @@
 // 演示后端：在浏览器里按 docs/接口合同/api-v0.md 实现全部接口，状态存在 localStorage。
 // 用途：后端没写好时前端能完整走通；也是每个接口的可运行样例。
 // 它不是产品逻辑的参考实现：计划、判分、掌握度这里只做了够演示的简化版，真实规则见 docs/设计/设计修订v2.md。
+// 演示出题失败：地址加 ?fail=exam（整套没出成）或 ?fail=exam-part（最后 2 道没出成）；重试后都能出好。
 
 import { OS_CHAPTERS, FOCUS_KEYWORDS, EXCLUDE_WORDS, EMPH_WORDS, SEED_FOCUS_TEXT, DEFAULT_FORMAT, QUESTION_POOL } from './data.js';
 
@@ -9,6 +10,10 @@ const MULT = { excluded: 0, none: 1, mentioned: 2.5, emphasized: 4, conflict: 4 
 const MASTERY_COEF = { new: 1, shaky: 1.2, mastered: 0.3 };
 
 let S = null;   // 在文件末尾初始化（依赖下面定义的函数）
+const FAIL = new URLSearchParams(globalThis.location?.search || '').get('fail');
+const pendingQ = (q) => q.status === 'generating' || q.status === 'verifying';
+// 计分、计数的题：隐藏的不算；出题结束后还没出好的（没出成）也不算
+const counted = (e, q) => q.status !== 'hidden' && (e.status === 'generating' || !pendingQ(q));
 
 function load() {
   try {
@@ -143,7 +148,11 @@ function tick() {
         m.stage = p < 0.2 ? '读取文字' : '整理知识点';
       }
     }
-    if (j.kind === 'exam') advanceExam(S.exams[j.target_id], t);
+    if (j.kind === 'exam') {
+      advanceExam(S.exams[j.target_id], t);
+      if (p >= 1) settleExam(j);
+      continue;
+    }
     if (p >= 1) { j.status = 'done'; complete(j); }
   }
   for (const m of Object.values(S.materials)) {
@@ -289,7 +298,7 @@ function steps(course) {
   const focus = course.focus.job_id ? 'doing' : conflictSuggestions(course).length ? 'attention' : course.focus.analyzed_at ? 'done' : 'todo';
   const plan = !course.plan ? 'todo' : course.plan.stale ? 'attention' : 'done';
   const exams = course.exams.map((e) => S.exams[e]).filter(Boolean);
-  const practice = !exams.length ? 'todo' : exams.some((e) => e.status !== 'finished') ? 'doing' : 'done';
+  const practice = !exams.length ? 'todo' : { generating: 'doing', ready: 'doing', finished: 'done', failed: 'attention' }[exams[0].status];
   return { materials, focus, plan, practice };
 }
 
@@ -459,6 +468,8 @@ function createExam(course, count, scope, { instant = false, title, offsetMs = 0
   if (!instant) {
     const j = newJob('exam', eid, 1200 + n * 1400 + 1700, ['出题中', '验证中']);
     e.job_id = j.id;
+    if (FAIL === 'exam') e.questions.forEach((q) => { q._fail = true; });
+    if (FAIL === 'exam-part') e.questions.slice(-2).forEach((q) => { q._fail = true; });
   }
   return e;
 }
@@ -466,10 +477,24 @@ function createExam(course, count, scope, { instant = false, title, offsetMs = 0
 function advanceExam(e, t) {
   if (!e || e.status !== 'generating') return;
   for (const q of e.questions) {
+    if (q._fail) continue;
     if (q.status === 'generating' && t >= q._ready_at) q.status = 'verifying';
     if (q.status === 'verifying' && t >= q._verified_at) q.status = 'ready';
   }
-  if (e.questions.every((q) => q.status !== 'generating' && q.status !== 'verifying')) { e.status = 'ready'; e.job_id = null; }
+}
+
+/** 出题任务结束：有可作答的题就是 ready，一道都没有就是 failed（同后端） */
+function settleExam(j) {
+  const e = S.exams[j.target_id];
+  if (!e || e.status !== 'generating') { j.status = 'done'; return; }
+  for (const q of e.questions) if (!q._fail && pendingQ(q)) q.status = 'ready';
+  const failed = e.questions.filter((q) => q._fail).length;
+  const usable = e.questions.some((q) => !pendingQ(q) && q.status !== 'hidden');
+  if (failed) {
+    j.status = 'failed';
+    j.error = { message: usable ? `${failed} 道题多次没有通过检查，没有出成` : 'LongCat 连接或响应暂时异常，连续 5 次没有成功', retryable: true };
+  } else j.status = 'done';
+  e.status = usable ? 'ready' : 'failed';
 }
 
 function qView(q) {
@@ -484,7 +509,7 @@ function examView(e) {
   return {
     id: e.id, title: e.title, created_at: e.created_at, status: e.status,
     job: e.job_id ? jobView(S.jobs[e.job_id]) : null, format_basis: e.format_basis,
-    questions: qs, score: e.score, total: e.questions.filter((q) => q.status !== 'hidden').reduce((s, q) => s + q.score, 0),
+    questions: qs, score: e.score, total: e.questions.filter((q) => counted(e, q)).reduce((s, q) => s + q.score, 0),
   };
 }
 
@@ -535,6 +560,8 @@ function doGrade(q, marks, course) {
 
 function finish(e, course) {
   if (e.result) return e.result;
+  if (e.status === 'failed') throw new HttpError(409, 'conflict', '这套题没有出成，可以重试或删除');
+  e.questions = e.questions.filter((q) => !pendingQ(q));   // 没出成的题不再出
   e.status = 'finished';
   const live = e.questions.filter((q) => q.status !== 'hidden');
   e.score = live.reduce((s, q) => s + (q.attempt?.score || 0), 0);
@@ -566,7 +593,15 @@ export const routes = [
       j.retry_ids = j.material_ids.filter((mid) => S.materials[mid]?.status === 'failed' && S.materials[mid].error?.retryable);
       for (const mid of j.retry_ids) Object.assign(S.materials[mid], { status: 'extracting', stage: '分组成主题', progress: 0.6, error: null });
     }
-    j.status = 'running'; j.started = now(); j.applied = false;
+    if (j.kind === 'exam') {
+      // 只重出没出成的题，出好的不动
+      const e = getExam(j.target_id);
+      const redo = e.questions.filter((q) => q._fail);
+      redo.forEach((q, i) => { q._fail = false; q._ready_at = now() + 1200 + i * 1400; q._verified_at = q._ready_at + 1600; });
+      e.status = 'generating';
+      j.duration = 1200 + redo.length * 1400 + 1700;
+    }
+    j.status = 'running'; j.started = now(); j.applied = false; j.error = null;
     return jobView(j);
   }],
 
@@ -701,15 +736,26 @@ export const routes = [
 
   ['GET', /^\/courses\/([^/]+)\/exams$/, ([cid]) => getCourse(cid).exams.map((eid) => S.exams[eid]).filter(Boolean).map((e) => {
     const v = examView(e);
-    return { id: v.id, title: v.title, created_at: v.created_at, status: v.status, question_count: v.questions.filter((q) => q.status !== 'hidden').length, answered: v.questions.filter((q) => q.attempt).length, score: v.score, total: v.total };
+    return { id: v.id, title: v.title, created_at: v.created_at, status: v.status, question_count: e.questions.filter((q) => counted(e, q)).length, answered: v.questions.filter((q) => q.attempt).length, score: v.score, total: v.total };
   })],
   ['POST', /^\/courses\/([^/]+)\/exams$/, ([cid], b) => {
     const c = getCourse(cid);
     if (!c.chapters.length) throw new HttpError(409, 'conflict', '先上传资料，整理出知识点后才能出题');
+    if (!c.format.types.some((t) => t.count > 0)) throw new HttpError(409, 'conflict', '考试形式里各题型的题量都是 0，先在重点页设置考试形式');
+    if (b.scope === 'mistakes' && !Object.values(c.kps).some((k) => k.mastery === 'shaky')) throw new HttpError(409, 'conflict', '还没有做错过、需要再练的知识点');
     const count = [5, 10, 20].includes(+b.count) ? +b.count : 10;
     return examView(createExam(c, count, b.scope || 'plan'));
   }],
   ['GET', /^\/exams\/([^/]+)$/, ([eid]) => examView(getExam(eid))],
+  ['DELETE', /^\/exams\/([^/]+)$/, ([eid]) => {
+    const e = getExam(eid);
+    if (e.job_id) delete S.jobs[e.job_id];
+    const c = S.courses[e.course_id];
+    c.exams = c.exams.filter((x) => x !== eid);
+    if (c.plan && e.questions.some((q) => q._changes?.length)) c.plan.stale = true;
+    delete S.exams[eid];
+    return null;
+  }],
   ['POST', /^\/exams\/([^/]+)\/finish$/, ([eid]) => { const e = getExam(eid); const r = finish(e, S.courses[e.course_id]); return { exam: examView(e), ...clone(r) }; }],
   ['GET', /^\/exams\/([^/]+)\/result$/, ([eid]) => { const e = getExam(eid); if (!e.result) throw new HttpError(409, 'conflict', '这套题还没完成'); return { exam: examView(e), ...clone(e.result) }; }],
   ['POST', /^\/questions\/([^/]+)\/attempt$/, ([qid], b) => { const { q, course } = getQuestion(qid); return doAttempt(q, b?.response ?? null, course); }],

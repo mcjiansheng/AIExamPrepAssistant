@@ -1,6 +1,6 @@
 """Product verification routing and three-tier results."""
 from core import dump
-from model import DATA_RULE, BudgetExhausted, call_json, require
+from model import DATA_RULE, call_json, require
 from workflow import items
 from workflow.llm import OutputError
 
@@ -39,6 +39,7 @@ def verify(client, kind, draft, pages, saved, save, code=None):
             result = ask("readback", "readback", {**public, "code": code})
             if not result["ok"]:
                 hard.append("题干与求解过程的条件不一致")
+                return hard, soft, hints, True
         for n, step in enumerate(draft["steps"], 1):
             review = {**public, "step": step}
             first = ask(f"v4_{n}", "v4", review)
@@ -69,9 +70,6 @@ def verify(client, kind, draft, pages, saved, save, code=None):
                 agrees = sum(compare(row["answer"]) for row in solves)
                 if agrees != len(solves):
                     hints.append("独立作答与参考答案有出入，建议核对解析")
-    except BudgetExhausted:
-        hints.append("已核对题目格式和出处，模型检查额度已用完")
-        return hard, soft, hints, False
     except OutputError:
         hints.append("有一项模型检查多次未完成，可查看出处核对")
         return hard, soft, hints, False

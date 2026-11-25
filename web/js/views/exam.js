@@ -1,6 +1,6 @@
 // 作答（沉浸）：一次一题；客观题代码判分，主观题对照评分点自评；出处、提示、报错
 import { api } from '../api.js';
-import { html, bind, sheet, toast } from '../ui.js';
+import { html, bind, sheet, toast, confirmSheet } from '../ui.js';
 import { QTYPE, REPORT } from '../labels.js';
 import { blocks, refTag, openPage } from './blocks.js';
 import { setContext, show as showAssistant } from '../assistant.js';
@@ -18,22 +18,27 @@ export async function mount(el, ctx) {
 
   const generating = () => exam.status === 'generating' && !['done', 'failed'].includes(exam.job?.status);
   const jobError = () => exam.status !== 'finished' && exam.job?.status === 'failed' ? exam.job.error : null;
-  const live = () => exam.questions.filter((q) => q.status !== 'hidden');
+  const pending = (q) => q.status === 'generating' || q.status === 'verifying';
+  // 出题任务已经结束还没出好的题：没出成，不能作答也不计分（“继续出题”会重新出）
+  const stuck = (q) => pending(q) && exam.status !== 'generating';
+  const live = () => exam.questions.filter((q) => q.status !== 'hidden' && !stuck(q));
   const graded = (q) => q.attempt?.state === 'graded';
-  const allDone = () => exam.status !== 'generating' && exam.questions.length > 0 && live().every(graded);
-  const firstOpen = () => Math.max(0, exam.questions.findIndex((q) => q.status !== 'hidden' && !graded(q)));
+  const allDone = () => exam.status === 'ready' && live().length > 0 && live().every(graded);
+  const open = (q) => q.status !== 'hidden' && !stuck(q) && !graded(q);
+  const firstOpen = () => Math.max(0, exam.questions.findIndex(open));
   idx = exam.status === 'finished' ? 0 : firstOpen();
 
   const dotClass = (q, i) => {
     const c = [i === idx ? 'cur' : ''];
-    if (q.status === 'hidden') c.push('gone');
-    else if (q.status === 'generating' || q.status === 'verifying') c.push('wait');
+    if (q.status === 'hidden' || stuck(q)) c.push('gone');
+    else if (pending(q)) c.push('wait');
     else if (graded(q)) c.push(q.attempt.score >= q.score ? 'ok' : q.attempt.score > 0 ? 'part' : 'bad');
     else if (q.attempt) c.push('part');
     return c.join(' ');
   };
 
   const render = () => {
+    if (exam.status === 'failed') return renderFailed();
     const q = exam.questions[idx];
     const failure = jobError();
     setContext({ view: 'exam', exam_id: eid, question_id: q && q.status !== 'generating' ? q.id : undefined });
@@ -46,13 +51,13 @@ export async function mount(el, ctx) {
           <div class="p">${generating() ? '出题中，' : ''}已答 ${done} / ${live().length}</div>
           <button class="btn ghost small" data-act="ask">问助手</button>
         </div>
-        <div class="dots" role="tablist" aria-label="题号">${exam.questions.map((x, i) => html`<button class="dot ${dotClass(x, i)}" data-act="jump" data-i="${i}" aria-label="第 ${i + 1} 题" aria-selected="${i === idx}">${i + 1}</button>`)}</div>
+        <div class="dots" role="tablist" aria-label="题号">${exam.questions.map((x, i) => html`<button class="dot ${dotClass(x, i)}" data-act="jump" data-i="${i}" aria-label="第 ${i + 1} 题${stuck(x) ? '，没出成' : ''}" aria-selected="${i === idx}">${i + 1}</button>`)}</div>
       </div>
       <div style="padding:16px">
         ${exam.format_basis === 'default' ? html`<p class="muted small" style="margin:0 4px 12px">题型分布为默认设置，未必与真实考试一致</p>` : ''}
-        ${failure ? html`<div class="notice" role="status">
-          <span class="grow">${failure.message}</span>
-          ${failure.retryable ? html`<button class="link" data-act="retry">重试</button>` : ''}
+        ${failure ? html`<div class="notice" role="status" style="margin-bottom:12px">
+          <span class="grow">${failure.message.replace(/[。.]$/, '')}。出好的题可以照常作答。</span>
+          ${failure.retryable ? html`<button class="link" data-act="retry">继续出题</button>` : ''}
         </div>` : exam.job?.status === 'done' && exam.job.stage?.includes('有限') ? html`<p class="muted small">${exam.job.stage}</p>` : ''}
         ${q ? html`<article class="panel q" aria-live="polite">${question(q)}</article>` : ''}
       </div>
@@ -63,16 +68,29 @@ export async function mount(el, ctx) {
       </div></div>`;
   };
 
+  // 一道可作答的题都没出成：说明原因，给重试和删除，不展示空的作答界面
+  const renderFailed = () => {
+    setContext({ view: 'exam', exam_id: eid });
+    const error = exam.job?.error;
+    el.innerHTML = html`
+      <div class="exam-top"><div class="bar1">
+        <button class="icon-btn" data-act="exit" aria-label="退出">✕</button>
+        <div class="t">${exam.title}</div>
+      </div></div>
+      <div style="padding:16px"><div class="panel empty" role="status">
+        <h2>这套题没有出成</h2>
+        <p>${error?.message || '出题没有完成'}</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          ${error?.retryable ? html`<button class="btn" data-act="retry">重试</button>` : html`<a class="btn" href="#/c/${cid}/practice">返回练习</a>`}
+          <button class="btn ghost" data-act="remove">删除这套</button>
+        </div>
+      </div></div>`;
+  };
+
   const primary = (q) => {
     if (exam.status === 'finished') return html`<a class="btn" href="#/c/${cid}/exam/${eid}/result">查看结果</a>`;
-    if (!q || q.status === 'generating' || q.status === 'verifying') {
-      if (jobError() && !live().some((item) => item.status === 'ready' || item.status === 'disputed')) {
-        return html`<a class="btn" href="#/c/${cid}/practice">返回练习</a>`;
-      }
-      if (jobError()) return nextOrFinish();
-      return html`<button class="btn" disabled>${q?.status === 'verifying' ? '验证完就能作答' : '出题中…'}</button>`;
-    }
-    if (q.status === 'hidden') return nextOrFinish();
+    if (!q || q.status === 'hidden' || stuck(q)) return nextOrFinish();
+    if (pending(q)) return html`<button class="btn" disabled>${q.status === 'verifying' ? '验证完就能作答' : '出题中…'}</button>`;
     if (!q.attempt) {
       const d = drafts[q.id];
       if (q.type === 'single') return html`<button class="btn" data-act="submit" ${d ? '' : 'disabled'}>提交</button>`;
@@ -95,9 +113,9 @@ export async function mount(el, ctx) {
     const head = html`<div class="q-head"><div class="grow">
         <div class="q-no">第 ${q.index} 题<span>${QTYPE[q.type]}，${q.score} 分</span></div>
         <div class="q-topic">${q.topic_title}</div></div>
-      ${q.status !== 'generating' && q.status !== 'hidden' && exam.status !== 'finished' ? html`<button class="icon-btn" data-act="report" aria-label="报错" title="这道题有问题">⚑</button>` : ''}</div>`;
+      ${!pending(q) && q.status !== 'hidden' && exam.status !== 'finished' ? html`<button class="icon-btn" data-act="report" aria-label="报错" title="这道题有问题">⚑</button>` : ''}</div>`;
+    if (stuck(q)) return html`${head}<p class="muted">这道题没出成，不计分。</p>`;
     if (q.status === 'generating' || (q.status === 'verifying' && !q.stem.length)) {
-      if (jobError()) return html`${head}<p class="muted">这道题还没出好。</p>`;
       const status = q.status === 'verifying' ? '验证中' : '出题中';
       return html`${head}<div class="skeleton" aria-label="${status}"><i style="width:92%"></i><i style="width:76%"></i><i style="width:84%"></i></div>
         <p class="muted small">${status}。可以先做其他题。</p>`;
@@ -208,6 +226,12 @@ export async function mount(el, ctx) {
         button.disabled = false;
       }
     },
+    remove: async () => {
+      if (!(await confirmSheet({ title: '删除这套题？', text: '删除后不能恢复。', ok: '删除', danger: true }))) return;
+      await api.deleteExam(eid);
+      toast('已删除这套题');
+      ctx.go(`#/c/${cid}/practice`);
+    },
     jump: (b) => go(+b.dataset.i),
     prev: () => go(idx - 1),
     next: () => go(idx + 1),
@@ -215,7 +239,7 @@ export async function mount(el, ctx) {
       const n = exam.questions.length;
       for (let k = 1; k <= n; k++) {
         const j = (idx + k) % n, q = exam.questions[j];
-        if (q.status !== 'hidden' && !graded(q)) return go(j);
+        if (open(q)) return go(j);
       }
       go(idx + 1);
     },
@@ -249,6 +273,7 @@ export async function mount(el, ctx) {
       announce(r.mastery_changes);
     },
     finish: async () => {
+      if (jobError() && !(await confirmSheet({ title: '完成这一套？', text: '还有题没出成，完成后不再补出，只按出好的题计分。', ok: '完成本套' }))) return;
       await api.finishExam(eid);
       ctx.go(`#/c/${cid}/exam/${eid}/result`);
     },

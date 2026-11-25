@@ -1,6 +1,6 @@
 """Structured question generation and independent verification."""
 from core import dump
-from model import DATA_RULE, BudgetExhausted, call_json, require
+from model import DATA_RULE, call_json, require
 from workflow import compute_first as cf, items, sandbox
 from workflow.llm import OutputError
 

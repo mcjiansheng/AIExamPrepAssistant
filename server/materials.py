@@ -180,6 +180,7 @@ class Materials:
         with app.db() as db:
             db.executescript(SCHEMA)
         app.job_handlers["ingest"] = self.ingest
+        app.job_retry_hooks["ingest"] = self.prepare_retry
         app.materials = self
         api.add("GET", "/courses/([^/]+)/materials", self.list)
         api.add("POST", "/courses/([^/]+)/materials", self.upload, multipart)

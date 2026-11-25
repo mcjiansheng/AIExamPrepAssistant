@@ -93,6 +93,7 @@ export const api = {
   createExam: (cid, b) => post(`/courses/${e(cid)}/exams`, b),
   exam: (eid) => get(`/exams/${e(eid)}`),
   finishExam: (eid) => post(`/exams/${e(eid)}/finish`),
+  deleteExam: (eid) => del(`/exams/${e(eid)}`),
   examResult: (eid) => get(`/exams/${e(eid)}/result`),
   attempt: (qid, response) => post(`/questions/${e(qid)}/attempt`, { response }),
   grade: (qid, marks) => post(`/questions/${e(qid)}/grade`, { marks }),

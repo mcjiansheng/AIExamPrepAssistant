@@ -108,6 +108,8 @@ class App:
         data_dir.mkdir(parents=True, exist_ok=True)
         self.mock_model = mock_model
         self.job_handlers = {}
+        self.job_end_hooks = {}       # kind → 函数(job)；任务结束（done 或最终 failed）后调用
+        self.job_retry_hooks = {}     # kind → 函数(db, job)；重试前准备（只重做失败的部分）
         self.transaction = local()
         self.job_signal = Condition()
         with sqlite3.connect(data_dir / "app.sqlite") as db:
@@ -192,8 +194,9 @@ class App:
                 focus_step = "attention"
         row = db.execute("SELECT value FROM plans WHERE course=?", (cid,)).fetchone()
         plan_step = "todo" if row is None else ("attention" if load(row["value"])["stale"] else "done")
-        exams = {row["status"] for row in db.execute("SELECT status FROM exams WHERE course=?", (cid,))}
-        practice = "done" if "finished" in exams else "doing" if exams else "todo"
+        latest = db.execute("SELECT status FROM exams WHERE course=? ORDER BY created_at DESC LIMIT 1", (cid,)).fetchone()
+        practice = "todo" if latest is None else {"generating": "doing", "ready": "doing", "finished": "done",
+                                                  "failed": "attention"}[latest["status"]]
         return {
             "id": cid, "name": course["name"], "exam_date": when,
             "days_left": (date.fromisoformat(when) - date.today()).days if when else None,
@@ -228,10 +231,8 @@ class App:
         with self.db(write=True) as db:
             job = self.job(db, jid)
             if job["status"] == "failed" and load(job["error"])["retryable"]:
-                if job["kind"] == "ingest":
-                    self.materials.prepare_retry(db, job)
-                elif job["kind"] == "focus":
-                    self.focus.prepare_retry(db, job)
+                if job["kind"] in self.job_retry_hooks:
+                    self.job_retry_hooks[job["kind"]](db, job)
                 db.execute("UPDATE jobs SET status='queued', error=NULL, retry_at=0, failures=0 WHERE id=?", (jid,))
             elif job["status"] not in ("queued", "running"):
                 raise conflict("这项任务当前不能重试")
@@ -280,15 +281,18 @@ class App:
 
     def run_job(self, job):
         jid = job["id"]
+        ended = True
         try:
             self.job_handlers[job["kind"]](job)
         except RetryLater as error:
             failures = job["failures"] + 1
             state = "queued" if failures < 5 else "failed"
+            ended = state == "failed"
+            message = f"{error}，稍后自动重试" if state == "queued" else f"{error}，连续 {failures} 次没有成功"
             with self.db(write=True) as db:
                 db.execute(
                     "UPDATE jobs SET status=?, failures=?, retry_at=?, error=? WHERE id=?",
-                    (state, failures, time.time() + 2 ** failures, dump({"message": str(error), "retryable": True}), jid),
+                    (state, failures, time.time() + 2 ** failures, dump({"message": message, "retryable": True}), jid),
                 )
         except JobFailure as error:
             self.fail_job(jid, str(error), error.retryable)
@@ -298,6 +302,8 @@ class App:
         else:
             with self.db(write=True) as db:
                 db.execute("UPDATE jobs SET status='done', progress=1, error=NULL WHERE id=?", (jid,))
+        if ended and job["kind"] in self.job_end_hooks:
+            self.job_end_hooks[job["kind"]](job)
 
     def fail_job(self, jid, message, retryable):
         with self.db(write=True) as db:
