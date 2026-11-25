@@ -78,9 +78,10 @@ export async function mockChat(cid, body, onEvent) {
     const hasKnowledge = course.chapters.length > 0;
     const q = ctx.question_id ? X.getQuestion(ctx.question_id).q : null;
 
-    // 做题时：先给思路，明确要答案才给
-    if (q && q.status !== 'generating' && q.status !== 'hidden') {
-      const wantsAnswer = /(答案|直接告诉|直接说|给我解析|看解析)/.test(text);
+    // 做题时问这道题：先给思路，明确要答案才给；问别的（重排计划、出题……）照常走下面的意图
+    const aboutQuestion = /(这题|这道|怎么想|思路|提示|不会|怎么做|为什么|答案|选什么|选哪|解析|直接告诉|直接说)/.test(text);
+    if (q && aboutQuestion && q.status !== 'generating' && q.status !== 'hidden') {
+      const wantsAnswer = /(答案|选什么|选哪|直接告诉|直接说|给我解析|看解析)/.test(text);
       if (!q.attempt && !wantsAnswer) {
         await tool(`查课件：${q.topic_title}`, 500);
         await say(`先不告诉你答案，给个思路：\n\n${q._hint || '先找出题目考的是哪个概念，再回到课件里它的定义。'}\n\n还是没有头绪的话，说“告诉我答案”，我再讲完整解法。`);

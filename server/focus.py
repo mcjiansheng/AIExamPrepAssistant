@@ -89,6 +89,7 @@ class FocusService:
             db.executescript(SCHEMA)
         app.focus = self
         app.job_handlers["focus"] = self.analyse
+        app.job_retry_hooks["focus"] = self.prepare_retry
         api.add("GET", "/courses/([^/]+)/focus", self.get)
         api.add("PUT", "/courses/([^/]+)/focus", self.put, "json")
         api.add("POST", "/courses/([^/]+)/focus/kps", self.choose_kp, "json")

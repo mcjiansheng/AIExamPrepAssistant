@@ -14,7 +14,7 @@ from app import Server
 from core import App
 
 
-class ApiTest(unittest.TestCase):
+class ApiCase(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -74,6 +74,15 @@ class ApiTest(unittest.TestCase):
     def topic_list(self):
         return self.request("GET", self.path + "/topics")[1]
 
+    def chat(self, value, **context):
+        status, raw = self.request("POST", self.path + "/chat", {"text": value, "context": context})
+        self.assertEqual(status, 200, raw)
+        events = [json.loads(line) for line in raw.splitlines()]
+        self.assertIn(events[-1]["type"], ("done", "error"))
+        return events
+
+
+class ApiTest(ApiCase):
     def test_course_and_jobs_contract(self):
         self.contract(self.request("GET", "/health")[1], "ok model mock_model")
         self.contract(self.course, "id name exam_date days_left steps next_step active_jobs",
@@ -259,13 +268,6 @@ class ApiTest(unittest.TestCase):
         self.assertIn("已改为简答题", questions[0]["hints"][0])
 
 
-    def chat(self, value, **context):
-        status, raw = self.request("POST", self.path + "/chat", {"text": value, "context": context})
-        self.assertEqual(status, 200, raw)
-        events = [json.loads(line) for line in raw.splitlines()]
-        self.assertIn(events[-1]["type"], ("done", "error"))
-        return events
-
     def test_chat_action_proposal_and_citations(self):
         self.upload(("demo.txt", "矩阵：数字的矩形排列。\n向量：一组有序的数字。".encode()))
         self.assertEqual(self.run_job()["status"], "done")
@@ -414,3 +416,184 @@ class ApiTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReviewFixesTest(ApiCase):
+    """审查 v0.1：出题失败、模型失败不永久停用、作答页助手。"""
+
+    def lessons(self, *lines):
+        self.upload(("lesson.txt", "\n".join(lines).encode()))
+        self.assertEqual(self.run_job()["status"], "done")
+
+    def exam(self, count, kind="single"):
+        self.assertEqual(self.request("PUT", self.path + "/exam-format",
+                                      {"types": [{"type": kind, "count": count, "score": 2}]})[0], 200)
+        status, exam = self.request("POST", self.path + "/exams", {"count": count, "scope": "all"})
+        self.assertEqual(status, 200, exam)
+        return exam
+
+    def patch_model(self, replace):
+        original = self.app.materials.model.complete
+        def complete(step, system, user, images=None):
+            reply = replace(step, system, user)
+            return original(step, system, user, images) if reply is None else reply
+        self.app.materials.model.complete = complete
+        self.addCleanup(setattr, self.app.materials.model, "complete", original)
+        return original
+
+    def test_nothing_to_ask_is_rejected_without_creating_an_exam(self):
+        self.lessons("矩阵：数字的有序排列", "向量：一组有序的数字")
+        self.assertEqual(self.request("PUT", self.path + "/exam-format", {"types": []})[0], 200)
+        status, reply = self.request("POST", self.path + "/exams", {"count": 5, "scope": "all"})
+        self.assertEqual(status, 409)
+        self.assertIn("题量都是 0", reply["error"]["message"])
+        self.request("PUT", self.path + "/exam-format", {"types": [{"type": "single", "count": 2, "score": 2}]})
+        status, reply = self.request("POST", self.path + "/exams", {"count": 5, "scope": "mistakes"})
+        self.assertEqual(status, 409)
+        self.assertIn("做错过", reply["error"]["message"])
+        self.assertEqual(self.request("GET", self.path + "/exams")[1], [])
+
+    def test_all_questions_failing_marks_exam_failed_and_retry_redoes_them(self):
+        self.lessons("矩阵：数字的有序排列", "向量：一组有序的数字", "行列式：方阵的一个数")
+        original = self.patch_model(lambda step, system, user: "不是 JSON" if step == "question" else None)
+        exam = self.exam(2)
+        job = self.run_job()
+        self.assertEqual(job["status"], "failed")
+        self.assertIs(job["error"]["retryable"], True)
+        e_path = "/exams/" + exam["id"]
+        failed = self.request("GET", e_path)[1]
+        self.assertEqual(failed["status"], "failed")
+        self.assertEqual(failed["questions"], [])
+        self.assertEqual(failed["total"], 0)
+        self.assertEqual(self.request("POST", e_path + "/finish")[0], 409)
+        summary = self.request("GET", self.path + "/exams")[1][0]
+        self.assertEqual((summary["status"], summary["question_count"]), ("failed", 0))
+        self.assertEqual(self.request("GET", self.path)[1]["steps"]["practice"], "attention")
+        self.app.materials.model.complete = original
+        self.assertEqual(self.request("POST", "/jobs/" + job["id"] + "/retry")[0], 200)
+        self.assertEqual(self.request("GET", e_path)[1]["status"], "generating")
+        self.assertEqual(self.run_job()["status"], "done")
+        ready = self.request("GET", e_path)[1]
+        self.assertEqual(ready["status"], "ready")
+        self.assertEqual([q["index"] for q in ready["questions"]], [1, 2])
+        self.assertTrue(all(q["status"] == "ready" for q in ready["questions"]))
+
+    def test_failure_midway_keeps_ready_questions_and_finish_drops_the_rest(self):
+        from core import JobFailure
+        self.lessons("矩阵：数字的有序排列", "向量：一组有序的数字", "行列式：方阵的一个数")
+        drafts = []
+        def replace(step, system, user):
+            if step == "question":
+                drafts.append(step)
+                if len(drafts) > 1:
+                    raise JobFailure("LongCat 鉴权失败（HTTP 401），检查密钥后可以重试", True)
+            return None
+        self.patch_model(replace)
+        exam = self.exam(3)
+        job = self.run_job()
+        self.assertEqual((job["status"], job["error"]["retryable"]), ("failed", True))
+        e_path = "/exams/" + exam["id"]
+        partial = self.request("GET", e_path)[1]
+        self.assertEqual(partial["status"], "ready")
+        self.assertEqual([q["status"] for q in partial["questions"]], ["ready", "generating", "generating"])
+        self.assertEqual(partial["total"], 2)
+        self.assertEqual(self.request("GET", self.path + "/exams")[1][0]["question_count"], 1)
+        code, final = self.request("POST", e_path + "/finish")
+        self.assertEqual(code, 200, final)
+        self.assertEqual(len(final["exam"]["questions"]), 1)
+        self.assertEqual(self.request("DELETE", e_path)[0], 204)
+        self.assertEqual(self.request("GET", e_path)[0], 404)
+        self.assertEqual(self.request("GET", "/jobs/" + job["id"])[0], 404)
+
+    def test_continue_after_midway_failure_keeps_answers(self):
+        from core import JobFailure
+        self.lessons("矩阵：数字的有序排列", "向量：一组有序的数字", "行列式：方阵的一个数")
+        broken = [False]
+        drafts = []
+        def replace(step, system, user):
+            if step == "question":
+                drafts.append(step)
+                if broken[0] or len(drafts) > 1:
+                    broken[0] = True
+                    raise JobFailure("LongCat 鉴权失败（HTTP 401），检查密钥后可以重试", True)
+            return None
+        original = self.patch_model(replace)
+        exam = self.exam(3)
+        job = self.run_job()
+        e_path = "/exams/" + exam["id"]
+        first = self.request("GET", e_path)[1]["questions"][0]
+        self.request("POST", "/questions/" + first["id"] + "/attempt", {"response": "A"})
+        self.app.materials.model.complete = original
+        self.assertEqual(self.request("POST", "/jobs/" + job["id"] + "/retry")[0], 200)
+        self.assertEqual(self.run_job()["status"], "done")
+        done = self.request("GET", e_path)[1]
+        self.assertEqual(done["status"], "ready")
+        self.assertEqual([q["index"] for q in done["questions"]], [1, 2, 3])
+        self.assertTrue(all(q["status"] == "ready" for q in done["questions"]))
+        self.assertEqual(done["questions"][0]["id"], first["id"])
+        self.assertEqual(done["questions"][0]["attempt"]["response"], "A")
+        self.assertEqual(done["total"], 6)
+
+    def test_model_failures_never_disable_the_client(self):
+        import io
+        import os
+        import urllib.error
+        from unittest import mock
+        import model
+        from core import JobFailure, RetryLater
+        client = model.LongCatClient(self.app.data_dir)
+        ok = json.dumps({"choices": [{"message": {"content": "{\"ok\": true}"}}], "usage": {"total_tokens": 3}}).encode()
+        replies = [urllib.error.URLError("offline")] * 5 + [ok]
+        def urlopen(request, timeout=None):
+            item = replies.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return io.BytesIO(item)
+        with mock.patch.dict(os.environ, {"LONGCAT_API_KEY": "k" * 20}), mock.patch.object(model.urllib.request, "urlopen", urlopen):
+            for _ in range(5):
+                with self.assertRaises(RetryLater):
+                    client.complete("question", "s", "u")
+            self.assertEqual(client.complete("question", "s", "u"), "{\"ok\": true}")
+            denied = urllib.error.HTTPError("https://x", 401, "Unauthorized", {}, io.BytesIO(b"{}"))
+            replies[:] = [denied, ok]
+            with self.assertRaises(JobFailure) as caught:
+                client.complete("question", "s", "u")
+            self.assertIs(caught.exception.retryable, True)
+            self.assertIn("鉴权失败", str(caught.exception))
+            self.assertEqual(client.complete("question", "s", "u"), "{\"ok\": true}")
+
+    def test_exam_page_assistant_routes_intent_and_never_leaks_the_answer(self):
+        self.lessons("矩阵：数字的有序排列", "向量：一组有序的数字")
+        exam = self.exam(1)
+        self.assertEqual(self.run_job()["status"], "done")
+        q = self.request("GET", "/exams/" + exam["id"])[1]["questions"][0]
+        context = {"view": "exam", "exam_id": exam["id"], "question_id": q["id"]}
+        replan = self.chat("重排计划为 2 天，每天 1 小时", **context)
+        self.assertEqual([e["action"]["kind"] for e in replan if e["type"] == "action"], ["replan"])
+        hint = self.chat("这题怎么想", **context)
+        text_ = "".join(e.get("delta", "") for e in hint)
+        self.assertIn("先看下方课件页", text_)
+        self.assertTrue(any(e["type"] == "refs" for e in hint))
+        self.assertFalse(any(e["type"] == "action" for e in hint))
+        self.patch_model(lambda step, system, user: json.dumps({"hint": "答案是 A，直接选它。"}) if step == "chat_hint" else None)
+        leaked = "".join(e.get("delta", "") for e in self.chat("这题给个提示", **context))
+        self.assertNotIn("答案是 A", leaked)
+        self.assertIn("先圈出题干里的已知条件", leaked)
+        reveal = self.chat("能直接告诉我这题选什么吗", **context)
+        self.assertEqual([e["action"]["kind"] for e in reveal if e["type"] == "action"], ["reveal"])
+        self.assertTrue(self.request("GET", "/exams/" + exam["id"])[1]["questions"][0]["peeked"])
+        self.request("POST", "/questions/" + q["id"] + "/attempt", {"response": "A"})
+        explain = "".join(e.get("delta", "") for e in self.chat("这题为什么这样做", **context))
+        self.assertIn("这道题的关键在第一步", explain)
+
+    def test_reveals_answer_rules(self):
+        from chat import reveals_answer
+        options = ["符合定义", "没有关系", "只能用于另一场景", "与定义矛盾"]
+        self.assertTrue(reveals_answer("答案是 A", "single", "A", options, ""))
+        self.assertTrue(reveals_answer("A 是正确的", "single", "A", options, ""))
+        self.assertFalse(reveals_answer("先看选项 A 和 B 的说法有什么不同", "single", "A", options, ""))
+        self.assertTrue(reveals_answer("一共缺页 10 次", "fill", "10", None, "引用串 7,0,1,2"))
+        self.assertFalse(reveals_answer("引用串里有 7 个不同页面", "fill", "10", None, "引用串 7,0,1,2"))
+        answer = "由输入井和输出井、输入缓冲区和输出缓冲区、输入进程和输出进程组成"
+        self.assertTrue(reveals_answer("它由输入井和输出井、输入缓冲区和输出缓冲区组成", "short", answer, None, ""))
+        self.assertFalse(reveals_answer("想想数据先放在磁盘上的哪里", "short", answer, None, ""))

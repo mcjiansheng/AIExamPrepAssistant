@@ -41,24 +41,11 @@ def data_from(prompt):
     return json.JSONDecoder().raw_decode(prompt)[0]
 
 
-class ModelStop(JobFailure):
-    """The real-model run must stop on authentication, quota or repeated failures."""
-
-
-class BudgetExhausted(Exception):
-    """A caller's allotted tokens are exhausted."""
-
-
 class LongCatClient:
     def __init__(self, data_dir):
         self.keys = data_dir.parent / "api_key"
         self.trace = data_dir / "model-usage.jsonl"
         self.lock = threading.Lock()
-        self.budget = None
-        self.spent = 0
-        self.pending = 0
-        self.failures = 0
-        self.stopped = None
         self.chat_mode = "json"
 
     def key(self):
@@ -74,40 +61,14 @@ class LongCatClient:
                         return match.group(0)
         raise JobFailure("没有配置 LongCat 密钥，配置后可以重试", True)
 
-    def begin(self, step, reserve):
-        with self.lock:
-            if self.stopped is not None:
-                raise ModelStop(self.stopped, False)
-            if self.budget is not None and self.spent + self.pending + reserve > self.budget:
-                if step in ("v3", "v4", "v5", "v6", "readback"):
-                    raise BudgetExhausted
-                if not self.pending:
-                    self.stopped = "下一次 LongCat 调用可能超过用量上限"
-                    raise ModelStop(self.stopped, False)
-                raise RetryLater("等待其他模型调用结束后继续")
-            self.pending += reserve
-
-    def end(self, step, reserve, usage, error):
+    def end(self, step, usage, error):
+        # 只记录用量。失败交给 Job 的退避重试处理，不在进程里永久停用模型（修复审查 1.1）。
         with self.lock, self.trace.open("a", encoding="utf-8") as trace:
-            self.pending -= reserve
-            total = usage.get("total_tokens")
-            if total is None and usage:
-                total = usage.get("prompt_tokens", usage.get("input_tokens", 0)) + usage.get(
-                    "completion_tokens", usage.get("output_tokens", 0),
-                )
-            self.spent += total if total is not None else reserve
-            self.failures = 0 if error is None else self.failures + 1
             trace.write(dump({"task": step, "usage": usage, "ok": error is None,
                               "error": type(error).__name__ if error else None}) + "\n")
-            if isinstance(error, ModelStop):
-                self.stopped = str(error)
-            elif self.failures >= 5:
-                self.stopped = "LongCat 连续 5 次调用失败"
-                raise ModelStop(self.stopped, False)
 
-    def request(self, step, path, payload, reserve):
+    def request(self, path, payload):
         key = self.key()
-        self.begin(step, reserve)
         return urllib.request.Request(
             f"{BASE_URL}/{path}", data=dump(payload).encode(),
             headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
@@ -119,16 +80,16 @@ class LongCatClient:
             with error:
                 detail = error.read(8192).decode("utf-8", "replace").casefold()
             if error.code in (401, 403):
-                return ModelStop(f"LongCat 鉴权失败（HTTP {error.code}）", False)
+                return JobFailure(f"LongCat 鉴权失败（HTTP {error.code}），检查密钥后可以重试", True)
             if error.code in (408, 429) or error.code >= 500:
-                return RetryLater(f"LongCat 暂不可用（HTTP {error.code}），稍后继续")
+                return RetryLater(f"LongCat 暂不可用（HTTP {error.code}）")
             if images and error.code in (400, 415, 422) and any(word in detail for word in ("image", "vision", "multimodal")):
                 return UnsupportedVision()
             return JobFailure(f"LongCat 无法处理这次调用（HTTP {error.code}）", False)
-        return RetryLater("LongCat 连接或响应暂时异常，稍后继续")
+        return RetryLater("LongCat 连接或响应暂时异常")
 
-    def json_request(self, step, path, payload, reserve, images=False):
-        request = self.request(step, path, payload, reserve)
+    def json_request(self, step, path, payload, images=False):
+        request = self.request(path, payload)
         error, usage = None, {}
         try:
             with urllib.request.urlopen(request, timeout=100) as response:
@@ -142,7 +103,7 @@ class LongCatClient:
             error = self.failure(exc, images)
             raise error from None
         finally:
-            self.end(step, reserve, usage, error)
+            self.end(step, usage, error)
 
     def complete(self, step, system, user, images=None):
         task = step.partition(":")[0]
@@ -159,19 +120,17 @@ class LongCatClient:
             "thinking": {"type": "disabled"},
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": content}],
         }
-        reserve = len((system + user).encode()) + limit + 256 + len(images) * 8192
-        reply = self.json_request(task, "chat/completions", data, reserve, images)
+        reply = self.json_request(task, "chat/completions", data, images)
         try:
             return reply["choices"][0]["message"].get("content") or ""
         except (IndexError, KeyError, TypeError):
-            raise RetryLater("LongCat 返回了无法读取的回复，稍后继续") from None
+            raise RetryLater("LongCat 返回了无法读取的回复") from None
 
     def tool_intent(self, system, packet, tools):
         data = {"model": MODEL, "instructions": system, "input": dump(packet),
                 "tools": tools, "parallel_tool_calls": False, "max_output_tokens": 1000,
                 "reasoning": {"effort": "none"}, "store": False}
-        reserve = len(dump(data).encode()) + 1200
-        reply = self.json_request("chat_tools", "responses", data, reserve)
+        reply = self.json_request("chat_tools", "responses", data)
         calls = [item for item in reply["output"] if item["type"] == "function_call"]
         if len(calls) != 1:
             raise OutputError(f"模型返回了 {len(calls)} 个工具调用，预期一个")
@@ -183,8 +142,7 @@ class LongCatClient:
     def stream_text(self, system, packet, limit=1400):
         data = {"model": MODEL, "instructions": system, "input": dump(packet), "stream": True,
                 "max_output_tokens": limit, "reasoning": {"effort": "none"}, "store": False}
-        reserve = len(dump(data).encode()) + limit + 200
-        request = self.request("chat_text", "responses", data, reserve)
+        request = self.request("responses", data)
         error, usage, completed = None, {}, False
         try:
             with urllib.request.urlopen(request, timeout=100) as stream:
@@ -205,7 +163,7 @@ class LongCatClient:
             error = self.failure(exc)
             raise error from None
         finally:
-            self.end("chat_text", reserve, usage, error)
+            self.end("chat_text", usage, error)
 
 
 class MockClient:
@@ -273,6 +231,13 @@ class MockClient:
             return dump({"steps": [{"md": "相乘得到 {{乘积}}。", "table": None, "refs": refs}],
                          "rubric": [{"point": "列乘积", "step": 1, "score": args["score"] / 2},
                                     {"point": "算结果", "step": 1, "score": args["score"] / 2}]})
+        if task == "chat_hint":
+            args = data_from(user)
+            return dump({"hint": f"这题考的是“{args['question']['topic_title']}”。先看下方课件页里的定义，再对照题干条件一步步推。"})
+        if task == "chat_explain":
+            args = data_from(user)
+            first = args["solution"]["steps"][0]["blocks"][0].get("text", "")
+            return dump({"text": "这道题的关键在第一步：" + first})
         if task in ("v4", "v5", "v6", "readback"):
             return dump({"ok": True, "reason": "模拟检查"})
         if task == "v3":

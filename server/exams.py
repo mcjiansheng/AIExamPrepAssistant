@@ -10,6 +10,7 @@ from workflow.llm import OutputError
 
 REPORT_KINDS = ("wrong_answer", "wrong_solution", "out_of_scope", "unclear", "wrong_ref")
 READY = ("ready", "disputed")
+PENDING = ("generating", "verifying")   # 还没出好的题
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS exams (
     id TEXT PRIMARY KEY,
@@ -140,9 +141,12 @@ class Exams:
             db.executescript(SCHEMA)
         app.exams = self
         app.job_handlers["exam"] = self.generate
+        app.job_end_hooks["exam"] = self.settle
+        app.job_retry_hooks["exam"] = self.prepare_retry
         api.add("GET", "/courses/([^/]+)/exams", self.list)
         api.add("POST", "/courses/([^/]+)/exams", self.create, "json")
         api.add("GET", "/exams/([^/]+)", self.get)
+        api.add("DELETE", "/exams/([^/]+)", self.delete)
         api.add("POST", "/exams/([^/]+)/finish", self.finish)
         api.add("GET", "/exams/([^/]+)/result", self.result)
         api.add("POST", "/questions/([^/]+)/attempt", self.attempt, "json")
@@ -185,6 +189,16 @@ class Exams:
                 points = [kp for kp in points if kp["topic_id"] in must]
         allowed = [kp for kp in points if kp_states[kp["id"]]["level"] != "excluded"]
         format_ = exam_format(db, cid)
+        if not any(entry["count"] for entry in format_["types"]):
+            raise conflict("考试形式里各题型的题量都是 0，先在重点页设置考试形式")
+        if not allowed:
+            if scope == "mistakes":
+                raise conflict("还没有做错过、需要再练的知识点")
+            if topic_id is not None:
+                raise conflict("这个主题的知识点都被标为不考")
+            if scope == "plan" and self.app.plans.view(db, cid):
+                raise conflict("计划里的必学主题没有可出题的知识点，可以把范围换成“全部”")
+            raise conflict("知识点都被标为不考，没有可出的题")
         slots = spread(format_, min(count, len(allowed)))
         eid = uid("e")
         payload = {"pos": 0, "entries": [], "spares": [], "requested": count, "failed": [], "work": {}}
@@ -233,21 +247,15 @@ class Exams:
                 self.app.checkpoint(db, jid, task["pos"] / len(entries),
                                     f"已处理 {task['pos']} / {len(entries)} 道题", task)
         with self.app.db(write=True) as db:
-            count = db.execute("SELECT count(*) FROM questions WHERE exam_id=? AND status IN ('ready','disputed','hidden')",
-                               (eid,)).fetchone()[0]
-            if count:
-                db.execute("UPDATE exams SET status='ready' WHERE id=? AND status='generating'", (eid,))
+            count = self.usable(db, eid)
             stage = f"已生成 {count} 道题"
-            if count < task["requested"]:
-                if not entries:
-                    stage = "当前范围没有可出题的知识点，或考试形式中的题量为零"
-                elif not task["failed"]:
-                    stage = f"可用知识点有限，已生成 {count} 道题"
+            if count < task["requested"] and not task["failed"]:
+                stage = f"可用知识点有限，已生成 {count} 道题"
             self.app.checkpoint(db, jid, 1, stage, task)
-        if not entries:
-            raise JobFailure(stage, False)
         if task["failed"]:
-            raise JobFailure(f"{len(task['failed'])} 道题未通过检查，已保留通过的题", False)
+            raise JobFailure(f"{len(task['failed'])} 道题多次没有通过检查，没有出成", True)
+        if not count:
+            raise JobFailure("出题用到的资料已被删除，这套题没有出成", False)
 
     def generate_question(self, task, jid, spec):
         data = task["work"]
@@ -294,7 +302,7 @@ class Exams:
                 else:
                     with self.app.db(write=True) as db:
                         db.execute("DELETE FROM questions WHERE id=?", (qid,))
-                    task["failed"].append(qid)
+                    task["failed"].append(dict(spec))   # 留着规格，重试时重出这一道
                     return
             elif hard:
                 hard_tries += 1
@@ -320,6 +328,45 @@ class Exams:
             save()
 
     @staticmethod
+    def usable(db, eid):
+        return db.execute("SELECT count(*) FROM questions WHERE exam_id=? AND status IN ('ready','disputed','hidden')",
+                          (eid,)).fetchone()[0]
+
+    def settle(self, job):
+        """出题任务结束（完成或最终失败）后定下试卷状态：有可作答的题就是 ready，否则 failed。"""
+        with self.app.db(write=True) as db:
+            exam = db.execute("SELECT * FROM exams WHERE id=? AND job_id=?", (job["target_id"], job["id"])).fetchone()
+            if exam is None or exam["status"] != "generating":
+                return
+            status = "ready" if self.usable(db, exam["id"]) else "failed"
+            db.execute("UPDATE exams SET status=? WHERE id=?", (status, exam["id"]))
+
+    def prepare_retry(self, db, job):
+        """只重出没出成的题：放弃过的题按原规格重新排进队列；中途中断的从断点继续。"""
+        task = load(job["payload"])
+        retry = [spec for spec in task["failed"] if isinstance(spec, dict)]
+        for spec in retry:
+            spec.update(qid=uid("q"))
+            task["entries"].append(spec)
+            db.execute(
+                "INSERT INTO questions(id,exam_id,kp_id,position,status,kind,score,topic_title) VALUES (?,?,?,?,'generating',?,?,?)",
+                (spec["qid"], job["target_id"], spec["kp_id"], spec["position"], spec["type"], spec["score"], spec["topic_title"]),
+            )
+        task["failed"] = []
+        db.execute("UPDATE jobs SET payload=? WHERE id=?", (dump(task), job["id"]))
+        db.execute("UPDATE exams SET status='generating' WHERE id=? AND status IN ('ready','failed')", (job["target_id"],))
+
+    def delete(self, eid):
+        with self.app.db(write=True) as db:
+            exam = exam_row(db, eid)
+            answered = db.execute("SELECT 1 FROM mastery_events m JOIN questions q ON q.id=m.question_id WHERE q.exam_id=?",
+                                  (eid,)).fetchone()
+            db.execute("DELETE FROM exams WHERE id=?", (eid,))
+            db.execute("DELETE FROM jobs WHERE id=?", (exam["job_id"],))
+            if answered:
+                stale(db, exam["course"])
+
+    @staticmethod
     def view_question(row):
         hide = row["status"] == "hidden"
         content = load(row["draft"]) if row["draft"] and not hide else {"stem": [], "options": None, "refs": [], "solution": None}
@@ -333,7 +380,8 @@ class Exams:
     def view(self, db, exam):
         qs = [self.view_question(row) for row in db.execute("SELECT * FROM questions WHERE exam_id=? ORDER BY position", (exam["id"],))]
         job = self.app.job(db, exam["job_id"])
-        active = [q for q in qs if q["status"] != "hidden"]
+        active = [q for q in qs if q["status"] != "hidden"
+                  and (exam["status"] == "generating" or q["status"] not in PENDING)]
         score = sum(q["attempt"]["score"] or 0 for q in active if q["attempt"]) if exam["status"] == "finished" else None
         return {"id": exam["id"], "title": exam["title"], "created_at": exam["created_at"],
                 "status": exam["status"], "format_basis": exam["format_basis"], "questions": qs,
@@ -349,7 +397,8 @@ class Exams:
             result = []
             for row in db.execute("SELECT * FROM exams WHERE course=? ORDER BY created_at DESC", (cid,)):
                 view = self.view(db, row)
-                visible = [q for q in view["questions"] if q["status"] != "hidden"]
+                visible = [q for q in view["questions"] if q["status"] != "hidden"
+                           and (row["status"] == "generating" or q["status"] not in PENDING)]
                 result.append({key: view[key] for key in ("id", "title", "created_at", "status", "score", "total")} |
                               {"question_count": len(visible), "answered": sum(q["attempt"] is not None for q in visible)})
             return result
@@ -460,6 +509,10 @@ class Exams:
             exam = exam_row(db, eid)
             if exam["status"] == "generating":
                 raise conflict("这套练习还在出题")
+            if exam["status"] == "failed":
+                raise conflict("这套题没有出成，可以重试或删除")
+            if not exam["result"]:
+                db.execute(f"DELETE FROM questions WHERE exam_id=? AND status IN {PENDING}", (eid,))
             result = load(exam["result"]) if exam["result"] else self.save_result(db, exam)
             return {"exam": self.view(db, exam_row(db, eid)), **result}
 
