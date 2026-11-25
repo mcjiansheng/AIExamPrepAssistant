@@ -1,19 +1,25 @@
 // 练习：试卷列表、出一套题
 import { api } from '../api.js';
-import { html, bind, sheet, fmtDate } from '../ui.js';
+import { html, bind, sheet, confirmSheet, toast, fmtDate } from '../ui.js';
 
 export async function mount(el, ctx) {
   const cid = ctx.course.id;
-  const [exams, topics] = await Promise.all([api.exams(cid), api.topics(cid)]);
-  const hasTopics = topics.chapters.length > 0;
-  const hasShaky = topics.chapters.some((c) => c.topics.some((t) => t.mastery.shaky > 0));
+  let exams, hasTopics, hasShaky;
+  const load = async () => {
+    const [list, topics] = await Promise.all([api.exams(cid), api.topics(cid)]);
+    exams = list;
+    hasTopics = topics.chapters.length > 0;
+    hasShaky = topics.chapters.some((c) => c.topics.some((t) => t.mastery.shaky > 0));
+  };
+  const progress = (e) => e.status === 'finished' ? `得分 ${e.score} / ${e.total}`
+    : e.status === 'failed' ? '出题失败' : e.status === 'generating' ? '出题中' : `做到 ${e.answered} / ${e.question_count}`;
 
-  el.innerHTML = html`<div class="page">
+  const render = () => { el.innerHTML = html`<div class="page">
     <div class="page-head">
       <div><h1>练习</h1><p class="sub">出好的题可以先做，没出好的会接着出现</p></div>
       ${exams.length && hasTopics ? html`<button class="btn" data-act="new">出一套题</button>` : ''}
     </div>
-    ${exams.length ? html`<ul class="panel list">${exams.map((e) => html`<li>
+    ${exams.length ? html`<ul class="panel list">${exams.map((e) => html`<li class="split">
       <a class="row row-link" href="#/c/${cid}/exam/${e.id}${e.status === 'finished' ? '/result' : ''}">
         <div class="grow"><div class="title">${e.title}</div>
           <div class="meta">${fmtDate(e.created_at)}${e.status === 'failed' ? '' : `，${e.question_count} 道题`}</div></div>
@@ -22,15 +28,41 @@ export async function mount(el, ctx) {
           : e.status === 'failed' ? html`<span class="state bad">出题失败</span>`
           : e.status === 'generating' ? html`<span class="state run">出题中</span>`
           : html`<span class="state">做到 ${e.answered} / ${e.question_count}</span>`}
-      </a></li>`)}</ul>`
+      </a>
+      <button class="icon-btn" data-act="menu" data-eid="${e.id}" aria-label="${e.title}的更多操作">⋯</button></li>`)}</ul>`
     : hasTopics ? html`<div class="panel empty"><h2>做一套题检验一下</h2>
         <p>题目按你的计划和老师的重点出，每道题都标出处。做完会更新掌握情况，计划跟着调整。</p>
         <button class="btn" data-act="new">出一套题</button></div>`
     : html`<div class="panel empty"><h2>先上传资料</h2><p>题目从课件里整理出的知识点出。</p>
         <a class="btn" href="#/c/${cid}/materials">去上传资料</a></div>`}
-  </div>`;
+  </div>`; };
+
+  await load();
+  render();
 
   bind(el, {
+    menu: (b) => {
+      const e = exams.find((x) => x.id === b.dataset.eid);
+      const s = sheet({
+        title: e.title,
+        body: html`<p class="muted">${fmtDate(e.created_at)}，${progress(e)}</p>`,
+        foot: html`<button class="btn ghost" data-act="del" style="color:var(--red)">删除这套</button>`,
+        handlers: {
+          del: async () => {
+            s.close();
+            const ok = await confirmSheet({
+              title: '删除这套题？',
+              text: e.answered ? '作答记录会一起删除，掌握情况按剩下的练习重算。删除后不能恢复。' : '删除后不能恢复。',
+              ok: '删除', danger: true,
+            });
+            if (!ok) return;
+            await api.deleteExam(e.id);
+            toast('已删除这套题');
+            await load(); render(); ctx.refreshShell();
+          },
+        },
+      });
+    },
     new: () => {
       let count = 10, scope = 'plan';
       const s = sheet({

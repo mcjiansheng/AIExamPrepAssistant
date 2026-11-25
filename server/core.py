@@ -285,11 +285,13 @@ class App:
         try:
             self.job_handlers[job["kind"]](job)
         except RetryLater as error:
-            failures = job["failures"] + 1
-            state = "queued" if failures < 5 else "failed"
-            ended = state == "failed"
-            message = f"{error}，稍后自动重试" if state == "queued" else f"{error}，连续 {failures} 次没有成功"
             with self.db(write=True) as db:
+                # 读库里的计数：任务运行中有进展时会清零，领取时的 job 行已经过时。行不在了说明试卷连同任务已被删除
+                row = db.execute("SELECT failures FROM jobs WHERE id=?", (jid,)).fetchone()
+                failures = (row["failures"] if row else 0) + 1
+                state = "queued" if failures < 5 else "failed"
+                ended = state == "failed"
+                message = f"{error}，稍后自动重试" if state == "queued" else f"{error}，连续 {failures} 次没有成功"
                 db.execute(
                     "UPDATE jobs SET status=?, failures=?, retry_at=?, error=? WHERE id=?",
                     (state, failures, time.time() + 2 ** failures, dump({"message": message, "retryable": True}), jid),
