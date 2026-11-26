@@ -330,8 +330,12 @@ def update_course(conn, user, cid, changes):
     if updates:
         assignments = ", ".join(f"{name} = ?" for name in updates)
         conn.execute(f"UPDATE courses SET {assignments} WHERE id = ?", (*updates.values(), cid))
+        snapshots = [("courses", {"id": cid}, dict(before))]
+        if updates.keys() & {"exam_date", "daily_cap_min"}:
+            from .plans import replan
+            snapshots += replan(conn, user)
         undo = record(conn, user, label="已修改课程", summary="课程设置已恢复",
-                      affects=COURSE_AREAS, rows=[("courses", {"id": cid}, dict(before))])
+                      affects=COURSE_AREAS, rows=snapshots)
     return {"result": course_view(conn, user, course(conn, user.id, cid)), "affects": COURSE_AREAS, "undo": undo}
 
 
@@ -354,12 +358,13 @@ def delete_course(cid: str, request: Request, user: Principal = Depends(principa
 
 @router.get("/courses/{cid}/home")
 def home(cid: str, request: Request, user: Principal = Depends(principal)):
-    with request.app.state.db.transaction() as conn:
+    from .plans import next_course_tasks
+    with request.app.state.db.transaction(write=True) as conn:
         row = course(conn, user.id, cid)
         states = kp_states(conn, cid)
         latest = conn.execute("SELECT * FROM practice_sessions WHERE course_id = ? ORDER BY created_at DESC LIMIT 1", (cid,)).fetchone()
         return {"course": course_view(conn, user, row, states), "map": map_view(conn, cid, states),
-                "next": [], "weak": weak_kps(conn, user, cid, states),
+                "next": next_course_tasks(conn, user, cid), "weak": weak_kps(conn, user, cid, states),
                 "last_session": session_summary(latest, row["name"], user.timezone) if latest else None}
 
 
@@ -372,5 +377,14 @@ def map_course(cid: str, request: Request, user: Principal = Depends(principal))
 
 @router.get("/kps/{kid}")
 def read_kp(kid: str, request: Request, task_id: str | None = None, user: Principal = Depends(principal)):
-    with request.app.state.db.transaction() as conn:
-        return kp_detail(conn, user, kp(conn, user.id, kid))
+    from .learning import applicable_task
+    from .practice import ensure_kp_quiz
+    with request.app.state.db.transaction(write=True) as conn:
+        point = kp(conn, user.id, kid)
+        item = applicable_task(conn, user, task_id, point)
+        result = kp_detail(conn, user, point)
+        result["quiz"] = ensure_kp_quiz(conn, user, point)
+        if item is not None:
+            ids = load(item["kp_ids"])
+            result["task"] = {"id": item["id"], "index": ids.index(kid) + 1, "total": len(ids)}
+        return result

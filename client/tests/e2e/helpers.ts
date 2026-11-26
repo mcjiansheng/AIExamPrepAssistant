@@ -41,7 +41,7 @@ export async function loginDemo(page: Page) {
   } else {
     await login(page, '13800000000');
   }
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL((url) => url.pathname === '/');
   await expect(page.getByRole('link', { name: /高等数学，还有 3 天考试/ })).toBeVisible();
 }
 

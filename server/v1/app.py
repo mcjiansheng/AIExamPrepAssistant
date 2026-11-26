@@ -12,7 +12,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException
 from starlette.responses import FileResponse, JSONResponse
 
-from . import accounts, auth, courses, demo, events, focus, jobs, materials, undo
+from . import accounts, auth, courses, demo, events, focus, jobs, learning, materials, plans, practice, undo
 from .db import Database, dump, utc_now
 from .errors import ApiError, not_found
 
@@ -91,6 +91,8 @@ def initialize_courses(conn, user_id, kind):
 def initialize_user(conn, user_id, kind):
     conn.execute("INSERT INTO model_limits (user_id) VALUES (?)", (user_id,))
     initialize_courses(conn, user_id, kind)
+    if kind == "demo":
+        demo.seed_study(conn, user_id)
 
 
 def initialize_existing_courses(conn, sms_mode):
@@ -104,13 +106,23 @@ def initialize_existing_courses(conn, sms_mode):
         initialize_courses(conn, user["id"], kind)
 
 
+def initialize_existing_study(conn, sms_mode):
+    if sms_mode == "dev":
+        found = conn.execute("SELECT id FROM users WHERE phone=?", ("13800000000",)).fetchone()
+        if found is not None:
+            demo.seed_study(conn, found["id"])
+
+
 def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=None):
     base = Path(data_dir or os.environ.get("FULLGRID_DATA_DIR", ROOT / "local" / "data"))
     dist = Path(client_dir or ROOT / "client" / "dist").resolve()
     app = FastAPI(title="满格 API", docs_url=None, redoc_url=None, openapi_url=None)
     sms_mode = sms_mode or os.environ.get("SMS_MODE", "dev")
     app.state.db = Database(
-        base / "v1.sqlite", data_migrations={4: lambda conn: initialize_existing_courses(conn, sms_mode)},
+        base / "v1.sqlite", data_migrations={
+            4: lambda conn: initialize_existing_courses(conn, sms_mode),
+            5: lambda conn: initialize_existing_study(conn, sms_mode),
+        },
     )
     app.state.data_dir = base
     app.state.mock_model = mock_model
@@ -140,7 +152,7 @@ def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=Non
     def health():
         return {"ok": True, "version": "1.0", "capabilities": {"ocr": False, "speech": False}, "sms": app.state.sms_mode}
 
-    for module in (auth, accounts, jobs, undo, events, courses, materials, focus):
+    for module in (auth, accounts, jobs, undo, events, courses, materials, focus, plans, learning, practice):
         app.include_router(module.router, prefix="/api/v1")
 
     @app.get("/{path:path}", include_in_schema=False)

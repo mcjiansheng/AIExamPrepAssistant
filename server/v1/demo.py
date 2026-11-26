@@ -9,8 +9,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .auth import Principal
-from .courses import create_course
-from .db import dump, utc_now
+from .courses import create_course, kp_states, readiness, state_of
+from .db import dump, load, utc_now
 from .focus import levels, seed_focus
 
 
@@ -280,3 +280,117 @@ def seed_personal_data(conn, user, courses, now):
         insert(conn, "notifications", {"id": identifier("n"), "user_id": user.id, "kind": kind, "title": title,
                                        "body": body, "href": f"/c/{course['id']}", "created_at": stamp,
                                        "read_at": stamp if read else None})
+
+
+def seed_study(conn, user_id):
+    user = conn.execute("SELECT timezone FROM users WHERE id=?", (user_id,)).fetchone()
+    now = utc_now()
+    zone = ZoneInfo(user["timezone"])
+    today = now.astimezone(zone).date()
+    rows = conn.execute(
+        "SELECT * FROM courses WHERE user_id=? AND sample=0 ORDER BY created_at,rowid", (user_id,),
+    ).fetchall()
+    original = {}
+    for row in rows:
+        original.setdefault(row["seed_key"], row)
+        seed_practice_items(conn, row, zone)
+    if "os" in original:
+        operating = original["os"]["id"]
+        classifications = levels(conn, operating)
+        states = kp_states(conn, operating)
+        eligible = [row for row in conn.execute(
+            "SELECT id,title FROM knowledge_points WHERE course_id=? ORDER BY position", (operating,),
+        ) if classifications.get(row["id"], "none") != "excluded" and states[row["id"]] == "new"]
+        ranks = {"emphasized": 0, "conflict": 0, "mentioned": 1, "none": 2}
+        chosen = min(eligible, key=lambda p: ranks[classifications.get(p["id"], "none")], default=None)
+        if chosen is not None:
+            seed_task(conn, user_id, operating, today, now, kind="learn", title=chosen["title"], minutes=20,
+                      status="todo", reason="还没学", ids=[chosen["id"]])
+            tablet = conn.execute(
+                "SELECT id FROM devices WHERE user_id=? AND kind='tablet' ORDER BY last_seen DESC LIMIT 1",
+                (user_id,),
+            ).fetchone()
+            if tablet is not None:
+                conn.execute(
+                    """INSERT INTO learning_resume(user_id,kind,course_id,kp_id,device_id,updated_at)
+                       VALUES (?,'kp',?,?,?,?) ON CONFLICT(user_id) DO NOTHING""",
+                    (user_id, operating, chosen["id"], tablet["id"], (now - timedelta(hours=2)).isoformat()),
+                )
+    if "math" in original:
+        math_course = original["math"]["id"]
+        seed_task(conn, user_id, math_course, today, now, kind="practice", title="快练 5 道", minutes=10,
+                  status="todo", reason="巩固学过的知识点", ids=[])
+        seed_task(conn, user_id, math_course, today, now, kind="learn", title="洛必达法则", minutes=25,
+                  status="done", reason="课件内容", ids=[])
+
+
+def seed_task(conn, user_id, course_id, today, now, *, kind, title, minutes, status, reason, ids):
+    insert(conn, "schedule_items", {
+        "id": identifier("t"), "user_id": user_id, "course_id": course_id,
+        "date": (today - timedelta(days=1)).isoformat(), "kind": kind, "title": title, "minutes": minutes,
+        "status": status, "reason": reason, "kp_ids": dump(ids), "created_at": (now - timedelta(days=1)).isoformat(),
+    })
+
+
+def seed_practice_items(conn, course, zone):
+    cid, user_id = course["id"], course["user_id"]
+    history = conn.execute(
+        """SELECT * FROM practice_sessions WHERE user_id=? AND course_id=? AND status='finished'
+           ORDER BY created_at,id""", (user_id, cid),
+    ).fetchall()
+    levels_ = levels(conn, cid)
+    covered = [row["id"] for row in conn.execute("SELECT id FROM knowledge_points WHERE course_id=?", (cid,))
+               if levels_.get(row["id"]) in {"emphasized", "conflict", "mentioned"}]
+    if not covered:
+        covered = [row["id"] for row in conn.execute("SELECT id FROM knowledge_points WHERE course_id=?", (cid,))
+                   if levels_.get(row["id"]) != "excluded"]
+    events_for_point = {key: [] for key in covered}
+    for session in history:
+        rows = conn.execute(
+            """SELECT e.*,b.type,b.score,b.options,b.answer FROM learning_events e
+               JOIN bank_questions b ON b.id=e.bank_id
+               WHERE e.session_id=? ORDER BY e.rowid""", (session["id"],),
+        ).fetchall()
+        for index, event in enumerate(rows):
+            if event["kp_id"] in events_for_point:
+                events_for_point[event["kp_id"]].append(event)
+            if event["question_id"] is not None:
+                continue
+            correct = event["outcome"] == "correct"
+            score = event["score"] if correct else math.floor(event["score"] / 2 + 0.5) if event["outcome"] == "partial" else 0
+            response = "（作答）"
+            if event["type"] == "single":
+                response = event["answer"] if correct else next(
+                    option["id"] for option in load(event["options"]) if option["id"] != event["answer"]
+                )
+            qid = identifier("qi")
+            insert(conn, "practice_questions", {
+                "id": qid, "user_id": user_id, "session_id": session["id"], "course_id": cid,
+                "kp_id": event["kp_id"], "bank_id": event["bank_id"], "position": index, "type": event["type"],
+                "score": event["score"], "status": "ready", "check_state": "passed",
+                "attempt": dump({"response": response, "state": "graded", "correct": correct, "score": score,
+                                 "marks": None, "answered_at": event["created_at"]}),
+            })
+            conn.execute("UPDATE learning_events SET question_id=? WHERE id=?", (qid, event["id"]))
+            if not correct:
+                conn.execute("UPDATE mistakes SET question_id=? WHERE bank_id=? AND last_wrong_at=?",
+                             (qid, event["bank_id"], event["created_at"]))
+        if not rows:
+            continue
+        on = datetime.fromisoformat(session["finished_at"]).astimezone(zone).date().isoformat()
+        ratio = sum(state_of(None, None, events_for_point[key]) == "mastered" for key in covered) / len(covered) if covered else 0
+        conn.execute(
+            """INSERT INTO readiness_snapshots(course_id,user_id,date,ratio) VALUES (?,?,?,?)
+               ON CONFLICT(course_id,date) DO NOTHING""", (cid, user_id, on, ratio),
+        )
+        kind = "mock" if session["kind"] == "mock" else "practice"
+        insert(conn, "learning_activity", {"id": f"session:{session['id']}", "user_id": user_id, "course_id": cid,
+                                          "kind": kind, "minutes": len(rows) * 95 / 60,
+                                          "created_at": session["finished_at"]})
+    if history:
+        value = readiness(conn, cid)
+        ratio = value["mastered"] / value["total"] if value["total"] else 0
+        conn.execute(
+            """INSERT INTO readiness_snapshots(course_id,user_id,date,ratio) VALUES (?,?,?,?)
+               ON CONFLICT(course_id,date) DO NOTHING""", (cid, user_id, str(utc_now().astimezone(zone).date()), ratio),
+        )

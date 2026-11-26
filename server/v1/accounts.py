@@ -148,8 +148,12 @@ def update_settings(conn, user, changes):
     if updates:
         assignments = ", ".join(f"{name}=?" for name in updates)
         conn.execute(f"UPDATE settings SET {assignments} WHERE user_id=?", (*updates.values(), user.id))
+        snapshots = [("settings", {"user_id": user.id}, dict(before))]
+        if updates.keys() & {"daily_minutes", "intensity"}:
+            from .plans import replan
+            snapshots += replan(conn, user)
         undo = record(conn, user, label="已修改设置", summary="设置已恢复", affects=affects,
-                      rows=[("settings", {"user_id": user.id}, dict(before))])
+                      rows=snapshots)
     result = conn.execute("SELECT * FROM settings WHERE user_id=?", (user.id,)).fetchone()
     return {"result": settings_view(result), "affects": affects, "undo": undo}
 
