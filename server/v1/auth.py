@@ -123,8 +123,9 @@ def authenticate(request, token):
                JOIN users u ON u.id = d.user_id
                WHERE t.token_hash = ? AND t.kind = 'access'
                  AND t.expires_at > ? AND t.revoked_at IS NULL
-                 AND d.revoked_at IS NULL""",
-            (token_hash(token), now.isoformat()),
+                 AND d.revoked_at IS NULL
+                 AND (u.deletion_at IS NULL OR u.deletion_at>?)""",
+            (token_hash(token), now.isoformat(), now.isoformat()),
         ).fetchone()
         if row is None:
             raise ApiError(401, "unauthorized", "登录已过期，请重新登录")
@@ -192,6 +193,10 @@ def issue_device(db, user, device, *, is_new):
 
 def phone_user(request, db, phone, device):
     user = db.execute("SELECT * FROM users WHERE phone = ?", (phone,)).fetchone()
+    if user is not None and user["deletion_at"] is not None and user["deletion_at"] <= utc_now().isoformat():
+        from .account_lifecycle import purge_user
+        purge_user(db, user["id"])
+        user = None
     is_new = user is None
     if is_new:
         kind = "demo" if request.app.state.sms_mode == "dev" and phone == "13800000000" else "new"
@@ -328,6 +333,8 @@ def refresh(body: RefreshInput, request: Request):
             db.execute("UPDATE auth_tokens SET used_at = ? WHERE token_hash = ?", (now.isoformat(), token["token_hash"]))
             db.execute("UPDATE devices SET last_seen = ? WHERE id = ?", (now.isoformat(), token["device_id"]))
             user = db.execute("SELECT * FROM users WHERE id = ?", (token["user_id"],)).fetchone()
+            if user["deletion_at"] is not None and user["deletion_at"] <= now.isoformat():
+                raise ApiError(401, "unauthorized", "账号冷静期已经结束，请重新登录")
             result = issue_tokens(db, user, token["device_id"], is_new=False)
     # Revocation survives the rejected replay request.
     if error:
@@ -373,6 +380,8 @@ def poll_qr(ticket_id: str, request: Request):
         tokens = None
         if ticket["status"] == "confirmed" and ticket["consumed_at"] is None:
             user = db.execute("SELECT * FROM users WHERE id = ?", (ticket["user_id"],)).fetchone()
+            if user["deletion_at"] is not None and user["deletion_at"] <= now.isoformat():
+                return {"status": "expired", "tokens": None}
             device = DeviceInfo(kind=ticket["device_kind"], name=ticket["device_name"], timezone=ticket["timezone"])
             db.execute("UPDATE users SET timezone = ?, deletion_at = NULL WHERE id = ?", (device.timezone, user["id"]))
             user = db.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()

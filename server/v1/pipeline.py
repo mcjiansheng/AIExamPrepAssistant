@@ -3,8 +3,10 @@ import logging
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import tempfile
+import time
 import zipfile
 from contextlib import ExitStack
 from datetime import timedelta
@@ -215,13 +217,39 @@ def ocr(app, path):
     return "\n".join(result.txts or ())
 
 
-def render_scanned_page(source, number, target):
+def pdfkit(source, workspace, operation, *args):
+    script = Path(__file__).with_name("pdfkit.swift")
+    command = ["swift", "-module-cache-path", str(workspace / "swift-cache"),
+               str(script), operation, str(source), *map(str, args)]
+    return subprocess.run(command, capture_output=True, check=True, timeout=120, cwd=workspace).stdout
+
+
+def document_text(path, workspace):
+    if path.suffix != ".pdf" or shutil.which("pdftotext") or not shutil.which("swift"):
+        return extractor.extract(path, workspace)
     try:
-        subprocess.run(
-            ["pdftoppm", "-f", str(number), "-l", str(number), "-r", "120", "-png", "-singlefile",
-             str(source), str(target.with_suffix(""))],
-            capture_output=True, check=True, timeout=60,
-        )
+        content = load(pdfkit(path, workspace, "text"))
+    except subprocess.TimeoutExpired:
+        raise extractor.ExtractionError("读取资料超时，可以重试或拆成较小的文件", True) from None
+    except subprocess.CalledProcessError as error:
+        if b"password" in error.stderr.lower():
+            raise extractor.ExtractionError("文件已加密，请解除密码后重新上传") from None
+        raise extractor.ExtractionError("读取失败，请确认文件能打开，再用原应用另存后重新上传") from None
+    if not content["pages"]:
+        raise extractor.ExtractionError("文件没有可读的页面，请确认文件内容后重新上传")
+    return [extractor.clean(page) for page in content["pages"]], content.get("modified")
+
+
+def render_scanned_page(source, number, target, workspace):
+    try:
+        if shutil.which("pdftoppm"):
+            subprocess.run(
+                ["pdftoppm", "-f", str(number), "-l", str(number), "-r", "120", "-png", "-singlefile",
+                 str(source), str(target.with_suffix(""))],
+                capture_output=True, check=True, timeout=60,
+            )
+        else:
+            pdfkit(source, workspace, "image", number, target)
     except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         raise extractor.ExtractionError("扫描页无法读取，请另存为图片或带文字的 PDF") from None
 
@@ -248,11 +276,11 @@ def extract_pages(app, user, row, jid):
                 with path.open("rb") as stream:
                     if b"%PDF-" not in stream.read(16 * 1024):
                         raise extractor.ExtractionError("文件没有可读的 PDF 文件头，请用原应用另存后重新上传")
-            texts, modified = extractor.extract(path, base)
+            texts, modified = document_text(path, base)
         for number, text in enumerate(texts, 1):
             image = render_dir / f"{number}.png"
             if not text and extension == ".pdf":
-                render_scanned_page(path, number, image)
+                render_scanned_page(path, number, image, base)
             if image.exists():
                 image_text = ocr(app, image) if not text else text
                 with app.state.db.transaction() as conn:
@@ -594,7 +622,7 @@ class Worker:
             row = conn.execute(
                 """SELECT j.*,u.timezone,u.guest FROM jobs j JOIN users u ON u.id=j.user_id
                    WHERE j.status='queued' AND (j.run_after IS NULL OR j.run_after<=?)
-                   AND j.kind IN ('ingest','focus','session','agent')
+                   AND j.kind IN ('ingest','focus','session','agent','export')
                    AND (j.kind<>'focus' OR (
                        EXISTS(SELECT 1 FROM active_knowledge_points WHERE course_id=j.course_id)
                        AND EXISTS(SELECT 1 FROM model_roles r JOIN provider_connections c ON c.id=r.connection_id
@@ -606,7 +634,16 @@ class Worker:
         return row
 
     def loop(self):
+        from .account_lifecycle import maintenance
+        next_maintenance = 0
         while not self.stop.is_set():
+            if time.monotonic() >= next_maintenance:
+                next_maintenance = time.monotonic() + 60
+                try:
+                    maintenance(self.app)
+                except (OSError, sqlite3.Error) as error:
+                    from .app import exception_chain
+                    logger.error(dump({"event": "account_maintenance", "errors": exception_chain(error)}))
             self.remove_deleted_files()
             job = self.claim()
             if job is None:
@@ -651,6 +688,9 @@ class Worker:
                 run_focus(app, user, job, payload)
             elif job["kind"] == "agent":
                 run_agent(app, user, job, payload)
+            elif job["kind"] == "export":
+                from .account_lifecycle import run_export
+                run_export(app, user, job, payload)
             else:
                 from .generation import run_session
                 run_session(app, user, job, payload)

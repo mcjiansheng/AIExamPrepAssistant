@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import sqlite3
 import tempfile
 import unittest
@@ -24,9 +25,10 @@ NULLABLE_USER_FIELDS = {
 }
 
 
-def assert_sample_structure(case, actual, sample, path="response"):
+def assert_sample_structure(case, actual, sample, path="response", *, nullable=()):
     """Compare populated sample fields while allowing nullable/empty variants."""
-    if sample is None or (actual is None and path in NULLABLE_USER_FIELDS):
+    normalized = re.sub(r"\[\d+\]", "[]", path)
+    if sample is None or (actual is None and (path in NULLABLE_USER_FIELDS or normalized in nullable)):
         return
     if isinstance(sample, dict):
         case.assertIsInstance(actual, dict, path)
@@ -34,7 +36,7 @@ def assert_sample_structure(case, actual, sample, path="response"):
         case.assertTrue(required <= actual.keys(), f"{path}: missing {required - actual.keys()}")
         case.assertFalse(actual.keys() - sample.keys(), f"{path}: extra fields")
         for key in actual.keys() & sample.keys():
-            assert_sample_structure(case, actual[key], sample[key], f"{path}.{key}")
+            assert_sample_structure(case, actual[key], sample[key], f"{path}.{key}", nullable=nullable)
         return
     if isinstance(sample, list):
         case.assertIsInstance(actual, list, path)
@@ -53,7 +55,7 @@ def assert_sample_structure(case, actual, sample, path="response"):
             errors = []
             for candidate in candidates:
                 try:
-                    assert_sample_structure(case, item, candidate, f"{path}[{index}]")
+                    assert_sample_structure(case, item, candidate, f"{path}[{index}]", nullable=nullable)
                     break
                 except AssertionError as error:
                     errors.append(str(error))

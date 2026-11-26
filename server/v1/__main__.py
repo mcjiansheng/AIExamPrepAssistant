@@ -27,9 +27,22 @@ def main():
     cli.add_argument("--mock-model", action="store_true")
     cli.add_argument("--host", default=os.environ.get("FULLGRID_HOST", "127.0.0.1"))
     cli.add_argument("--port", type=int, default=os.environ.get("FULLGRID_PORT", "8765"))
-    cli.add_argument("command", nargs="?", choices=("reset-demo",))
+    cli.add_argument("command", nargs="?", choices=("reset-demo", "smoke-longcat", "smoke-preflight"))
+    cli.add_argument("--material", help="LongCat 冒烟可指定 local/课件资料/ 下的课件")
+    cli.add_argument("--excerpt", action="store_true", help="使用已确认的 25 页本地 PPTX 的前 12 页")
     args = cli.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    if args.command in {"smoke-longcat", "smoke-preflight"}:
+        import json
+        from .smoke import prepare_excerpt, run
+        from .model_runtime import JobFailure
+        try:
+            material = prepare_excerpt() if args.excerpt else args.material
+            result = run(material=material, preflight=args.command == "smoke-preflight")
+        except JobFailure as error:
+            cli.exit(1, str(error) + "\n")
+        print(json.dumps(result, ensure_ascii=False))
+        return 0 if result["status"] in {"ready", "passed"} else 1
     app = create_app(mock_model=args.mock_model)
     if args.command == "reset-demo":
         reset_demo(app)
@@ -38,4 +51,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

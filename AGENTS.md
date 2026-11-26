@@ -68,7 +68,7 @@ AI 备考助手：用课件和老师的重点生成复习计划和模拟试卷�
 - `web/`：v0 WebUI（原生 JS，无依赖、无构建），`client/` 达到 P0 后删除。`cd web && python3 -m http.server 8811` 即可打开；没有后端时自动用演示数据。说明见 `web/README.md`。
 - `docs/实施记录/`：已完成任务的过程与验证记录。
 - `docs/协作/`：任务合同、验证者提示词、实施记录、本地交接的模板。大任务（跨会话、改接口、同时涉及两端、描述含糊）先写任务合同。
-- `server/`：单用户后端和 WebUI 服务，试运行执行 `python3 server/app.py --mock-model`。
+- `server/`：多用户 v1 用 `python3 -m server.v1 --mock-model` 启动，单用户 v0 用 `python3 server/app.py --mock-model` 启动。全量测试用 `python3 -m unittest discover -s server/tests`。
 - `<鸿蒙工程目录>/`：创建后补上入口。
 - `local/`：本机内容，不进仓库。
 

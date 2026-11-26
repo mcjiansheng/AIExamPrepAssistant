@@ -21,10 +21,72 @@ ROLES = ("chat", "organize", "generate", "vision")
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
+class LegacyModelLog(logging.Filter):
+    def filter(self, record):
+        if record.msg == "%s 输出未通过校验：%s":
+            step, _ = record.args
+            record.msg = "%s 输出未通过校验"
+            record.args = (step,)
+        return True
+
+
+logging.getLogger().addFilter(LegacyModelLog())
+
+
+def question_reply(raw, prompt):
+    try:
+        value = legacy_model.parse_json(raw)
+    except ValueError:
+        return raw
+    if not isinstance(value, dict):
+        return raw
+    if legacy_model.data_from(prompt)["type"] != "single" and value.get("options") == []:
+        value["options"] = None
+    steps, rubric = value.get("steps"), value.get("rubric")
+    if isinstance(steps, list) and len(steps) == 1 and isinstance(rubric, list):
+        # The sole solution step is the only possible target for a rubric reference.
+        for point in rubric:
+            if isinstance(point, dict) and type(point.get("step")) is int:
+                point["step"] = 1
+    return dump(value)
+
+
 class ProviderFailure(JobFailure):
     def __init__(self, message, status):
         super().__init__(message, True)
         self.status = status
+
+
+class TurnLimit(JobFailure):
+    def __init__(self):
+        super().__init__("这轮对话已达到用量上限，已完成的操作会保留", False)
+
+
+def token_ceiling(data):
+    if data is None:
+        return 0
+    reserve = len(dump(data).encode()) + data.get("max_tokens", 0) + 512
+    if "data:image/" in str(data):
+        reserve = max(reserve, 16_000)
+    return reserve
+
+
+class TurnBudget:
+    def __init__(self):
+        self.in_use = 0
+
+    def reserve(self, data):
+        size = token_ceiling(data)
+        if self.in_use + size > 30_000:
+            raise TurnLimit
+        self.in_use += size
+        return size
+
+    def record(self, reserved, counts):
+        if counts:
+            incoming = counts.get("prompt_tokens", counts.get("input_tokens", 0)) or 0
+            outgoing = counts.get("completion_tokens", counts.get("output_tokens", 0)) or 0
+            self.in_use += incoming + outgoing - reserved
 
 
 def binding(conn, user_id, role, mock_model):
@@ -45,7 +107,7 @@ def cost_of(presets, row, model, incoming, outgoing):
 
 
 class Model:
-    def __init__(self, app, connection, model, feature, course_id=None, job_id=None, plugin_id=None):
+    def __init__(self, app, connection, model, feature, course_id=None, job_id=None, plugin_id=None, turn_budget=None):
         self.app = app
         self.row = connection
         self.model = model
@@ -53,6 +115,7 @@ class Model:
         self.course_id = course_id
         self.job_id = job_id
         self.plugin_id = plugin_id
+        self.turn_budget = turn_budget
         self.mock = MockClient() if app.state.mock_model else None
 
     def key(self):
@@ -103,9 +166,13 @@ class Model:
         url = self.url(endpoint)
         if url is None:
             return None
+        budget = getattr(self.app.state, "smoke_budget", None)
+        reserve = budget.reserve(data) if budget else 0
+        turn_reserve = self.turn_budget.reserve(data) if self.turn_budget else 0
         started = time.monotonic()
         counts = {}
         ok = False
+        rejected_auth = False
         try:
             key = self.key()
             if self.row["protocol"] == "anthropic":
@@ -117,10 +184,12 @@ class Model:
             status = response.status_code
             diagnostic = response.text.casefold()[:4000] if status >= 400 else ""
             if status in (401, 403):
+                rejected_auth = True
                 raise ProviderFailure("密钥无效或没有权限，请更新密钥", "invalid")
             if status == 402 or any(word in diagnostic for word in ("insufficient_quota", "insufficient balance")):
                 raise ProviderFailure("服务商余额不足，请充值或换一个服务商", "limited")
             if status in (404, 405, 501) and optional:
+                ok = True
                 return None
             if status == 429 or status >= 500:
                 raise RetryLater("服务商限流，请稍后重试" if status == 429 else "服务商暂时异常，请稍后重试")
@@ -147,6 +216,10 @@ class Model:
             self.disabled(failure)
             raise
         finally:
+            if budget:
+                budget.record(reserve, counts, ok, rejected_auth)
+            if self.turn_budget:
+                self.turn_budget.record(turn_reserve, counts)
             self.usage(step, started, counts, ok)
 
     def payload(self, system, message, limit, images):
@@ -179,17 +252,19 @@ class Model:
             else:
                 reply = self.mock.complete(step, system, user, images)
             self.usage(step, started, {"input_tokens": len(system + user) // 3, "output_tokens": len(reply) // 3}, True)
-            return reply
+            return question_reply(reply, user) if step == "question" else reply
         task = step.partition(":")[0]
         limit = 1800 if task in {"extract", "topics", "question", "cfproblem", "cfexplain", "chat"} else 800
         endpoint, data = self.payload(system, user, limit, images)
         reply = self.request(step, endpoint, data)
         try:
             if self.row["protocol"] == "anthropic":
-                return "".join(part["text"] for part in reply["content"] if part["type"] == "text")
-            return reply["choices"][0]["message"].get("content") or ""
+                text = "".join(part["text"] for part in reply["content"] if part["type"] == "text")
+            else:
+                text = reply["choices"][0]["message"].get("content") or ""
         except (IndexError, KeyError, TypeError):
             raise RetryLater("服务商返回了无法读取的回复") from None
+        return question_reply(text, user) if step == "question" else text
 
     def tool_intent(self, system, packet, tools):
         endpoint, data = self.payload(system, dump(packet), 1000, None)

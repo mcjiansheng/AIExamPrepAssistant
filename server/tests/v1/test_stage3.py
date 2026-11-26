@@ -96,6 +96,18 @@ class StudyTest(unittest.TestCase):
             self.assertEqual(event[0], 0)
         self.api("POST", f"/questions/{qid}/attempt", token, status=409, json={"response": correct})
 
+    def test_partial_completion_reviews_answered_and_unanswered_counts(self):
+        token = self.member()
+        start = self.api("POST", "/sessions", token, json={"kind": "quick", "count": 5})
+        session = self.api("GET", f"/sessions/{start['id']}", token)
+        q = next(item for item in session["questions"] if item["type"] == "single")
+        with self.app.state.db.transaction() as conn:
+            answer = conn.execute("SELECT answer FROM bank_questions WHERE id=?", (q["bank_id"],)).fetchone()[0]
+        self.api("POST", f"/questions/{q['id']}/attempt", token, json={"response": answer})
+        finished = self.api("POST", f"/sessions/{session['id']}/finish", token)
+        self.assertEqual(finished["accuracy"], 0.2)
+        self.assertIn("另有 4 道未答", finished["review"]["text"])
+
     def test_wrong_answer_mistake_and_finish_are_durable(self):
         token = self.member()
         start = self.api("POST", "/sessions", token, json={"kind": "quick", "count": 5})

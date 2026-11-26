@@ -13,7 +13,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException
 from starlette.responses import FileResponse, JSONResponse
 
-from . import accounts, auth, chat, courses, demo, events, focus, jobs, learning, materials, pipeline, plans, practice, providers, undo
+from . import account_lifecycle, accounts, auth, chat, courses, demo, events, focus, jobs, learning, materials, pipeline, plans, plugins, practice, providers, undo
 from .db import Database, dump, load, utc_now
 from .errors import ApiError, not_found
 from .vault import KeyVault
@@ -192,7 +192,12 @@ def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=Non
     def health():
         return {"ok": True, "version": "1.0", "capabilities": {"ocr": True, "speech": False}, "sms": app.state.sms_mode}
 
-    for module in (auth, accounts, jobs, undo, events, courses, materials, focus, plans, learning, practice, providers, pipeline, chat):
+    @app.post("/api/v1/speech/transcribe")
+    def transcribe():
+        raise ApiError(409, "conflict", "本版暂未开通语音转写")
+
+    for module in (auth, accounts, jobs, undo, events, courses, materials, focus, plans, learning, practice,
+                   providers, pipeline, chat, plugins, account_lifecycle):
         app.include_router(module.router, prefix="/api/v1")
 
     @app.get("/{path:path}", include_in_schema=False)

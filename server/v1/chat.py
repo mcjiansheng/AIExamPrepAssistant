@@ -7,12 +7,13 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import Field, ValidationError
 from starlette.responses import StreamingResponse
 
-from . import assistant_tools, courses, jobs, materials, practice
+from . import assistant_tools, courses, jobs, materials, plugins, practice
 from .auth import Body, Principal, new_id, principal, rate_limited, require_member
 from .db import dump, load, local_iso, utc_now
 from .errors import ApiError, conflict, not_found
 from .events import changed
-from .model_runtime import JobFailure, Model, OutputError, ProviderFailure, RetryLater, binding
+from .idempotency import run
+from .model_runtime import JobFailure, Model, OutputError, ProviderFailure, RetryLater, TurnBudget, TurnLimit, binding
 
 router = APIRouter()
 User = Annotated[Principal, Depends(principal)]
@@ -128,7 +129,7 @@ def threads(request: Request, user: User):
 
 @router.post("/threads")
 def new_thread(body: NewThread, request: Request, user: User):
-    with request.app.state.db.transaction(write=True) as conn:
+    def create():
         if body.course_id:
             courses.course(conn, user.id, body.course_id)
         tid = new_id("th")
@@ -136,7 +137,10 @@ def new_thread(body: NewThread, request: Request, user: User):
             "INSERT INTO chat_threads(id,user_id,course_id,title,kind,updated_at) VALUES (?,?,?,?,'custom',?)",
             (tid, user.id, body.course_id, body.title or "新对话", utc_now().isoformat()),
         )
-        return thread_view(thread_row(conn, user, tid), user)
+        return 200, thread_view(thread_row(conn, user, tid), user)
+    with request.app.state.db.transaction(write=True) as conn:
+        _, result = run(conn, request, user, create)
+    return result
 
 
 @router.patch("/threads/{tid}")
@@ -245,6 +249,8 @@ def stream(app, user, body, target, ids, model_row):
             active(conn, reply)
             if event["type"] == "card":
                 save_card(conn, reply, event["card"])
+            elif event["type"] == "text":
+                conn.execute("UPDATE chat_messages SET text=text||? WHERE id=?", (event["delta"], reply))
             elif event["type"] == "tool" and event["status"] == "running":
                 row = conn.execute("SELECT tools FROM chat_messages WHERE id=?", (reply,)).fetchone()
                 conn.execute("UPDATE chat_messages SET tools=? WHERE id=?",
@@ -253,8 +259,10 @@ def stream(app, user, body, target, ids, model_row):
 
     def finish(error=None):
         with db.transaction(write=True) as conn:
-            conn.execute("UPDATE chat_messages SET status=?,error=? WHERE id=? AND status='running'",
-                         ("error" if error else "done", dump({"code": error["code"], "message": error["message"]}) if error else None, reply))
+            finished = conn.execute("UPDATE chat_messages SET status=?,error=? WHERE id=? AND status='running'",
+                                    ("error" if error else "done", dump({"code": error["code"], "message": error["message"]}) if error else None, reply)).rowcount
+        if finished:
+            app.state.events.publish(user.id, changed(["threads"], target))
         return dump(error or {"type": "done"}) + "\n"
 
     def failure(code, message, retryable=True):
@@ -267,12 +275,15 @@ def stream(app, user, body, target, ids, model_row):
             yield finish()
             return
         raw_model, override = model_row
-        model = Model(app, raw_model, override or raw_model["model"], "chat", target)
+        model = Model(app, raw_model, override or raw_model["model"], "chat", target, turn_budget=TurnBudget())
         yield append({"type": "start", "message_id": reply, "user_message_id": incoming})
         with db.transaction() as conn:
             if jobs.reached_daily_limit(conn, user):
                 raise JobFailure("今天的 AI 用量已到上限，明天可以继续", False)
             packet = assistant_tools.context_packet(conn, user, tid, reply, body, target)
+        if body.command and body.command.startswith("plugin:") and not body.context.question_id:
+            yield from stream_plugin(app, user, body, target, reply, model, append, finish)
+            return
         intents = assistant_tools.plan(model, packet, body)
         multi = len(intents) > 1
         if multi and any(tool in {"focus", "practice", "organize"} for tool, _ in intents):
@@ -296,9 +307,16 @@ def stream(app, user, body, target, ids, model_row):
             tag = {"type": "tool", "id": new_id("tool"), "label": assistant_tools.label(tool)}
             yield append(tag | {"status": "running"})
             try:
+                if tool == "hint" and model.mock is None:
+                    suggestion = assistant_tools.live_hint(app, user, body, model)
+                else:
+                    suggestion = None
                 with db.transaction(write=True) as conn:
                     active(conn, reply)
-                    result = assistant_tools.execute(conn, app, user, body, target, tool, params)
+                    if tool in {"hint", "answer"}:
+                        result = assistant_tools.question_help(conn, user, body, tool, suggestion)
+                    else:
+                        result = assistant_tools.execute(conn, app, user, body, target, tool, params)
                     save_result(conn, reply, result)
                 for event in turn_payload(result):
                     yield dump(event) + "\n"
@@ -322,6 +340,9 @@ def stream(app, user, body, target, ids, model_row):
             event = assistant_tools.card(user, "connect", reason=str(error))
             yield append({"type": "card", "card": event})
         yield finish(failure("provider_error", str(error), error.retryable))
+    except TurnLimit as error:
+        yield append({"type": "text", "delta": str(error)})
+        yield finish()
     except (JobFailure, OutputError, RetryLater) as error:
         yield finish(failure("provider_error", str(error), getattr(error, "retryable", True)))
     except Exception as error:
@@ -331,6 +352,27 @@ def stream(app, user, body, target, ids, model_row):
     finally:
         with db.transaction(write=True) as conn:
             conn.execute("UPDATE chat_messages SET status='stopped' WHERE id=? AND status='running'", (reply,))
+
+
+def stream_plugin(app, user, body, target, reply, model, append, finish):
+    _, _, spec = body.command.partition(":")
+    pid, _, command = spec.partition(":")
+    tag = {"type": "tool", "id": new_id("tool"), "label": command or "调用插件"}
+    yield append(tag | {"status": "running"})
+    try:
+        result = assistant_tools.plugin_result(app, user, body, target, pid, command, model)
+    except (ApiError, plugins.PluginFailure) as error:
+        yield append(tag | {"status": "failed"})
+        yield finish({"type": "error", "code": "tool_failed", "message": str(error),
+                      "retryable": getattr(error, "retryable", False)})
+        return
+    with app.state.db.transaction(write=True) as conn:
+        active(conn, reply)
+        save_result(conn, reply, result)
+    for event in turn_payload(result):
+        yield dump(event) + "\n"
+    yield append(tag | {"status": "done"})
+    yield finish()
 
 
 def update_task(db, task, index, status):

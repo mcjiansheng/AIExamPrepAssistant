@@ -1,4 +1,4 @@
-from . import courses, learning, plans, practice
+from . import courses, learning, plans, plugins, practice
 from .auth import new_id
 from .db import dump, load, utc_now
 from .legacy import module
@@ -14,7 +14,7 @@ def spec_for(conn, user, slot):
     kid = slot["kp_id"]
     point = courses.kp(conn, user.id, kid)
     rows = conn.execute(
-        """SELECT m.id AS material_id,m.title AS material_title,r.page,p.text
+        """SELECT m.id AS material_id,m.title AS material_title,r.page,p.text,NULL AS vision
            FROM kp_refs r JOIN materials m ON m.id=r.material_id
            JOIN material_pages p ON p.material_id=r.material_id AND p.page=r.page
            WHERE r.kp_id=? AND m.user_id=? AND m.superseded_by IS NULL ORDER BY r.position""",
@@ -119,6 +119,19 @@ def replacement(app, user, jid, qid, hard, payload):
     return True
 
 
+def draft_question(app, user, model, spec, work, save):
+    comments = work.get("comments", [])
+    if spec["type"] == "calc":
+        with app.state.db.transaction(write=True) as conn:
+            enabled = any(row["id"] == "compute-first" for row in plugins.summaries(conn, user, model.course_id))
+        if enabled:
+            result = plugins.invoke(app, user, "compute-first", "/计算题",
+                                    {"spec": spec, "comments": comments, "saved": work, "save": save},
+                                    course_id=model.course_id, model=model)
+            return result["draft"]
+    return drafting.draft(model, spec, comments, work, save)[0]
+
+
 def draft_next(app, user, job, payload, qid):
     db = app.state.db
     with db.transaction() as conn:
@@ -150,16 +163,20 @@ def draft_next(app, user, job, payload, qid):
 
     if "draft" not in work:
         try:
-            draft, _ = drafting.draft(model, spec, work.get("comments", []), work, save)
+            draft = draft_question(app, user, model, spec, work, save)
         except drafting.CalculationFailed:
             spec["type"] = "short"
             draft, _ = drafting.draft(model, spec, ["求解程序未完成，改出简答题"], work, save)
-        except OutputError:
+        except OutputError as error:
             if spec["type"] == "calc":
                 spec["type"] = "short"
-                draft, _ = drafting.draft(model, spec, ["计算题未通过校验，改出简答题"], work, save)
-            else:
-                draft, _ = drafting.draft(model, spec, ["上一版结构有误，按要求出一道简洁的题"], work, save)
+            spec["pages"] = spec["pages"][:1]
+            comments = [
+                f"上一版未通过校验：{error}",
+                "只依据这一页写一道题，题干和解析各用一个文字块，至少一个出处逐字摘抄。",
+                "非单选的 options 填 null。若为简答，给两条评分点且都引用第 1 步，总分等于题目分值。",
+            ]
+            draft, _ = drafting.draft(model, spec, comments, work, save)
         work["draft"] = draft
         save()
     if not work.get("published") and not publish_draft(app, user, job, slot, spec, work["draft"], payload):

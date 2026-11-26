@@ -1,4 +1,5 @@
 """The assistant calls the same account, lesson and planning services as the UI."""
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -11,9 +12,14 @@ from .legacy import module
 from .model_runtime import OutputError
 
 model_api = module("model")
+legacy_chat = module("chat")
 NUMBER = dict(zip("一两二三四五六七八九十半", (1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, .5))) | {"一个半": 1.5}
 TYPE_LABELS = {"single": "单选", "fill": "填空", "calc": "计算", "short": "简答", "proof": "证明", "design": "设计"}
-ANSWER_REQUEST = re.compile(r"(?:直接|现在)(?:告诉我|给我)?(?:完整)?答案|(?:给我|告诉我|看)(?:正确|完整)?(?:答案|解析)|答案(?:是什么|是多少|选什么|选哪|是[哪什多少])|^答案[？?。]?$")
+ANSWER_REQUEST = re.compile(
+    r"(?:直接|现在)(?:告诉我|给我)?(?:完整)?答案|(?:告诉我|给我|看)(?:正确|完整)?(?:答案|解析|选项)"
+    r"|直接告诉我(?:选什么|选哪个|怎么算出结果)|答案(?:是什么|是多少|选什么|选哪|是[哪什多少])|^答案[？?。]?$"
+)
+ANSWER_NEGATION = re.compile(r"(?:不要|别|不想|不用|不必|无需)[^。；，！？]*?(?:答案|解析|选项|结果)")
 CHINESE_DURATION = r"(\d+(?:\.\d+)?|一个半|一|两|二|三|四|五|六|七|八|九|十|半)"
 COMMANDS = {"simplify", "example", "quiz", "compare", "outline", "today", "review"}
 
@@ -215,7 +221,9 @@ def check_plan(value):
 
 def plan(model, packet, body):
     if body.context.question_id:
-        tool = "answer" if ANSWER_REQUEST.search(body.text.strip()) else "hint"
+        text = ANSWER_NEGATION.sub("", body.text.strip())
+        only_hint = re.search(r"只(?:要|给)(?:我)?(?:一个)?提示", text)
+        tool = "answer" if not only_hint and ANSWER_REQUEST.search(text) else "hint"
         return [(tool, {})]
     if body.command and body.command not in COMMANDS and not body.command.startswith("plugin:"):
         raise OutputError("这条助手命令不存在")
@@ -288,14 +296,45 @@ def explain(conn, user, body, params):
     return Result(card=card(user, "explain", title=title, kp_id=point["id"], blocks=blocks, refs=refs), refs=refs)
 
 
-def question_help(conn, user, body, tool):
+def live_hint(app, user, body, model):
+    qid = body.context.question_id
+    with app.state.db.transaction() as conn:
+        row = practice.question_row(conn, user.id, qid)
+        if row["attempt"] or row["peeked"] or row["status"] != "ready":
+            return None
+        hint_level = min(2, len(load(row["hints"])) + 1)
+        if any(hint["level"] == hint_level for hint in load(row["hints"])):
+            return None
+        item = practice.question_view(conn, user, row)
+        excerpts = []
+        for ref in item["refs"][:3]:
+            page = conn.execute("SELECT text FROM material_pages WHERE material_id=? AND page=?",
+                                (ref["material_id"], ref["page"])).fetchone()
+            if page:
+                excerpts.append(page["text"][:500])
+    detail = "只给方向。" if hint_level == 1 else "只给第一步。"
+    packet = {"question": item["stem"], "options": item["options"], "request": body.text, "pages": excerpts}
+
+    def check(output):
+        hint = output.get("hint")
+        if not isinstance(hint, str) or not hint.strip():
+            raise ValueError("hint 必须是非空文字")
+
+    try:
+        response = model_api.call_json(model, "chat_hint", legacy_chat.HINT + detail, dump(packet), check)
+        return response["hint"].strip()
+    except OutputError:
+        return legacy_chat.FALLBACK_HINT
+
+
+def question_help(conn, user, body, tool, suggestion=None):
     row = practice.question_row(conn, user.id, body.context.question_id)
     if row["attempt"] or row["peeked"]:
         question = practice.question_view(conn, user, row)
         message = ""
     else:
         level = 3 if tool == "answer" else min(2, len(load(row["hints"])) + 1)
-        result = practice.give_hint(conn, user, row["id"], level)
+        result = practice.give_hint(conn, user, row["id"], level, suggestion)
         question = result["question"]
         if level != 3:
             return Result(answer=result["hint"]["text"], refs=result["hint"]["refs"], affects=["session"])
@@ -325,6 +364,30 @@ def start_practice(conn, app, user, cid, body, params):
     return Result(card=card(user, "practice", title=session["title"], session_kind=session["kind"], course_id=cid,
                             kp_id=request.kp_id, count=len(session["questions"]), minutes=session["time_limit_min"] or max(1, len(session["questions"]) * 2),
                             session_id=session["id"]), affects=practice.AREAS, wait_for=owned["job_id"])
+
+
+def plugin_result(app, user, body, target, pid, command, model):
+    if not pid or not command:
+        raise not_found("插件命令")
+    text = body.text.strip()
+    arguments = {}
+    if text.startswith("{"):
+        try:
+            arguments = json.loads(text)
+        except ValueError:
+            raise conflict("插件参数需要是 JSON 对象") from None
+        if not isinstance(arguments, dict):
+            raise conflict("插件参数需要是 JSON 对象")
+    elif pid == "compute-first" and command in {"计算题", "/计算题"}:
+        from .generation import spec_for
+        with app.state.db.transaction() as conn:
+            point = need_point(conn, user, body, {})
+            arguments = {"spec": spec_for(conn, user, {"kp_id": point["id"], "type": "calc", "position": 0, "score": 10})}
+    elif text and text not in {command, "/" + command}:
+        arguments = {"text": text}
+    result = plugins.invoke(app, user, pid, command, arguments, course_id=target, model=model)
+    return Result(card=card(user, "plugin", plugin_id=pid, template=result["template"]),
+                  refs=result["refs"])
 
 
 def task_state(job):

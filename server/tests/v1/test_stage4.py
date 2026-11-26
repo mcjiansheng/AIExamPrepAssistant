@@ -1,3 +1,4 @@
+import json
 import tempfile
 import time
 import unittest
@@ -10,7 +11,7 @@ from fastapi.testclient import TestClient
 from server.tests.v1.test_stage1 import DEVICE
 from server.v1 import generation, pipeline
 from server.v1.app import create_app
-from server.v1.model_runtime import OutputError
+from server.v1.model_runtime import MockClient, OutputError, legacy_model
 
 TEXT = ("Process scheduling assigns processor time to ready processes. "
         "A priority queue orders candidates by their priorities. "
@@ -180,6 +181,33 @@ class AiFlowTest(unittest.TestCase):
             self.assertEqual(state["error"], {"message": "服务商暂时异常，连续 5 次没有成功", "retryable": True})
         self.api("POST", f"/jobs/{jid}/retry", token)
         self.assertEqual(self.wait_for(token, f"/jobs/{jid}", {"done", "failed"})["status"], "done")
+
+    def test_short_question_accepts_empty_options_and_single_step_rubric(self):
+        token = self.member()
+        cid = self.organize(token)
+        original = MockClient.complete
+        altered = []
+
+        def answer(model, step, system, prompt, images=None):
+            raw = original(model, step, system, prompt, images)
+            if step == "question" and legacy_model.data_from(prompt)["type"] == "short":
+                value = json.loads(raw)
+                self.assertEqual(len(value["steps"]), 1)
+                value["options"] = []
+                value["rubric"][1]["step"] = 2
+                altered.append(True)
+                return json.dumps(value, ensure_ascii=False)
+            return raw
+
+        with patch.object(MockClient, "complete", answer):
+            session = self.api("POST", "/sessions", token,
+                               json={"kind": "quick", "course_id": cid, "count": 5, "confirm": True})
+            job = self.wait_for(token, f"/jobs/{session['job']['id']}", {"done", "failed"})
+        self.assertTrue(altered)
+        self.assertEqual(job["status"], "done", job)
+        q = next(item for item in self.api("GET", f"/sessions/{session['id']}", token)["questions"] if item["type"] == "short")
+        self.assertEqual(q["status"], "ready")
+        self.assertEqual(q["check"], "passed")
 
     def test_draft_is_answerable_before_review_and_flagged_answer_does_not_score(self):
         token = self.member()

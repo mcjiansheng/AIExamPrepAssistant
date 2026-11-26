@@ -1,4 +1,3 @@
-import json
 import struct
 import zlib
 from collections import defaultdict
@@ -18,7 +17,7 @@ from .errors import ApiError, not_found
 from .events import changed
 from .idempotency import run
 from .jobs import today_tokens
-from .model_runtime import Model, OutputError, ProviderFailure, ROLES, RetryLater, JobFailure, binding
+from .model_runtime import Model, OutputError, ProviderFailure, ROLES, RetryLater, JobFailure, binding, legacy_model
 
 router = APIRouter()
 Role = Literal["chat", "organize", "generate", "vision"]
@@ -194,6 +193,8 @@ def live_check(model, row, metadata, names):
         listed = model.request("check_models", "models", optional=True)
         if listed is not None and isinstance(listed.get("data"), list):
             names = list(dict.fromkeys(names + [item["id"] for item in listed["data"] if isinstance(item.get("id"), str)]))
+    except ProviderFailure:
+        raise
     except (JobFailure, RetryLater) as error:
         return steps + [check_step("models", False, str(error))], None, names
     if not names:
@@ -201,7 +202,9 @@ def live_check(model, row, metadata, names):
     steps.append(check_step("models", True))
     try:
         raw = model.complete("check_json", '只返回 JSON 对象 {"ok": true}。', "格式检查")
-        json_ok = json.loads(raw.strip().removeprefix("```json").removesuffix("```").strip()) == {"ok": True}
+        json_ok = legacy_model.parse_json(raw) == {"ok": True}
+    except ProviderFailure:
+        raise
     except (ValueError, JobFailure, RetryLater):
         json_ok = False
     steps.append(check_step("json", json_ok, None if json_ok else "模型未返回预期 JSON"))
@@ -211,12 +214,16 @@ def live_check(model, row, metadata, names):
             tools_ok = model.tool_intent("调用 ping，不要输出正文。", {"input": "ping"}, [
                 {"name": "ping", "description": "无副作用的连接检查", "parameters": {"type": "object", "properties": {}}},
             ]) == {"tool": "ping", "params": {}}
+        except ProviderFailure:
+            raise
         except (KeyError, IndexError, TypeError, OutputError, JobFailure, RetryLater):
             tools_ok = False
     steps.append(check_step("tools", tools_ok, None if tools_ok else "这个连接使用 JSON 意图"))
     try:
         vision = "red" in model.complete("check_vision", "Reply with the predominant color in one English word.",
                                          "What color is the image?", [red_square()]).casefold()
+    except ProviderFailure:
+        raise
     except (JobFailure, RetryLater):
         vision = False
     steps.append(check_step("vision", vision, None if vision else "当前模型不能看图"))

@@ -270,7 +270,7 @@ def build_session(conn, user, request, *, quiz=False, exclude=None, app=None):
     now = utc_now().isoformat()
     sid = new_id("s")
     name = next((row["name"] for row in scope if row["id"] == cid), None)
-    title = f"{name} · {TITLE[kind]}" if name else TITLE[kind]
+    title = f"{name or '全部课程'} · {TITLE[kind]}"
     if quiz:
         title = f"{points[0]['title']}小测"
     conn.execute(
@@ -404,7 +404,7 @@ def grade_question(conn, user, qid, marks):
             "mastery": changes, "mistake_added": added}
 
 
-def give_hint(conn, user, qid, level):
+def give_hint(conn, user, qid, level, suggestion=None):
     row = question_row(conn, user.id, qid)
     if row["status"] != "ready":
         raise conflict("这道题还不能查看提示")
@@ -413,7 +413,7 @@ def give_hint(conn, user, qid, level):
     hint = next((value for value in hints if value["level"] == level), None)
     if hint is None:
         available = load(bank["hints"])
-        text = "完整过程见下方解析。" if level == 3 else available[level - 1]
+        text = "完整过程见下方解析。" if level == 3 else suggestion or available[level - 1]
         if level in (1, 2):
             options = [option["text"] for option in load(bank["options"]) or []]
             stem = " ".join(block.get("text", "") for block in load(bank["stem"]))
@@ -503,11 +503,17 @@ def finish_session(conn, user, sid):
     mastery, chapters = mastery_changes(conn, user, sid)
     misses = [question_view(conn, user, item) for item in eligible
               if item["attempt"] and (load(item["attempt"])["score"] or 0) < item["score"]]
-    review = None
     if misses:
         first = misses[0]
         review = {"text": f"有 {len(misses)} 道题没拿满分，可以先复习「{first['kp']['title']}」。",
                   "actions": [{"label": "复习这个知识点", "kind": "kp", "kp_id": first["kp"]["id"], "session": None}]}
+    elif not attempts:
+        review = {"text": "这次没有作答。", "actions": []}
+    elif len(attempts) < len(eligible):
+        review = {"text": f"这次答了 {len(attempts)} 道，另有 {len(eligible) - len(attempts)} 道未答。可以继续复习相关知识点。",
+                  "actions": []}
+    else:
+        review = {"text": "这组题全部做对了。可以学下一个知识点，或者试一套模拟卷。", "actions": []}
     result = {
         "session": session_view(conn, user, session_row(conn, user.id, sid)), "score": score, "total": total,
         "accuracy": sum(attempt["correct"] is True for attempt in attempts) / len(eligible) if eligible else 0,
