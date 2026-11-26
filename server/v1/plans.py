@@ -357,24 +357,33 @@ def update_today(body: Minutes, request: Request, user: Principal = Depends(prin
     return result
 
 
+def apply_tasks(conn, user, rows, changes):
+    on = local_today(user)
+    snapshots, dates, keep = [], {on}, []
+    for row in rows:
+        updates = {key: value for key, value in changes.items() if value != row[key]}
+        if not updates:
+            continue
+        if "date" in updates:
+            updates["pinned"] = True
+        assignments = ",".join(f"{key}=?" for key in updates)
+        conn.execute(f"UPDATE schedule_items SET {assignments} WHERE id=?", (*updates.values(), row["id"]))
+        dates.update((date.fromisoformat(row["date"]), date.fromisoformat(updates.get("date", row["date"]))))
+        snapshots.append(("schedule_items", {"id": row["id"]}, dict(row)))
+        keep.append(row["id"])
+    if snapshots:
+        snapshots += replan(conn, user, dates=[day for day in dates if day >= on], preserve=keep)
+    return snapshots
+
+
 @router.patch("/tasks/{task_id}")
 def update_task(task_id: str, body: TaskPatch, request: Request, user: Principal = Depends(principal)):
     with request.app.state.db.transaction(write=True) as conn:
         ensure_plan(conn, user)
         row = task(conn, user.id, task_id)
         changes = body.model_dump(mode="json", exclude_unset=True)
-        if "date" in changes and changes["date"] != row["date"]:
-            changes["pinned"] = True
-        changes = {key: value for key, value in changes.items() if value != row[key]}
-        label = "已挪动任务" if "date" in changes else "已更新任务"
-        snapshots = []
-        if changes:
-            assignments = ",".join(f"{key}=?" for key in changes)
-            conn.execute(f"UPDATE schedule_items SET {assignments} WHERE id=?", (*changes.values(), task_id))
-            on = local_today(user)
-            dates = {on, date.fromisoformat(row["date"]), date.fromisoformat(changes.get("date", row["date"]))}
-            snapshots = [("schedule_items", {"id": task_id}, dict(row))]
-            snapshots += replan(conn, user, dates=[day for day in dates if day >= on], preserve=(task_id,))
+        label = "已挪动任务" if changes.get("date", row["date"]) != row["date"] else "已更新任务"
+        snapshots = apply_tasks(conn, user, [row], changes)
         current = task_view(conn, task(conn, user.id, task_id))
         result = change(conn, user, current, label, snapshots)
     request.app.state.events.publish(user.id, changed(AREAS, current["course_id"]))

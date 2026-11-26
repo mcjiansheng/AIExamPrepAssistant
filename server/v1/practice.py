@@ -588,20 +588,25 @@ def result(sid: str, request: Request, user: Principal = Depends(principal)):
         return finish_session(conn, user, sid)
 
 
+def remove_session(conn, user, sid):
+    row = session_row(conn, user.id, sid)
+    events = conn.execute("SELECT DISTINCT kp_id,bank_id FROM learning_events WHERE session_id=?", (sid,)).fetchall()
+    conn.execute("DELETE FROM practice_sessions WHERE id=?", (sid,))
+    conn.execute("DELETE FROM learning_activity WHERE user_id=? AND id=?", (user.id, f"session:{sid}"))
+    for kid in {item["kp_id"] for item in events}:
+        learning.recompute_progress(conn, user, kid)
+        learning.snapshot_readiness(conn, user, courses.kp(conn, user.id, kid)["course_id"])
+    for bank_id in {item["bank_id"] for item in events}:
+        rebuild_mistake(conn, user, bank_id)
+    if events:
+        plans.replan(conn, user)
+    return row
+
+
 @router.delete("/sessions/{sid}", status_code=204)
 def delete_session(sid: str, request: Request, user: Principal = Depends(principal)):
     with request.app.state.db.transaction(write=True) as conn:
-        row = session_row(conn, user.id, sid)
-        events = conn.execute("SELECT DISTINCT kp_id,bank_id FROM learning_events WHERE session_id=?", (sid,)).fetchall()
-        conn.execute("DELETE FROM practice_sessions WHERE id=?", (sid,))
-        conn.execute("DELETE FROM learning_activity WHERE user_id=? AND id=?", (user.id, f"session:{sid}"))
-        for kid in {item["kp_id"] for item in events}:
-            learning.recompute_progress(conn, user, kid)
-            learning.snapshot_readiness(conn, user, courses.kp(conn, user.id, kid)["course_id"])
-        for bank_id in {item["bank_id"] for item in events}:
-            rebuild_mistake(conn, user, bank_id)
-        if events:
-            plans.replan(conn, user)
+        row = remove_session(conn, user, sid)
     publish(request, user, row["course_id"])
     return Response(status_code=204)
 

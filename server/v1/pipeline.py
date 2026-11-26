@@ -582,6 +582,7 @@ class Worker:
     def start(self):
         with self.app.state.db.transaction(write=True) as conn:
             conn.execute("UPDATE jobs SET status='queued' WHERE status='running'")
+            conn.execute("UPDATE chat_messages SET status='stopped' WHERE status='running'")
         self.thread.start()
 
     def close(self):
@@ -593,7 +594,7 @@ class Worker:
             row = conn.execute(
                 """SELECT j.*,u.timezone,u.guest FROM jobs j JOIN users u ON u.id=j.user_id
                    WHERE j.status='queued' AND (j.run_after IS NULL OR j.run_after<=?)
-                   AND j.kind IN ('ingest','focus','session')
+                   AND j.kind IN ('ingest','focus','session','agent')
                    AND (j.kind<>'focus' OR (
                        EXISTS(SELECT 1 FROM active_knowledge_points WHERE course_id=j.course_id)
                        AND EXISTS(SELECT 1 FROM model_roles r JOIN provider_connections c ON c.id=r.connection_id
@@ -641,12 +642,15 @@ class Worker:
         app, jid = self.app, job["id"]
         db = app.state.db
         payload = load(job["payload"])
+        from .chat import BackgroundWait, run_agent
         try:
             job_event(app, user, jid)
             if job["kind"] == "ingest":
                 run_ingest(app, user, job, payload)
             elif job["kind"] == "focus":
                 run_focus(app, user, job, payload)
+            elif job["kind"] == "agent":
+                run_agent(app, user, job, payload)
             else:
                 from .generation import run_session
                 run_session(app, user, job, payload)
@@ -668,7 +672,7 @@ class Worker:
         except JobFailure as error:
             with db.transaction(write=True) as conn:
                 self.fail(conn, job, user, payload, str(error), error.retryable)
-        except Removed:
+        except (Removed, BackgroundWait):
             return
         except Exception as error:
             from .app import exception_chain

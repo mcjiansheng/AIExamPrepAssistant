@@ -234,15 +234,26 @@ def get_focus(course_id: str, request: Request, user: User):
         return view(conn, user, course_id)
 
 
+def submit_fragments(conn, user, course_id, text, source="text"):
+    own_course(conn, user.id, course_id)
+    ids = save_fragments(conn, user.id, course_id, text, source)
+    has_kps = conn.execute("SELECT 1 FROM knowledge_points WHERE course_id=? LIMIT 1", (course_id,)).fetchone() is not None
+    job = new_job(conn, user, "focus", course_id, course_id=course_id,
+                  stage="分析老师重点" if has_kps else "等待资料整理", payload={"fragment_ids": ids})
+    return ids, job
+
+
+def fragment_undo(conn, user, ids):
+    return record(conn, user, label="已记下老师说的重点", summary="删掉刚记的老师原话",
+                  affects=["focus", "map", "course", "today", "schedule"],
+                  rows=[("fragments", {"id": fid}, None) for fid in ids])
+
+
 @router.post("/courses/{course_id}/focus/fragments")
 def add_fragments(course_id: str, body: FragmentInput, request: Request, user: User):
     require_member(user)
     def create():
-        own_course(conn, user.id, course_id)
-        ids = save_fragments(conn, user.id, course_id, body.text, body.source)
-        has_kps = conn.execute("SELECT 1 FROM knowledge_points WHERE course_id=? LIMIT 1", (course_id,)).fetchone() is not None
-        new_job(conn, user, "focus", course_id, course_id=course_id,
-                stage="分析老师重点" if has_kps else "等待资料整理", payload={"fragment_ids": ids})
+        submit_fragments(conn, user, course_id, body.text, body.source)
         return 200, view(conn, user, course_id)
     with request.app.state.db.transaction(write=True) as conn:
         _, result = idempotent(conn, request, user, create)
