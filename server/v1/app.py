@@ -136,6 +136,7 @@ def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=Non
 
     @asynccontextmanager
     async def serving(app):
+        pipeline.prepare_pdfkit()
         worker = pipeline.Worker(app) if worker_enabled else None
         if worker is not None:
             worker.start()

@@ -35,6 +35,9 @@ class StudyTest(unittest.TestCase):
         for row in carried:
             course_tasks = [task for task in today["tasks"] if task["course_id"] == row["course_id"]]
             self.assertEqual(course_tasks[0]["kind"], "review")
+            upcoming = self.api("GET", f"/courses/{row['course_id']}/home", token)["next"]
+            self.assertEqual([item["id"] for item in upcoming if item["date"] == today["date"]],
+                             [item["id"] for item in course_tasks[:3]])
         schedule = self.api("GET", "/schedule", token)
         self.assertEqual(len(schedule["days"]), 7)
         self.assertTrue(any(exam["name"] == "高等数学" for day in schedule["days"] for exam in day["exams"]))

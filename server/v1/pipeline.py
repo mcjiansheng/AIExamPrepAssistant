@@ -8,8 +8,9 @@ import subprocess
 import tempfile
 import time
 import zipfile
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 from datetime import timedelta
+from functools import cache
 from pathlib import Path, PurePosixPath
 from threading import Event, Thread
 from typing import Annotated, Literal
@@ -23,7 +24,7 @@ from .auth import Principal, new_id, principal, require_member
 from .db import dump, load, utc_now
 from .errors import ApiError
 from .events import changed
-from .idempotency import run
+from .idempotency import previous_response, run
 from .legacy import module
 from .model_runtime import JobFailure, OutputError, RetryLater, binding, role_model
 
@@ -60,12 +61,21 @@ def page_count(path, extension):
     if extension in IMAGE_FORMATS:
         return 1
     if extension == ".pdf":
-        try:
-            out = subprocess.run(["pdfinfo", str(path)], capture_output=True, check=True, timeout=15).stdout
-        except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            return None
-        result = re.search(rb"^Pages:\s+(\d+)", out, re.M)
-        return int(result.group(1)) if result else None
+        if poppler := shutil.which("pdfinfo"):
+            try:
+                out = subprocess.run([poppler, str(path)], capture_output=True, check=True, timeout=15).stdout
+            except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                pass
+            else:
+                result = re.search(rb"^Pages:\s+(\d+)", out, re.M)
+                if result and int(result.group(1)) > 0:
+                    return int(result.group(1))
+        if shutil.which("swift"):
+            try:
+                return int(pdfkit("count", path)) or None
+            except (ValueError, FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                pass
+        return None
     if extension in {".pptx", ".docx"}:
         try:
             with zipfile.ZipFile(path) as archive:
@@ -85,16 +95,11 @@ def page_count(path, extension):
 def enqueue_uploads(conn, app, user, cid, records):
     if binding(conn, user.id, "organize", app.state.mock_model) is None or not records:
         return None
-    for row in records:
-        if row["pages"] is None:
-            count = page_count(source_file(app, row), row["storage_extension"])
-            conn.execute("UPDATE materials SET pages=? WHERE id=?", (count, row["id"]))
-    rows = [present(conn, row["id"], user.id) for row in records]
-    counts = [row["pages"] for row in rows]
+    counts = [row["pages"] for row in records]
     units = sum(counts) if all(value is not None for value in counts) else None
     estimate = providers.estimate(conn, app, user, "ingest", units) if units is not None else None
     approval = estimate if estimate is not None and estimate["needs_confirm"] else None
-    ids = [row["id"] for row in rows]
+    ids = [row["id"] for row in records]
     state = "waiting_confirm" if approval else "reading"
     stage = "等待确认用量" if approval else "读取资料"
     conn.executemany("UPDATE materials SET status=?,stage=? WHERE id=?", [(state, stage, item) for item in ids])
@@ -115,7 +120,7 @@ def release_waiting(conn, app, user):
         enqueue_uploads(conn, app, user, cid, group)
 
 
-def write_upload(conn, app, user, cid, source, upload, rollback):
+def stage_upload(app, user, cid, source, upload, rollback):
     title = PurePosixPath((upload.filename or "").replace("\\", "/")).name
     extension = Path(title).suffix.casefold()
     if extension not in FORMATS:
@@ -138,12 +143,10 @@ def write_upload(conn, app, user, cid, source, upload, rollback):
         output.flush()
         os.fsync(output.fileno())
     kind = "photo" if source == "photo" else v0_materials.classify(title, extension)
-    conn.execute(
-        """INSERT INTO materials(id,user_id,course_id,title,kind,source,status,vision,uploaded_at,storage_extension,content_hash)
-           VALUES (?,?,?,?,?,?,'waiting_ai','none',?,?,?)""",
-        (mid, user.id, cid, title, kind, source, utc_now().isoformat(), extension, digest.hexdigest()),
-    )
-    return present(conn, mid, user.id)
+    return {"id": mid, "user_id": user.id, "course_id": cid, "title": title, "kind": kind, "source": source,
+            "uploaded_at": utc_now().isoformat(), "storage_extension": extension, "content_hash": digest.hexdigest(),
+            "pages": page_count(path, extension)}
+
 
 
 @router.post("/courses/{cid}/materials")
@@ -155,18 +158,33 @@ def upload_materials(
     if len(files) > 20:
         raise ApiError(413, "too_large", "一次最多上传 20 个文件")
     app = request.app
+    with app.state.db.transaction() as conn:
+        courses.course(conn, user.id, cid)
+        if (saved := previous_response(conn, request, user)) is not None:
+            status, result = saved
+            return JSONResponse(result, status_code=status)
     with ExitStack() as rollback:
+        rows = [stage_upload(app, user, cid, source, file, rollback) for file in files]
+        inserted = False
         with app.state.db.transaction(write=True) as conn:
             courses.course(conn, user.id, cid)
 
             def create():
-                rows = [write_upload(conn, app, user, cid, source, file, rollback) for file in files]
+                nonlocal inserted
+                conn.executemany(
+                    """INSERT INTO materials(id,user_id,course_id,title,kind,source,status,vision,uploaded_at,
+                                             storage_extension,content_hash,pages)
+                       VALUES (:id,:user_id,:course_id,:title,:kind,:source,'waiting_ai','none',:uploaded_at,
+                               :storage_extension,:content_hash,:pages)""", rows,
+                )
+                inserted = True
                 job = enqueue_uploads(conn, app, user, cid, rows)
                 return 200, {"job": job, "materials": [materials.view(
                     conn, present(conn, row["id"], user.id), user.timezone) for row in rows]}
 
             status, result = run(conn, request, user, create)
-        rollback.pop_all()
+        if inserted:
+            rollback.pop_all()
     app.state.events.publish(user.id, changed(AREAS, cid))
     return JSONResponse(result, status_code=status)
 
@@ -217,18 +235,37 @@ def ocr(app, path):
     return "\n".join(result.txts or ())
 
 
-def pdfkit(source, workspace, operation, *args):
+@cache
+def pdfkit_module_cache():
+    return tempfile.TemporaryDirectory(prefix="fullgrid-pdfkit-")
+
+
+def pdfkit(operation, *args):
     script = Path(__file__).with_name("pdfkit.swift")
-    command = ["swift", "-module-cache-path", str(workspace / "swift-cache"),
-               str(script), operation, str(source), *map(str, args)]
-    return subprocess.run(command, capture_output=True, check=True, timeout=120, cwd=workspace).stdout
+    command = ["swift", "-module-cache-path", pdfkit_module_cache().name,
+               str(script), operation, *(str(arg.resolve()) if isinstance(arg, Path) else str(arg) for arg in args)]
+    return subprocess.run(command, capture_output=True, check=True, timeout=120).stdout
+
+
+@cache
+def prepare_pdfkit():
+    if shutil.which("swift") and (not shutil.which("pdfinfo") or not shutil.which("pdftotext")):
+        try:
+            pdfkit("prepare")
+        except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            logger.warning("PDFKit 预热失败，读取 PDF 时将再尝试")
 
 
 def document_text(path, workspace):
-    if path.suffix != ".pdf" or shutil.which("pdftotext") or not shutil.which("swift"):
+    if path.suffix != ".pdf":
+        return extractor.extract(path, workspace)
+    with path.open("rb") as stream:
+        if b"%PDF-" not in stream.read(16 * 1024):
+            raise extractor.ExtractionError("文件没有可读的 PDF 文件头，请用原应用另存后重新上传")
+    if shutil.which("pdftotext") or not shutil.which("swift"):
         return extractor.extract(path, workspace)
     try:
-        content = load(pdfkit(path, workspace, "text"))
+        content = load(pdfkit("text", path))
     except subprocess.TimeoutExpired:
         raise extractor.ExtractionError("读取资料超时，可以重试或拆成较小的文件", True) from None
     except subprocess.CalledProcessError as error:
@@ -240,7 +277,7 @@ def document_text(path, workspace):
     return [extractor.clean(page) for page in content["pages"]], content.get("modified")
 
 
-def render_scanned_page(source, number, target, workspace):
+def render_scanned_page(source, number, target):
     try:
         if shutil.which("pdftoppm"):
             subprocess.run(
@@ -249,9 +286,20 @@ def render_scanned_page(source, number, target, workspace):
                 capture_output=True, check=True, timeout=60,
             )
         else:
-            pdfkit(source, workspace, "image", number, target)
+            pdfkit("image", source, number, target)
     except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         raise extractor.ExtractionError("扫描页无法读取，请另存为图片或带文字的 PDF") from None
+
+
+@contextmanager
+def document_path(app, row):
+    with tempfile.TemporaryDirectory(dir=root(app)) as directory:
+        path = Path(directory) / ("document" + row["storage_extension"])
+        try:
+            os.link(source_file(app, row), path)
+        except FileNotFoundError:
+            raise Removed from None
+        yield path
 
 
 def extract_pages(app, user, row, jid):
@@ -261,26 +309,17 @@ def extract_pages(app, user, row, jid):
     render_dir.mkdir(parents=True, exist_ok=True)
     result = []
     vision_state = "none"
-    with tempfile.TemporaryDirectory(dir=base) as directory:
-        path = Path(directory) / ("document" + extension)
-        try:
-            os.link(source_file(app, row), path)
-        except FileNotFoundError:
-            raise Removed from None
+    with document_path(app, row) as path:
         if extension in IMAGE_FORMATS:
             image = render_dir / "1.png"
             image_to_png(path, image)
             texts, modified = [""], None
         else:
-            if extension == ".pdf":
-                with path.open("rb") as stream:
-                    if b"%PDF-" not in stream.read(16 * 1024):
-                        raise extractor.ExtractionError("文件没有可读的 PDF 文件头，请用原应用另存后重新上传")
             texts, modified = document_text(path, base)
         for number, text in enumerate(texts, 1):
             image = render_dir / f"{number}.png"
             if not text and extension == ".pdf":
-                render_scanned_page(path, number, image, base)
+                render_scanned_page(path, number, image)
             if image.exists():
                 image_text = ocr(app, image) if not text else text
                 with app.state.db.transaction() as conn:
@@ -381,11 +420,12 @@ def save_points(conn, user, row, payload, points):
     mid, cid = row["id"], row["course_id"]
     if "chapter" not in payload:
         chapter, topic = new_id("ch"), new_id("tp")
+        title = Path(row["title"]).stem
         position = conn.execute("SELECT COUNT(*) FROM chapters WHERE course_id=?", (cid,)).fetchone()[0]
         conn.execute("INSERT INTO chapters(id,user_id,course_id,title,position) VALUES (?,?,?,?,?)",
-                     (chapter, user.id, cid, row["title"], position))
+                     (chapter, user.id, cid, title, position))
         conn.execute("INSERT INTO topics(id,user_id,course_id,chapter_id,title,position,minutes) VALUES (?,?,?,?,?,?,?)",
-                     (topic, user.id, cid, chapter, row["title"], 0, 15))
+                     (topic, user.id, cid, chapter, title, 0, 15))
         payload.update(chapter=chapter, topic=topic, points=[])
     position = conn.execute("SELECT COALESCE(MAX(position)+1,0) FROM knowledge_points WHERE course_id=?", (cid,)).fetchone()[0]
     for offset, point in enumerate(points):
@@ -419,9 +459,9 @@ def process_material(app, user, job, payload, mid):
     work = payload.setdefault("work", {})
     with db.transaction() as conn:
         row = present(conn, mid, user.id)
+        if row["status"] in {"ready", "failed"}:
+            return
         check_limit(conn, user)
-    if row["status"] in {"ready", "failed"}:
-        return
     if not work.get("extracted"):
         pages, modified, vision = extract_pages(app, user, row, job["id"])
         work.update(extracted=True, page_offset=0, skipped=[])
@@ -456,7 +496,7 @@ def process_material(app, user, job, payload, mid):
     points = work.get("points", [])
     if not points:
         raise extractor.ExtractionError("没有整理出知识点，请上传包含课程正文的资料")
-    groups = group_points(model, (row["course_id"], row["title"]), points)
+    groups = group_points(model, (row["course_id"], Path(row["title"]).stem), points)
     with db.transaction(write=True) as conn:
         present(conn, mid, user.id)
         for i, group in enumerate(groups, 1):
@@ -482,23 +522,60 @@ def process_material(app, user, job, payload, mid):
     app.state.events.publish(user.id, changed(AREAS, row["course_id"]))
 
 
+def mark_material_failed(conn, user, mid, error):
+    result = {"message": str(error), "retryable": error.retryable}
+    conn.execute("UPDATE materials SET status='failed',error=?,stage=NULL WHERE id=? AND user_id=?",
+                 (dump(result), mid, user.id))
+    return {"id": mid, **result}
+
+
+def needs_ingest_confirmation(app, user, job, payload):
+    db = app.state.db
+    with db.transaction() as conn:
+        rows = [row for mid in payload["materials"][payload["index"]:]
+                if (row := conn.execute(
+                    "SELECT * FROM materials WHERE id=? AND user_id=? AND status NOT IN ('failed','ready')",
+                    (mid, user.id),
+                ).fetchone())]
+    if payload["units"] is not None and all(row["pages"] is not None for row in rows):
+        return False
+
+    # The upload probe can fail even for a readable PDF. Count its text-layer
+    # pages here, before extraction can call either the vision or organize model.
+    counts, unreadable = {}, {}
+    for row in rows:
+        mid = row["id"]
+        if row["pages"] is not None:
+            counts[mid] = row["pages"]
+            continue
+        try:
+            with document_path(app, row) as path:
+                texts, _ = document_text(path, root(app))
+            counts[mid] = len(texts)
+        except Removed:
+            continue
+        except extractor.ExtractionError as error:
+            unreadable[mid] = error
+
+    with db.transaction(write=True) as conn:
+        failures = payload.setdefault("failures", [])
+        failures.extend(mark_material_failed(conn, user, mid, error) for mid, error in unreadable.items())
+        conn.executemany("UPDATE materials SET pages=? WHERE id=? AND user_id=?",
+                         [(count, mid, user.id) for mid, count in counts.items()])
+        payload["units"] = sum(counts.values())
+        estimate = providers.estimate(conn, app, user, "ingest", payload["units"]) if counts else None
+        if estimate and estimate["needs_confirm"]:
+            conn.executemany("UPDATE materials SET status='waiting_confirm',stage='等待确认用量' WHERE id=? AND user_id=?",
+                             [(mid, user.id) for mid in counts])
+            set_job(conn, job["id"], payload, "等待确认用量", status="needs_input", estimate=estimate)
+            return True
+        set_job(conn, job["id"], payload, "读取资料")
+    return False
+
+
 def run_ingest(app, user, job, payload):
-    if payload["units"] is None:
-        db = app.state.db
-        with db.transaction(write=True) as conn:
-            rows = [row for mid in payload["materials"]
-                    if (row := conn.execute("SELECT * FROM materials WHERE id=? AND user_id=?", (mid, user.id)).fetchone())]
-            counts = [row["pages"] or count_after_upload(app, row) for row in rows]
-            payload["units"] = sum(counts)
-            estimate = providers.estimate(conn, app, user, "ingest", payload["units"])
-            if estimate["needs_confirm"] and not payload.get("approved"):
-                conn.executemany(
-                    "UPDATE materials SET status='waiting_confirm',stage='等待确认用量' WHERE id=?",
-                    [(mid,) for mid in payload["materials"]],
-                )
-                set_job(conn, job["id"], payload, "等待确认用量", status="needs_input", estimate=estimate)
-                return
-            set_job(conn, job["id"], payload, "读取资料")
+    if needs_ingest_confirmation(app, user, job, payload):
+        return
     db = app.state.db
     targets = payload["materials"]
     failures = payload.setdefault("failures", [])
@@ -509,11 +586,8 @@ def run_ingest(app, user, job, payload):
         except Removed:
             pass
         except extractor.ExtractionError as error:
-            result = {"message": str(error), "retryable": error.retryable}
             with db.transaction(write=True) as conn:
-                conn.execute("UPDATE materials SET status='failed',error=?,stage=NULL WHERE id=? AND user_id=?",
-                             (dump(result), mid, user.id))
-            failures.append({"id": mid, **result})
+                failures.append(mark_material_failed(conn, user, mid, error))
         payload["index"] += 1
         payload.pop("work", None)
         with db.transaction(write=True) as conn:
@@ -522,16 +596,6 @@ def run_ingest(app, user, job, payload):
         job_event(app, user, job["id"])
     if len(failures) == len(targets):
         raise JobFailure(failures[-1]["message"], any(entry["retryable"] for entry in failures))
-
-
-def count_after_upload(app, row):
-    count = page_count(source_file(app, row), row["storage_extension"])
-    if count is not None:
-        return count
-    if row["storage_extension"] in {".txt", ".md", ".markdown"}:
-        text = source_file(app, row).read_text(encoding="utf-8-sig", errors="replace")
-        return len(extractor.text_pages(text))
-    return 1
 
 
 def run_focus(app, user, job, payload):

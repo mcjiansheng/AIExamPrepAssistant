@@ -87,13 +87,14 @@ def available(conn, user_id, day, default):
     return row[0] if row is not None else default
 
 
-def ordered(rows, course_rows, day):
+def course_task_order(row):
     priorities = {"review": 0, "learn": 2, "mock": 3, "mistakes": 4, "practice": 5}
-    return sorted(rows, key=lambda row: (
-        -urgency(course_rows[row["course_id"]], day),
-        1 if row["moved_from"] and row["kind"] != "review" else priorities[row["kind"]],
-        row["position"], row["created_at"], row["id"],
-    ))
+    priority = 1 if row["moved_from"] and row["kind"] != "review" else priorities[row["kind"]]
+    return priority, row["position"], row["created_at"], row["id"]
+
+
+def ordered(rows, course_rows, day):
+    return sorted(rows, key=lambda row: (-urgency(course_rows[row["course_id"]], day), *course_task_order(row)))
 
 
 def standing_courses(conn, user_id, day):
@@ -293,10 +294,12 @@ def today_view(conn, user, *, consume_notice=False):
 
 def next_course_tasks(conn, user, course_id):
     ensure_plan(conn, user)
-    return [task_view(conn, row) for row in conn.execute(
-        """SELECT * FROM schedule_items WHERE user_id=? AND course_id=? AND status='todo' AND date>=?
-           ORDER BY date, position, created_at LIMIT 3""", (user.id, course_id, str(local_today(user))),
-    )]
+    tasks = conn.execute(
+        "SELECT * FROM schedule_items WHERE user_id=? AND course_id=? AND status='todo' AND date>=?",
+        (user.id, course_id, str(local_today(user))),
+    )
+    upcoming = sorted(tasks, key=lambda row: (row["date"], *course_task_order(row)))[:3]
+    return [task_view(conn, row) for row in upcoming]
 
 
 def day_view(conn, user, on, default):

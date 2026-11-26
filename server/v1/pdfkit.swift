@@ -10,6 +10,10 @@ func fail(_ message: String, _ code: Int32 = 1) -> Never {
     exit(code)
 }
 
+if args.count == 2, args[1] == "prepare" {
+    exit(0)
+}
+
 guard args.count >= 3, let doc = PDFDocument(url: URL(fileURLWithPath: args[2])) else {
     fail("Cannot open PDF")
 }
@@ -17,7 +21,9 @@ if doc.isLocked {
     fail("PDF password required", 2)
 }
 
-if args[1] == "text" {
+if args[1] == "count" {
+    print(doc.pageCount)
+} else if args[1] == "text" {
     let pages = (0..<doc.pageCount).map { doc.page(at: $0)?.string ?? "" }
     var output: [String: Any] = ["pages": pages]
     if let modified = doc.documentAttributes?[PDFDocumentAttribute.modificationDateAttribute] as? Date {

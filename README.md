@@ -17,7 +17,7 @@ AI 备考助手。大学生期中、期末备考时，把课件、作业、笔�
 
 ## 本机运行
 
-服务端 v1 使用 Python 3.12 或以上版本。安装 `server/requirements.txt` 的固定版本后，在仓库根目录执行 `python3 -m server.v1 --mock-model`，默认监听 [127.0.0.1:8765](http://127.0.0.1:8765)。前端开发服务器打开 [127.0.0.1:5173/?api=real](http://127.0.0.1:5173/?api=real) 即可联调。演示模式用 `13800000000` 和短信验证码 `123456`，`python3 -m server.v1 --mock-model reset-demo` 可重建演示账号及数据。
+服务端 v1 使用 Python 3.12 或以上版本。安装 `server/requirements.txt` 的固定版本后，在仓库根目录执行 `python3 -m server.v1 --mock-model`，默认监听 [127.0.0.1:8765](http://127.0.0.1:8765)。前端开发服务器打开 [127.0.0.1:5173/?api=real](http://127.0.0.1:5173/?api=real) 即可联调。开发模式用演示账号 `13800000000`，随机验证码显示在登录页。`python3 -m server.v1 --mock-model reset-demo` 可重建演示账号及数据。
 
 v1 的 SQLite 库和上传的原文件保存在 `local/data/`。连接真实模型时在设置里添加用户自己的连接，API 密钥加密保存在服务端。可用 `python3 -m server.v1 smoke-preflight` 检查本机是否具备 LongCat 冒烟材料，预检不发送请求。
 

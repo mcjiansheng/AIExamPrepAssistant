@@ -1,4 +1,7 @@
 import json
+import os
+import shutil
+import sys
 import tempfile
 import time
 import unittest
@@ -8,6 +11,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from server.tests.v1.test_contract import sample_pdf
 from server.tests.v1.test_stage1 import DEVICE
 from server.v1 import generation, pipeline
 from server.v1.app import create_app
@@ -60,7 +64,8 @@ class AiFlowTest(unittest.TestCase):
         result = self.upload(token, cid)
         job = self.wait_for(token, f"/jobs/{result['job']['id']}", {"done", "failed"})
         self.assertEqual(job["status"], "done", job)
-        self.assertTrue(self.api("GET", f"/courses/{cid}/map", token)["chapters"])
+        chapters = self.api("GET", f"/courses/{cid}/map", token)["chapters"]
+        self.assertEqual([chapter["title"] for chapter in chapters], ["scheduling"])
         return cid
 
     def test_keys_are_encrypted_and_invalid_connections_update_visibly(self):
@@ -102,6 +107,38 @@ class AiFlowTest(unittest.TestCase):
         self.assertEqual(self.wait_for(token, f"/jobs/{jid}", {"done", "failed"})["status"], "done")
         usage = self.api("GET", "/me/usage", token)
         self.assertGreater(usage["total"]["tokens_in"], 0)
+
+    def upload_pdf(self, token, cid, pages):
+        return self.api("POST", f"/courses/{cid}/materials", token, data={"source": "file"},
+                        files=[("files", ("调度资料.pdf", sample_pdf(pages), "application/pdf"))])
+
+    @unittest.skipUnless(sys.platform == "darwin", "PDFKit is a macOS framework")
+    def test_pdf_page_count_without_pdfinfo_pauses_in_upload_response(self):
+        token = self.member()
+        self.add_model(token)
+        cid = self.new_course(token)
+        with patch.dict(os.environ, {"PATH": "/usr/bin:/bin"}):
+            self.assertIsNone(shutil.which("pdfinfo"))
+            upload = self.upload_pdf(token, cid, 20)
+        self.assertEqual(upload["job"]["status"], "needs_input")
+        self.assertEqual(upload["job"]["estimate"]["tokens_max"], 84_000)
+        self.assertEqual(upload["materials"][0]["pages"], 20)
+        self.assertEqual(upload["materials"][0]["status"], "waiting_confirm")
+
+    def test_pdf_text_layer_counts_pages_before_any_model_call(self):
+        token = self.member()
+        self.add_model(token)
+        cid = self.new_course(token)
+        before = self.api("GET", "/me/limits", token)["today_tokens"]
+        with patch.object(pipeline, "page_count", return_value=None):
+            upload = self.upload_pdf(token, cid, 20)
+            self.assertEqual(upload["job"]["status"], "queued")
+            paused = self.wait_for(token, f"/jobs/{upload['job']['id']}", {"needs_input", "done", "failed"})
+        self.assertEqual(paused["status"], "needs_input", paused)
+        self.assertEqual(paused["estimate"]["tokens_max"], 84_000)
+        material, = self.api("GET", f"/courses/{cid}/materials", token)
+        self.assertEqual((material["pages"], material["status"]), (20, "waiting_confirm"))
+        self.assertEqual(self.api("GET", "/me/limits", token)["today_tokens"], before)
 
     def test_daily_limit_pauses_after_completed_batch_and_allows_later_continue(self):
         token = self.member()
