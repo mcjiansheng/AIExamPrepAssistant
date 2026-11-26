@@ -1,0 +1,8 @@
+fastapi==0.165.0
+uvicorn==0.54.0
+python-multipart==0.0.34
+httpx==0.28.1
+cryptography==50.0.2
+mcp==2.3.0
+rapidocr==3.10.0
+onnxruntime==1.32.0
