@@ -14,6 +14,8 @@ export const api = {
   undo: (id: T.ID) => http.post<{ ok: true; affects: T.Area[]; summary: string }>(`/undo/${id}`),
   job: (id: T.ID) => http.get<T.Job>(`/jobs/${id}`),
   retryJob: (id: T.ID) => http.post<T.Job>(`/jobs/${id}/retry`),
+  /** needs_input 的任务：确认用量或提高上限后继续 */
+  continueJob: (id: T.ID) => http.post<T.Job>(`/jobs/${id}/continue`),
 
   // 认证与账号
   sms: (phone: string) => http.post<{ cooldown_sec: number; dev_code: string | null }>('/auth/sms', { phone }),

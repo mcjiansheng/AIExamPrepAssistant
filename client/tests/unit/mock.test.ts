@@ -123,7 +123,9 @@ describe('演示后端', () => {
   });
 
   it('助手：今天只有 1 小时 → 改动卡，可以撤销', async () => {
-    const { data: tokens } = await call<T.Tokens>('POST', '/auth/guest', { device });
+    // 助手要连接 AI：用已连接的演示账号（合同第 14 节）
+    await call('POST', '/auth/sms', { phone: '13800000000' });
+    const { data: tokens } = await call<T.Tokens>('POST', '/auth/login', { phone: '13800000000', code: '123456', device });
     const t = tokens.access_token;
     const thread = (await call<T.Thread[]>('GET', '/threads', undefined, t)).data.find((x) => x.kind === 'global')!;
     const ids = (today: T.Today) => today.tasks.map((x) => x.id).sort().join();
@@ -139,6 +141,66 @@ describe('演示后端', () => {
     expect(restored.minutes_available).toBe(120);
     // 撤销后任务和改动前完全一样：重排新建的任务被删掉，被删的旧任务回来，不重复
     expect(ids(restored)).toBe(original);
+  });
+
+  it('没有连接 AI：访客在示例课程里用助手，回连接卡', async () => {
+    const { data: tokens } = await call<T.Tokens>('POST', '/auth/guest', { device });
+    const t = tokens.access_token;
+    const thread = (await call<T.Thread[]>('GET', '/threads', undefined, t)).data.find((x) => x.kind === 'global')!;
+    const before = (await call<T.Today>('GET', '/today', undefined, t)).data.minutes_available;
+    const events = (await call<T.ChatEvent[]>('POST', `/threads/${thread.id}/messages`, { text: '今天只有 1 小时', context: { route: '/' } }, t)).data;
+    const cards = events.filter((e): e is Extract<T.ChatEvent, { type: 'card' }> => e.type === 'card');
+    expect(cards.map((e) => e.card.kind)).toEqual(['connect']);
+    expect(events.at(-1)!.type).toBe('done');
+    expect((await call<T.Today>('GET', '/today', undefined, t)).data.minutes_available).toBe(before);
+  });
+
+  it('整理超过确认阈值：上传后暂停等确认，继续后整理；连接 AI 后的自动整理同样', async () => {
+    await call('POST', '/auth/sms', { phone: '13912340000' });
+    const t = (await call<T.Tokens>('POST', '/auth/login', { phone: '13912340000', code: '123456', device })).data.access_token;
+    const pdf = (name: string, pages: number) => new File([`%PDF-1.4\n${'1 0 obj << /Type /Page >> endobj\n'.repeat(pages)}2 0 obj << /Type /Pages >> endobj\n`], name, { type: 'application/pdf' });
+    const upload = async (cid: T.ID, file: File) => {
+      const form = new FormData();
+      form.append('files', file);
+      form.append('source', 'file');
+      return (await call<{ materials: T.Material[]; job: T.Job | null }>('POST', `/courses/${cid}/materials`, form, t)).data;
+    };
+    // 没连接时上传 12 页：等待连接
+    const os = (await call<T.Course>('POST', '/courses', { name: '操作系统', exam_date: null }, t)).data;
+    const waiting = await upload(os.id, pdf('操作系统 第三章.pdf', 12));
+    expect(waiting.materials[0]!.pages).toBe(12);
+    expect(waiting.job).toBeNull();
+    // 连接后自动整理：12 页约 3.6 万 token，超过 2 万，暂停等确认
+    const conn = (await call<T.Connection>('POST', '/me/providers', { preset_id: 'deepseek', key: 'sk-test-1234567890' }, t)).data;
+    await call('POST', `/me/providers/${conn.id}/check`, {}, t);
+    const paused = (await call<T.Course>('GET', `/courses/${os.id}`, undefined, t)).data.organizing;
+    expect(paused.state).toBe('waiting_confirm');
+    const job = (await call<T.Job>('GET', `/jobs/${paused.job_id}`, undefined, t)).data;
+    expect(job.status).toBe('needs_input');
+    expect(job.estimate!.needs_confirm).toBe(true);
+    expect(job.estimate!.tokens_min).toBeLessThan(36_000);
+    expect(job.estimate!.tokens_max).toBeGreaterThan(36_000);
+    expect((await call<T.Material[]>('GET', `/courses/${os.id}/materials`, undefined, t)).data[0]!.status).toBe('waiting_confirm');
+    tick(Date.now() + 60_000);
+    expect((await call<T.Job>('GET', `/jobs/${job.id}`, undefined, t)).data.status).toBe('needs_input');
+    // 确认后继续
+    const resumed = (await call<T.Job>('POST', `/jobs/${job.id}/continue`, {}, t)).data;
+    expect(resumed.status).toBe('queued');
+    expect(resumed.estimate).toBeNull();
+    for (let i = 0; i < 8; i += 1) tick(Date.now() + (i + 1) * 5_000);
+    expect((await call<T.CourseMap>('GET', `/courses/${os.id}/map`, undefined, t)).data.chapters.length).toBeGreaterThan(0);
+    expect((await call('POST', `/jobs/${job.id}/continue`, {}, t)).status).toBe(409);
+    // 已连接时上传：大的暂停、小的直接整理
+    const ds = (await call<T.Course>('POST', '/courses', { name: '数据结构', exam_date: null }, t)).data;
+    const big = await upload(ds.id, pdf('数据结构 全册.pdf', 30));
+    expect(big.job!.status).toBe('needs_input');
+    expect(big.job!.estimate!.needs_confirm).toBe(true);
+    expect(big.materials[0]!.status).toBe('waiting_confirm');
+    const small = await upload(ds.id, pdf('数据结构 第一章.pdf', 3));
+    expect(small.job!.status).toBe('queued');
+    expect(small.job!.estimate).toBeNull();
+    const estimate = (await call<T.Estimate>('POST', '/estimate', { op: 'ingest', course_id: ds.id, material_ids: [big.materials[0]!.id] }, t)).data;
+    expect(estimate.tokens_min).toBe(big.job!.estimate!.tokens_min);
   });
 
   it('新用户：没连 AI 时上传等待，连接后整理出知识结构', async () => {

@@ -16,8 +16,13 @@ mockConfig.speed = 0;
 async function call<R = any>(method: string, path: string, body?: unknown, token?: string) {
   const headers = new Headers();
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  if (body !== undefined) headers.set('Content-Type', 'application/json');
-  const res = await mockFetch(new Request(`http://test/api/v1${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) }));
+  let payload: BodyInit | undefined;
+  if (body instanceof FormData) payload = body;
+  else if (body !== undefined) {
+    headers.set('Content-Type', 'application/json');
+    payload = JSON.stringify(body);
+  }
+  const res = await mockFetch(new Request(`http://test/api/v1${path}`, { method, headers, body: payload }));
   const text = await res.text();
   const type = res.headers.get('Content-Type') ?? '';
   return (type.includes('ndjson') ? text.trim().split('\n').map((l) => JSON.parse(l)) : text ? JSON.parse(text) : null) as R;
@@ -82,6 +87,13 @@ describe.skipIf(!dir)('合同样例', () => {
     save('GET-notifications', await call('GET', '/notifications', undefined, t));
     save('GET-plugins', await call('GET', '/plugins', undefined, t));
     save('GET-plugins-id', await call('GET', '/plugins/compute-first', undefined, t));
+    // 上传 20 页：整理预计超过确认阈值，任务暂停在 needs_input（合同 v1.1 第 3、10 节）
+    const form = new FormData();
+    form.append('files', new File([`%PDF-1.4\n${'1 0 obj << /Type /Page >> endobj\n'.repeat(20)}`], '操作系统 第五章 文件系统.pdf', { type: 'application/pdf' }));
+    form.append('source', 'file');
+    const upload = await call<{ materials: T.Material[]; job: T.Job }>('POST', `/courses/${os.id}/materials`, form, t);
+    save('POST-courses-id-materials', upload);
+    save('POST-jobs-id-continue', await call('POST', `/jobs/${upload.job.id}/continue`, {}, t));
     save('ERROR-needs_confirmation', await call('POST', '/sessions', { kind: 'mock', course_id: os.id }, t));
     save('ERROR-unauthorized', await call('GET', '/today'));
     mkdirSync(dir!, { recursive: true });

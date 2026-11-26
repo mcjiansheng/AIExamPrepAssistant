@@ -114,7 +114,7 @@ export function createSession(user: UserRow, input: T.NewSession): SessionRow {
   };
   const job = {
     id: uid('j'), user_id: user.id, kind: 'session' as const, status: 'running' as const, progress: 0, stage: '出题中',
-    error: null, course_id: session.course_id, target_id: session.id, result: null, created_at: nowIso(), due: 0, payload: {},
+    error: null, course_id: session.course_id, target_id: session.id, result: null, estimate: null, created_at: nowIso(), due: 0, payload: {},
   };
   session.job_id = job.id;
   db.jobs.push(job);

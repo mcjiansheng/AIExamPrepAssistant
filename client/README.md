@@ -21,8 +21,9 @@ npm run dev                 # http://127.0.0.1:5173
 | `npm run typecheck` | 生成 token 后 `tsc`（strict） |
 | `npm test` | Vitest：演示后端按合同走主流程（`tests/unit/`） |
 | `npm run build` | 生产构建 |
-| `npm run e2e` | Playwright，用本机 Chrome（`channel: 'chrome'`，不下载浏览器）：`flows.spec.ts` 四条端到端流程；`screens.spec.ts` 在 390 / 768 / 1280 / 1600 四种宽度下给 15 个页面截图，存 `../local/证据/client-p0/` |
+| `npm run e2e` | Playwright，用本机 Chrome（`channel: 'chrome'`，不下载浏览器）：`flows.spec.ts` 六条端到端流程（`E2E_API=real` 时连服务端 v1）；`screens.spec.ts` 在 390 / 768 / 1280 / 1600 四种宽度下给 15 个页面截图，存 `../local/证据/client-p0/` |
 | `SAMPLES_DIR=<目录> npx vitest run tests/unit/samples.test.ts` | 从演示后端生成合同样例（`docs/接口合同/samples-v1/`） |
+| `FIXTURES_DIR=<目录> npx vitest run tests/unit/fixtures.test.ts` | 导出示例课程、服务商预设、插件目录（服务端做示例数据用） |
 
 ## 目录
 

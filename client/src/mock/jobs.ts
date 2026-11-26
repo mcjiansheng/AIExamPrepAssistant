@@ -3,7 +3,7 @@ import type * as T from '../api/types';
 import { changed, emit } from './bus';
 import { contentFor } from './content';
 import { analyzeFragments, buildStructure, jobView, refreshMaterialCounts } from './course';
-import { byId, db, nowIso, persist, uid, type JobRow, type MaterialRow } from './db';
+import { byId, db, nowIso, persist, uid, type CourseRow, type JobRow, type MaterialRow, type UserRow } from './db';
 import { planUser } from './plan';
 import { questionView } from './practice';
 
@@ -12,10 +12,51 @@ const STAGES = ['读取资料', '抽取知识点', '分组成主题', '分析老
 export function newJob(userId: T.ID, kind: T.Job['kind'], courseId: T.ID | null, targetId: T.ID, payload: Record<string, unknown>, delay = 400): JobRow {
   const job: JobRow = {
     id: uid('j'), user_id: userId, kind, status: 'queued', progress: 0, stage: null, error: null, course_id: courseId,
-    target_id: targetId, result: null, created_at: nowIso(), due: Date.now() + delay, payload,
+    target_id: targetId, result: null, estimate: null, created_at: nowIso(), due: Date.now() + delay, payload,
   };
   db.jobs.push(job);
   return job;
+}
+
+/** 整理资料的估算：每页约 3,000 token，区间 ±40%；中值超过确认阈值时要确认（合同 v1.1 第 3、7 节） */
+const INGEST_TOKENS_PER_PAGE = 3_000;
+export function ingestEstimate(pages: number, user: UserRow): T.Estimate {
+  const tokens = Math.max(1, pages) * INGEST_TOKENS_PER_PAGE;
+  const min = Math.round(tokens * 0.6);
+  const max = Math.round(tokens * 1.4);
+  return { tokens_min: min, tokens_max: max, cost_min: +(min * 4e-6).toFixed(2), cost_max: +(max * 4e-6).toFixed(2), needs_confirm: tokens > user.limits.confirm_tokens };
+}
+
+/** 开始整理：估算超过确认阈值时先暂停在 needs_input，等 POST /jobs/{id}/continue */
+export function startIngest(user: UserRow, course: CourseRow, materials: MaterialRow[]): JobRow {
+  const job = newJob(user.id, 'ingest', course.id, course.id, { material_ids: materials.map((m) => m.id), step: 0 }, 500);
+  const estimate = ingestEstimate(materials.reduce((sum, m) => sum + (m.pages ?? 1), 0), user);
+  if (estimate.needs_confirm) {
+    job.status = 'needs_input';
+    job.stage = '等待确认用量';
+    job.estimate = estimate;
+    for (const m of materials) { m.status = 'waiting_confirm'; m.stage = null; m.progress = 0; }
+    course.organizing = { state: 'waiting_confirm', progress: null, stage: '等待确认用量', job_id: job.id, attention: null };
+  } else {
+    for (const m of materials) m.status = 'reading';
+    course.organizing = { state: 'working', progress: 0, stage: '读取资料', job_id: job.id, attention: null };
+  }
+  return job;
+}
+
+/** 确认用量后继续 */
+export function continueJob(job: JobRow) {
+  job.status = 'queued';
+  job.stage = null;
+  job.estimate = null;
+  job.due = Date.now() + 300;
+  if (job.kind !== 'ingest' || !job.course_id) return;
+  const course = byId('courses', job.course_id);
+  for (const id of (job.payload.material_ids as T.ID[]) ?? []) {
+    const m = byId('materials', id);
+    if (m?.status === 'waiting_confirm') m.status = 'reading';
+  }
+  if (course) course.organizing = { state: 'working', progress: 0, stage: '读取资料', job_id: job.id, attention: null };
 }
 
 function notify(userId: T.ID, kind: T.Notification['kind'], title: string, body: string | null, href: string | null) {

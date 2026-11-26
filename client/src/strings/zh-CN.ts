@@ -35,7 +35,8 @@ export const s = {
   },
   course: {
     list: '课程', home: '课程主页', readiness: '准备度', next: '下一步', weak: '薄弱处', materials: '资料', focus: '老师重点',
-    practice: '本课练习', insight: '学情', settings: '课程设置', organizing: '整理中', waitingAi: '等待连接 AI 后整理',
+    practice: '本课练习', insight: '学情', settings: '课程设置', organizing: '整理中', waitingAi: '等待连接 AI 后整理', waitingConfirm: '等待确认后整理',
+    confirmIngest: (range: string) => `整理这些资料约需 ${range} token`, startOrganize: '开始整理',
     examDate: '考试日期', unknownDate: '还不确定', dailyCap: '每天给这门课的时间', auto: '自动分配', color: '颜色',
     deleteTitle: (name: string) => `删除《${name}》？`, deleteBody: '资料、知识点、练习记录和对话会一起删掉，不能恢复。',
     noKps: '还没有知识点', addMaterialFirst: '先添加资料，整理好后这里会出现知识点地图', sampleTag: '示例',
@@ -60,7 +61,7 @@ export const s = {
     title: '资料', upload: '添加资料', drop: '松开即可上传', photo: '拍照', phone: '用手机拍', pages: (n: number) => `${n} 页`,
     kps: (n: number) => `${n} 个知识点`, skipped: (pages: number[]) => `第 ${pages.join('、')} 页没读出来`, superseded: '旧版本',
     deleteTitle: (name: string) => `删除《${name}》？`, deleteBody: (kps: number, qs: number) => `会删掉 ${kps} 个知识点和 ${qs} 道题，不能恢复。`,
-    waitingAi: '等待连接 AI 后整理', kindTitle: '资料类型', empty: '还没有资料',
+    waitingAi: '等待连接 AI 后整理', waitingConfirm: '等待确认后整理', kindTitle: '资料类型', empty: '还没有资料',
   },
   focus: {
     title: '老师重点', said: '老师说的', mapped: '对应的知识点', maybe: '可能也包括', notFound: '课件里没找到', placeholder: '照原话粘贴老师说的：哪些考、哪些不考、题型是什么',
