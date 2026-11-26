@@ -1,0 +1,19 @@
+.brief { display: flex; gap: 12px; align-items: flex-start; padding: 14px 8px 14px 16px; border-radius: var(--radius-card); background: var(--accent-soft); }
+.briefText { flex: 1; font-size: var(--fs-body-sm); line-height: 22px; color: var(--text-primary); }
+.pills { gap: 8px; margin: 0 calc(-1 * var(--pad, 16px)); padding: 0 var(--pad, 16px); }
+.resume { display: flex; align-items: center; gap: 14px; }
+.resumeIcon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--bg-surface); color: var(--accent); flex: none; }
+.tasksHead { display: flex; align-items: center; gap: 14px; }
+.ringText { font-size: var(--fs-caption); font-weight: 500; font-variant-numeric: tabular-nums; }
+.taskList { display: flex; flex-direction: column; gap: 8px; }
+.toggle { display: flex; align-items: center; gap: 6px; height: 40px; color: var(--text-secondary); font-size: var(--fs-body-sm); }
+.week { display: flex; flex-direction: column; gap: 4px; }
+.day { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 12px; min-height: 40px; padding: 4px 0; }
+.dayName { display: flex; flex-direction: column; font-size: var(--fs-caption); line-height: 16px; color: var(--text-secondary); }
+.dayName strong { font-size: var(--fs-body-sm); color: var(--text-primary); font-weight: 500; }
+.today .dayName strong { color: var(--accent); }
+.dayBar { display: flex; height: 8px; border-radius: 4px; background: var(--bg-sunken); overflow: hidden; gap: 1px; }
+.dayBar span { height: 100%; }
+.exam { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-caption); font-weight: 500; white-space: nowrap; }
+.done { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 16px; text-align: center; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }

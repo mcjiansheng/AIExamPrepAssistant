@@ -1,0 +1,13 @@
+# 依赖。仓库在 iCloud 同步的 ~/Documents 下时，安装后执行
+#   xattr -w 'com.apple.fileprovider.ignore#P' 1 node_modules
+# 让 iCloud 不同步、不清出这个目录（npm 会删掉软链，.nosync 软链的办法不可用）
+node_modules
+
+# 构建与测试产物
+dist
+test-results
+playwright-report
+*.tsbuildinfo
+
+# 由 scripts/tokens.mjs 从 src/tokens/tokens.json 生成
+src/tokens/generated/

@@ -1,0 +1,39 @@
+.stack {
+  display: grid;
+}
+.stack > * {
+  grid-area: 1 / 1;
+}
+.spacer {
+  flex: 1 1 auto;
+}
+.line {
+  height: 1px;
+  background: var(--line);
+  flex: none;
+}
+.vline {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+  flex: none;
+}
+.grid {
+  display: grid;
+  min-width: 0;
+}
+.scrollX {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+.scrollX::-webkit-scrollbar {
+  display: none;
+}
+.scrollY {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}

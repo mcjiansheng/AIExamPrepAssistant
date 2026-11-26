@@ -1,0 +1,70 @@
+.task {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 12px 8px 12px 20px;
+  border-radius: var(--radius-card);
+  background: var(--bg-surface);
+  transition: transform var(--dur-press) var(--ease-standard), box-shadow var(--dur-short), opacity var(--dur-medium);
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.task:hover { box-shadow: inset 0 0 0 1px var(--line-strong); }
+.main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; text-align: left; }
+.main:active { transform: scale(0.985); }
+.strip { position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px; border-radius: 0 4px 4px 0; }
+.kind {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex: none;
+}
+.body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.title { font-size: var(--fs-h3); line-height: var(--lh-h3); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta { display: flex; align-items: center; gap: 6px; font-size: var(--fs-caption); line-height: var(--lh-caption); color: var(--text-secondary); white-space: nowrap; overflow: hidden; }
+.check {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex: none;
+}
+.checkCircle { width: 26px; height: 26px; }
+.checkCircle circle { stroke: var(--line-strong); transition: stroke var(--dur-short), fill var(--dur-short); }
+.check:hover .checkCircle circle { stroke: var(--accent); }
+.checkCircle path { stroke: var(--on-accent); stroke-dasharray: 14; stroke-dashoffset: 14; }
+.checked .checkCircle circle { fill: var(--accent); stroke: var(--accent); }
+.checked .checkCircle path { animation: draw var(--dur-short) var(--ease-standard) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+/* M2：勾掉后卡片高度收起 */
+.collapse { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--dur-medium) var(--ease-standard), opacity var(--dur-medium), margin var(--dur-medium); }
+.collapse > * { min-height: 0; overflow: hidden; }
+.leaving { grid-template-rows: 0fr; opacity: 0; margin-top: -8px; }
+.doneTask { opacity: 0.6; }
+.doneTask .title { text-decoration: line-through; text-decoration-color: var(--text-tertiary); }
+.highlightTask { animation: hl 1s var(--ease-standard); }
+@keyframes hl { 0%, 40% { background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface)); } }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  font-size: var(--fs-body-sm);
+  white-space: nowrap;
+  flex: none;
+  transition: transform var(--dur-press);
+}
+.pill:active { transform: scale(0.97); }
+.pill strong { font-weight: 500; font-variant-numeric: tabular-nums; }
+.pillUrgent { color: #fff; }
+.pillUrgent .dot { background: rgba(255, 255, 255, 0.85) !important; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }

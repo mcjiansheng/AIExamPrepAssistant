@@ -1,0 +1,116 @@
+/* 骨架：与真实布局同形，1.5 秒周期微光（M5） */
+.skel {
+  display: block;
+  background: var(--bg-sunken);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--bg-surface) 60%, transparent), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 1.5s infinite;
+}
+html[data-motion='reduce'] .skel::after { animation: none; }
+@keyframes shimmer { to { transform: translateX(100%); } }
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 24px;
+  text-align: center;
+}
+.stateIcon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  color: var(--text-secondary);
+}
+
+.dock {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(92vw, 420px);
+  pointer-events: none;
+  bottom: calc(var(--dock-bottom, 24px) + env(safe-area-inset-bottom));
+}
+.undo, .toast {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  max-width: 100%;
+  padding: 0 8px 0 18px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text-primary) 92%, transparent);
+  color: var(--bg-surface);
+  font-size: var(--fs-body-sm);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+  animation: up var(--spring-default-dur) var(--spring-default);
+}
+.toast { padding: 0 18px; }
+.toastDanger { background: var(--danger); color: #fff; }
+.undo button {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  color: color-mix(in srgb, var(--accent) 60%, white);
+  font-weight: 500;
+}
+.undo button:hover { background: color-mix(in srgb, var(--bg-surface) 12%, transparent); }
+.undoTimer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: color-mix(in srgb, var(--accent) 70%, white);
+  transform-origin: left;
+  animation: timer 5s linear forwards;
+}
+@keyframes timer { to { transform: scaleX(0); } }
+@keyframes up { from { transform: translateY(16px); opacity: 0; } }
+
+.offline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 28px;
+  background: var(--warning);
+  color: #fff;
+  font-size: var(--fs-caption);
+}
+
+.bar { height: 4px; border-radius: 2px; background: var(--bg-sunken); overflow: hidden; }
+.barFill { height: 100%; border-radius: 2px; background: var(--accent); transition: width var(--spring-default-dur) var(--spring-default); }
+.ring { position: relative; display: grid; place-items: center; flex: none; }
+.ring svg { transform: rotate(-90deg); }
+.ringTrack { stroke: var(--bg-sunken); }
+.ringFill { transition: stroke-dashoffset var(--spring-default-dur) var(--spring-default); }
+.ringLabel { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.big { font-size: var(--fs-display); line-height: var(--lh-display); font-weight: var(--fw-display); font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+.bigUnit { font-size: var(--fs-h3); font-weight: 500; margin-left: 2px; color: var(--text-secondary); }
