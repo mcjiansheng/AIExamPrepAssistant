@@ -1,0 +1,1427 @@
+[
+  {
+    "question": {
+      "id": "q_6ul1tw",
+      "bank_id": "q_6ul1tw",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_4kcbqm",
+        "title": "读者-写者问题"
+      },
+      "course_id": "c_3xn81w",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“读者-写者问题”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "一次只允许一个进程使用的资源叫临界资源"
+        },
+        {
+          "id": "B",
+          "text": "允许多个读者同时读"
+        },
+        {
+          "id": "C",
+          "text": "信号量是一个整数加一个等待队列"
+        },
+        {
+          "id": "D",
+          "text": "互斥信号量初值为 1"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_3zdwy4",
+          "material_title": "第二章 进程管理.pptx",
+          "page": 42,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "B",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“读者-写者问题”：允许多个读者同时读，写者必须独占；第一个读者负责 P(wmutex)，最后一个读者负责 V(wmutex)。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_3zdwy4",
+                "material_title": "第二章 进程管理.pptx",
+                "page": 42,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“临界区与互斥”、“信号量机制”、“PV 操作实现互斥”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_3xn81w",
+    "course_name": "操作系统",
+    "reason": "选了 A",
+    "wrong_count": 2,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-25T23:38:06-08:00"
+  },
+  {
+    "question": {
+      "id": "q_76mkkc",
+      "bank_id": "q_76mkkc",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_4sdnwy",
+        "title": "系统安全状态"
+      },
+      "course_id": "c_3xn81w",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“系统安全状态”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "互斥、请求和保持、不可抢占、循环等待"
+        },
+        {
+          "id": "B",
+          "text": "破坏四个必要条件中的一个"
+        },
+        {
+          "id": "C",
+          "text": "分配资源前先试探分配"
+        },
+        {
+          "id": "D",
+          "text": "存在一个安全序列"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_3zdwy4",
+          "material_title": "第二章 进程管理.pptx",
+          "page": 60,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "D",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“系统安全状态”：存在一个安全序列，使每个进程都能拿到所需资源并运行完，系统就处于安全状态。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_3zdwy4",
+                "material_title": "第二章 进程管理.pptx",
+                "page": 60,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“死锁的必要条件”、“死锁预防”、“银行家算法”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_3xn81w",
+    "course_name": "操作系统",
+    "reason": "自评：部分得分",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-24T21:25:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_3319ha",
+      "bank_id": "q_3319ha",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_17ynid",
+        "title": "0/0 与 ∞/∞ 型未定式"
+      },
+      "course_id": "c_5lic6",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“0/0 与 ∞/∞ 型未定式”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "0·∞、∞ − ∞、1^∞ 等先化成 0/0 或 ∞/∞"
+        },
+        {
+          "id": "B",
+          "text": "f 在 [a, b] 上连续、在 (a, b) 内可导且 f(a) = f(b)"
+        },
+        {
+          "id": "C",
+          "text": "分子分母导数之比的极限存在时"
+        },
+        {
+          "id": "D",
+          "text": "存在 ξ ∈ (a, b)"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_8z9ul",
+          "material_title": "高等数学 第三至四章.pdf",
+          "page": 14,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "C",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“0/0 与 ∞/∞ 型未定式”：分子分母导数之比的极限存在时，原极限等于它。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_8z9ul",
+                "material_title": "高等数学 第三至四章.pdf",
+                "page": 14,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“其他未定式”、“罗尔定理”、“拉格朗日中值定理”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_5lic6",
+    "course_name": "高等数学",
+    "reason": "自评：部分得分",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-24T20:31:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_74wkwa",
+      "bank_id": "q_74wkwa",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_4rncfw",
+        "title": "死锁预防"
+      },
+      "course_id": "c_3xn81w",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“死锁预防”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "互斥、请求和保持、不可抢占、循环等待"
+        },
+        {
+          "id": "B",
+          "text": "存在一个安全序列"
+        },
+        {
+          "id": "C",
+          "text": "破坏四个必要条件中的一个"
+        },
+        {
+          "id": "D",
+          "text": "分配资源前先试探分配"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_3zdwy4",
+          "material_title": "第二章 进程管理.pptx",
+          "page": 57,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "C",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“死锁预防”：破坏四个必要条件中的一个，例如一次性申请全部资源、按序号申请资源。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_3zdwy4",
+                "material_title": "第二章 进程管理.pptx",
+                "page": 57,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“死锁的必要条件”、“系统安全状态”、“银行家算法”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_3xn81w",
+    "course_name": "操作系统",
+    "reason": "选了 A",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-23T21:25:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_a85p94",
+      "bank_id": "q_a85p94",
+      "index": 0,
+      "version": 1,
+      "type": "fill",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 4,
+      "kp": {
+        "id": "kp_9ebq33",
+        "title": "二叉树的性质"
+      },
+      "course_id": "c_8yq1ed",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "一棵二叉树有 10 个度为 2 的结点，它的叶子结点有 ______ 个。"
+        }
+      ],
+      "options": null,
+      "refs": [
+        {
+          "material_id": "m_90wdm9",
+          "material_title": "数据结构 线性表与树.pptx",
+          "page": 23,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "11",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "二叉树中 n₀ = n₂ + 1，所以叶子结点数 = 10 + 1 = 11。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_90wdm9",
+                "material_title": "数据结构 线性表与树.pptx",
+                "page": 23,
+                "quote": null
+              }
+            ]
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_8yq1ed",
+    "course_name": "数据结构",
+    "reason": "自评：没有得分",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-23T21:16:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_31r671",
+      "bank_id": "q_31r671",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_15cjt3",
+        "title": "柯西中值定理"
+      },
+      "course_id": "c_5lic6",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“柯西中值定理”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "f 在 [a, b] 上连续、在 (a, b) 内可导且 f(a) = f(b)"
+        },
+        {
+          "id": "B",
+          "text": "两个函数在区间上的增量之比"
+        },
+        {
+          "id": "C",
+          "text": "存在 ξ ∈ (a, b)"
+        },
+        {
+          "id": "D",
+          "text": "分子分母导数之比的极限存在时"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_8z9ul",
+          "material_title": "高等数学 第三至四章.pdf",
+          "page": 10,
+          "quote": null
+        },
+        {
+          "material_id": "m_9ttws",
+          "material_title": "期中复习题.pdf",
+          "page": 6,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "B",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“柯西中值定理”：两个函数在区间上的增量之比，等于它们在某一点的导数之比。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_8z9ul",
+                "material_title": "高等数学 第三至四章.pdf",
+                "page": 10,
+                "quote": null
+              },
+              {
+                "material_id": "m_9ttws",
+                "material_title": "期中复习题.pdf",
+                "page": 6,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“罗尔定理”、“拉格朗日中值定理”、“0/0 与 ∞/∞ 型未定式”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_5lic6",
+    "course_name": "高等数学",
+    "reason": "选了 A",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-23T20:31:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_2zavkw",
+      "bank_id": "q_2zavkw",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_14ec4d",
+        "title": "拉格朗日中值定理"
+      },
+      "course_id": "c_5lic6",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“拉格朗日中值定理”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "存在 ξ ∈ (a, b)"
+        },
+        {
+          "id": "B",
+          "text": "f 在 [a, b] 上连续、在 (a, b) 内可导且 f(a) = f(b)"
+        },
+        {
+          "id": "C",
+          "text": "两个函数在区间上的增量之比"
+        },
+        {
+          "id": "D",
+          "text": "分子分母导数之比的极限存在时"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_8z9ul",
+          "material_title": "高等数学 第三至四章.pdf",
+          "page": 7,
+          "quote": null
+        },
+        {
+          "material_id": "m_9ttws",
+          "material_title": "期中复习题.pdf",
+          "page": 5,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "A",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“拉格朗日中值定理”：存在 ξ ∈ (a, b)，使 f(b) − f(a) = f′(ξ)(b − a)。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_8z9ul",
+                "material_title": "高等数学 第三至四章.pdf",
+                "page": 7,
+                "quote": null
+              },
+              {
+                "material_id": "m_9ttws",
+                "material_title": "期中复习题.pdf",
+                "page": 5,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“罗尔定理”、“柯西中值定理”、“0/0 与 ∞/∞ 型未定式”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_5lic6",
+    "course_name": "高等数学",
+    "reason": "选了 A",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-21T21:34:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_7ay3oj",
+      "bank_id": "q_7ay3oj",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_4ugjz6",
+        "title": "死锁检测与解除"
+      },
+      "course_id": "c_3xn81w",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“死锁检测与解除”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "互斥、请求和保持、不可抢占、循环等待"
+        },
+        {
+          "id": "B",
+          "text": "用资源分配图检测是否存在环路"
+        },
+        {
+          "id": "C",
+          "text": "破坏四个必要条件中的一个"
+        },
+        {
+          "id": "D",
+          "text": "存在一个安全序列"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_3zdwy4",
+          "material_title": "第二章 进程管理.pptx",
+          "page": 66,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "B",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“死锁检测与解除”：用资源分配图检测是否存在环路；解除的方法有撤销进程和剥夺资源。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_3zdwy4",
+                "material_title": "第二章 进程管理.pptx",
+                "page": 66,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“死锁的必要条件”、“死锁预防”、“系统安全状态”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_3xn81w",
+    "course_name": "操作系统",
+    "reason": "选了 A",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-21T20:31:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_5uaafv",
+      "bank_id": "q_5uaafv",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_4qj908",
+        "title": "死锁的必要条件"
+      },
+      "course_id": "c_3xn81w",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项不是产生死锁的必要条件？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "互斥条件"
+        },
+        {
+          "id": "B",
+          "text": "请求和保持条件"
+        },
+        {
+          "id": "C",
+          "text": "不可抢占条件"
+        },
+        {
+          "id": "D",
+          "text": "进程的优先级各不相同"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_3zdwy4",
+          "material_title": "第二章 进程管理.pptx",
+          "page": 55,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "D",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "产生死锁的四个必要条件是：互斥、请求和保持、不可抢占、循环等待。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_3zdwy4",
+                "material_title": "第二章 进程管理.pptx",
+                "page": 55,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“进程优先级各不相同”与死锁是否发生无关，所以选 D。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_3xn81w",
+    "course_name": "操作系统",
+    "reason": "选了 A",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-21T19:28:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_ao6tuh",
+      "bank_id": "q_ao6tuh",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_9bn4my",
+        "title": "表达式求值"
+      },
+      "course_id": "c_8yq1ed",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“表达式求值”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "后进先出"
+        },
+        {
+          "id": "B",
+          "text": "中缀表达式用运算符栈转成后缀表达式"
+        },
+        {
+          "id": "C",
+          "text": "先进先出"
+        },
+        {
+          "id": "D",
+          "text": "用一段连续的存储单元依次存放元素"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_90wdm9",
+          "material_title": "数据结构 线性表与树.pptx",
+          "page": 19,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "B",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“表达式求值”：中缀表达式用运算符栈转成后缀表达式，后缀表达式用操作数栈求值。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_90wdm9",
+                "material_title": "数据结构 线性表与树.pptx",
+                "page": 19,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“栈”、“队列”、“顺序表”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_8yq1ed",
+    "course_name": "数据结构",
+    "reason": "选了 A",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-21T19:19:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_35jog3",
+      "bank_id": "q_35jog3",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_181cf3",
+        "title": "其他未定式"
+      },
+      "course_id": "c_5lic6",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“其他未定式”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "分子分母导数之比的极限存在时"
+        },
+        {
+          "id": "B",
+          "text": "f 在 [a, b] 上连续、在 (a, b) 内可导且 f(a) = f(b)"
+        },
+        {
+          "id": "C",
+          "text": "存在 ξ ∈ (a, b)"
+        },
+        {
+          "id": "D",
+          "text": "0·∞、∞ − ∞、1^∞ 等先化成 0/0 或 ∞/∞"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_8z9ul",
+          "material_title": "高等数学 第三至四章.pdf",
+          "page": 17,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "D",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“其他未定式”：0·∞、∞ − ∞、1^∞ 等先化成 0/0 或 ∞/∞，再用洛必达法则。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_8z9ul",
+                "material_title": "高等数学 第三至四章.pdf",
+                "page": 17,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“0/0 与 ∞/∞ 型未定式”、“罗尔定理”、“拉格朗日中值定理”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_5lic6",
+    "course_name": "高等数学",
+    "reason": "选了 A",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-19T21:34:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_amkdzx",
+      "bank_id": "q_amkdzx",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_9ayj3m",
+        "title": "队列"
+      },
+      "course_id": "c_8yq1ed",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“队列”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "先进先出"
+        },
+        {
+          "id": "B",
+          "text": "后进先出"
+        },
+        {
+          "id": "C",
+          "text": "中缀表达式用运算符栈转成后缀表达式"
+        },
+        {
+          "id": "D",
+          "text": "用一段连续的存储单元依次存放元素"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_90wdm9",
+          "material_title": "数据结构 线性表与树.pptx",
+          "page": 16,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "A",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“队列”：先进先出，队尾进、队头出；循环队列用取模运算判断队满和队空。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_90wdm9",
+                "material_title": "数据结构 线性表与树.pptx",
+                "page": 16,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“栈”、“表达式求值”、“顺序表”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_8yq1ed",
+    "course_name": "数据结构",
+    "reason": "自评：部分得分",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-19T21:16:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_2xu7k6",
+      "bank_id": "q_2xu7k6",
+      "index": 0,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_13g0y2",
+        "title": "罗尔定理"
+      },
+      "course_id": "c_5lic6",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“罗尔定理”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "存在 ξ ∈ (a, b)"
+        },
+        {
+          "id": "B",
+          "text": "两个函数在区间上的增量之比"
+        },
+        {
+          "id": "C",
+          "text": "分子分母导数之比的极限存在时"
+        },
+        {
+          "id": "D",
+          "text": "f 在 [a, b] 上连续、在 (a, b) 内可导且 f(a) = f(b)"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_8z9ul",
+          "material_title": "高等数学 第三至四章.pdf",
+          "page": 4,
+          "quote": null
+        },
+        {
+          "material_id": "m_9ttws",
+          "material_title": "期中复习题.pdf",
+          "page": 4,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "D",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“罗尔定理”：f 在 [a, b] 上连续、在 (a, b) 内可导且 f(a) = f(b)，则存在 ξ 使 f′(ξ) = 0。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_8z9ul",
+                "material_title": "高等数学 第三至四章.pdf",
+                "page": 4,
+                "quote": null
+              },
+              {
+                "material_id": "m_9ttws",
+                "material_title": "期中复习题.pdf",
+                "page": 4,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“拉格朗日中值定理”、“柯西中值定理”、“0/0 与 ∞/∞ 型未定式”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    },
+    "course_id": "c_5lic6",
+    "course_name": "高等数学",
+    "reason": "自评：部分得分",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-19T20:31:00-08:00"
+  },
+  {
+    "question": {
+      "id": "q_5wk7l5",
+      "bank_id": "q_5wk7l5",
+      "index": 0,
+      "version": 1,
+      "type": "calc",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 10,
+      "kp": {
+        "id": "kp_4t3paf",
+        "title": "银行家算法"
+      },
+      "course_id": "c_3xn81w",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "系统有 A、B、C 三类资源，当前可用资源为 (3, 3, 2)。各进程的最大需求和已分配资源如下表。用银行家算法判断系统是否处于安全状态；若安全，给出一个安全序列。"
+        },
+        {
+          "kind": "table",
+          "header": [
+            "进程",
+            "Max",
+            "Allocation"
+          ],
+          "rows": [
+            [
+              "P0",
+              "7, 5, 3",
+              "0, 1, 0"
+            ],
+            [
+              "P1",
+              "3, 2, 2",
+              "2, 0, 0"
+            ],
+            [
+              "P2",
+              "9, 0, 2",
+              "3, 0, 2"
+            ],
+            [
+              "P3",
+              "2, 2, 2",
+              "2, 1, 1"
+            ],
+            [
+              "P4",
+              "4, 3, 3",
+              "0, 0, 2"
+            ]
+          ]
+        }
+      ],
+      "options": null,
+      "refs": [
+        {
+          "material_id": "m_3zdwy4",
+          "material_title": "第二章 进程管理.pptx",
+          "page": 63,
+          "quote": null
+        }
+      ],
+      "hints": [],
+      "peeked": false,
+      "attempt": null,
+      "solution": {
+        "answer": "安全。安全序列之一：P1, P3, P4, P2, P0",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "先算 Need = Max − Allocation："
+              },
+              {
+                "kind": "table",
+                "header": [
+                  "进程",
+                  "Need"
+                ],
+                "rows": [
+                  [
+                    "P0",
+                    "7, 4, 3"
+                  ],
+                  [
+                    "P1",
+                    "1, 2, 2"
+                  ],
+                  [
+                    "P2",
+                    "6, 0, 0"
+                  ],
+                  [
+                    "P3",
+                    "0, 1, 1"
+                  ],
+                  [
+                    "P4",
+                    "4, 3, 1"
+                  ]
+                ]
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_3zdwy4",
+                "material_title": "第二章 进程管理.pptx",
+                "page": 63,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "令 Work = Available = (3, 3, 2)，每次找 Need ≤ Work 的进程，假设它运行完并释放资源："
+              },
+              {
+                "kind": "table",
+                "header": [
+                  "进程",
+                  "Need",
+                  "Work（运行前）",
+                  "Work（释放后）"
+                ],
+                "rows": [
+                  [
+                    "P1",
+                    "1, 2, 2",
+                    "3, 3, 2",
+                    "5, 3, 2"
+                  ],
+                  [
+                    "P3",
+                    "0, 1, 1",
+                    "5, 3, 2",
+                    "7, 4, 3"
+                  ],
+                  [
+                    "P4",
+                    "4, 3, 1",
+                    "7, 4, 3",
+                    "7, 4, 5"
+                  ],
+                  [
+                    "P2",
+                    "6, 0, 0",
+                    "7, 4, 5",
+                    "10, 4, 7"
+                  ],
+                  [
+                    "P0",
+                    "7, 4, 3",
+                    "10, 4, 7",
+                    "10, 5, 7"
+                  ]
+                ]
+              }
+            ],
+            "refs": []
+          },
+          {
+            "n": 3,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "所有进程都能运行完成，系统处于安全状态。安全序列不唯一。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": [
+          {
+            "id": "r1",
+            "point": "正确算出 Need 矩阵",
+            "score": 2
+          },
+          {
+            "id": "r2",
+            "point": "逐步比较 Need 与 Work 并更新 Work",
+            "score": 5
+          },
+          {
+            "id": "r3",
+            "point": "结论正确并给出一个合法的安全序列",
+            "score": 3
+          }
+        ]
+      }
+    },
+    "course_id": "c_3xn81w",
+    "course_name": "操作系统",
+    "reason": "自评：没有得分",
+    "wrong_count": 1,
+    "correct_streak": 0,
+    "last_wrong_at": "2026-11-19T19:28:00-08:00"
+  }
+]

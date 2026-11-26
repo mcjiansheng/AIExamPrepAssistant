@@ -1,0 +1,38 @@
+[
+  {
+    "id": "th_36llg",
+    "course_id": null,
+    "title": "全局",
+    "kind": "global",
+    "model": null,
+    "updated_at": "2026-11-25T23:38:06-08:00",
+    "preview": null
+  },
+  {
+    "id": "th_6erv4",
+    "course_id": "c_5lic6",
+    "title": "高等数学",
+    "kind": "course",
+    "model": null,
+    "updated_at": "2026-11-25T23:38:06-08:00",
+    "preview": null
+  },
+  {
+    "id": "th_8zdr5m",
+    "course_id": "c_8yq1ed",
+    "title": "数据结构",
+    "kind": "course",
+    "model": null,
+    "updated_at": "2026-11-25T23:38:06-08:00",
+    "preview": null
+  },
+  {
+    "id": "th_3ywzko",
+    "course_id": "c_3xn81w",
+    "title": "操作系统",
+    "kind": "course",
+    "model": null,
+    "updated_at": "2026-11-24T17:38:10-08:00",
+    "preview": "区别在于缺页时换出哪一页……"
+  }
+]

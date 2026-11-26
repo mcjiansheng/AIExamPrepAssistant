@@ -1,0 +1,16 @@
+{
+  "error": {
+    "code": "needs_confirmation",
+    "message": "这套题预计要用约 48 千 token",
+    "hint": null,
+    "detail": {
+      "estimate": {
+        "tokens_min": 38080,
+        "tokens_max": 57120,
+        "cost_min": 0.15,
+        "cost_max": 0.23,
+        "needs_confirm": true
+      }
+    }
+  }
+}

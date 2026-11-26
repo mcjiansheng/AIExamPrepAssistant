@@ -1,0 +1,37 @@
+{
+  "id": "compute-first",
+  "name": "计算题求解",
+  "version": "1.2.0",
+  "description": "先算后写：代码算出数值和表格，模型只写叙述",
+  "source": "builtin",
+  "cost": "每道计算题约多用 3 千 token",
+  "permissions": {
+    "read": [
+      "course.knowledge"
+    ],
+    "write": [
+      "questions"
+    ],
+    "network": [],
+    "model": true
+  },
+  "commands": [
+    {
+      "name": "/计算题",
+      "description": "按当前知识点出一道计算题"
+    }
+  ],
+  "question_types": [
+    {
+      "id": "calc",
+      "name": "计算题"
+    }
+  ],
+  "readme": "计算类知识点出题时，先由代码在沙箱里算出结果，再让模型写题干和解析，数值由代码填入，避免算错。",
+  "installed": true,
+  "enabled": true,
+  "scope": "all",
+  "course_ids": [],
+  "granted": true,
+  "usage_tokens": 25000
+}

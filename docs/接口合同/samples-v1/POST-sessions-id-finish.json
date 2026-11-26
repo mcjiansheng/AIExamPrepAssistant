@@ -1,0 +1,396 @@
+{
+  "session": {
+    "id": "s_jq1wq4",
+    "kind": "quick",
+    "course_id": "c_3xn81w",
+    "title": "操作系统 · 快练",
+    "status": "finished",
+    "created_at": "2026-11-25T23:38:06-08:00",
+    "started_at": "2026-11-25T23:38:06-08:00",
+    "finished_at": "2026-11-25T23:38:06-08:00",
+    "time_limit_min": null,
+    "position": 0,
+    "task_id": null,
+    "job": {
+      "id": "j_jrf59l",
+      "kind": "session",
+      "status": "done",
+      "progress": 1,
+      "stage": null,
+      "error": null,
+      "course_id": "c_3xn81w",
+      "target_id": "s_jq1wq4",
+      "result": null,
+      "created_at": "2026-11-25T23:38:06-08:00"
+    },
+    "questions": [
+      {
+        "id": "qi_jstken",
+        "bank_id": "q_5wk7l5",
+        "index": 0,
+        "version": 1,
+        "type": "calc",
+        "status": "ready",
+        "check": "passed",
+        "check_note": null,
+        "replaced": false,
+        "score": 10,
+        "kp": {
+          "id": "kp_4t3paf",
+          "title": "银行家算法"
+        },
+        "course_id": "c_3xn81w",
+        "stem": [
+          {
+            "kind": "text",
+            "text": "系统有 A、B、C 三类资源，当前可用资源为 (3, 3, 2)。各进程的最大需求和已分配资源如下表。用银行家算法判断系统是否处于安全状态；若安全，给出一个安全序列。"
+          },
+          {
+            "kind": "table",
+            "header": [
+              "进程",
+              "Max",
+              "Allocation"
+            ],
+            "rows": [
+              [
+                "P0",
+                "7, 5, 3",
+                "0, 1, 0"
+              ],
+              [
+                "P1",
+                "3, 2, 2",
+                "2, 0, 0"
+              ],
+              [
+                "P2",
+                "9, 0, 2",
+                "3, 0, 2"
+              ],
+              [
+                "P3",
+                "2, 2, 2",
+                "2, 1, 1"
+              ],
+              [
+                "P4",
+                "4, 3, 3",
+                "0, 0, 2"
+              ]
+            ]
+          }
+        ],
+        "options": null,
+        "refs": [
+          {
+            "material_id": "m_3zdwy4",
+            "material_title": "第二章 进程管理.pptx",
+            "page": 63,
+            "quote": null
+          }
+        ],
+        "hints": [],
+        "peeked": false,
+        "attempt": null,
+        "solution": null
+      },
+      {
+        "id": "qi_jtx694",
+        "bank_id": "q_6ul1tw",
+        "index": 1,
+        "version": 1,
+        "type": "single",
+        "status": "ready",
+        "check": "passed",
+        "check_note": null,
+        "replaced": false,
+        "score": 2,
+        "kp": {
+          "id": "kp_4kcbqm",
+          "title": "读者-写者问题"
+        },
+        "course_id": "c_3xn81w",
+        "stem": [
+          {
+            "kind": "text",
+            "text": "下列哪一项说的是“读者-写者问题”？"
+          }
+        ],
+        "options": [
+          {
+            "id": "A",
+            "text": "一次只允许一个进程使用的资源叫临界资源"
+          },
+          {
+            "id": "B",
+            "text": "允许多个读者同时读"
+          },
+          {
+            "id": "C",
+            "text": "信号量是一个整数加一个等待队列"
+          },
+          {
+            "id": "D",
+            "text": "互斥信号量初值为 1"
+          }
+        ],
+        "refs": [
+          {
+            "material_id": "m_3zdwy4",
+            "material_title": "第二章 进程管理.pptx",
+            "page": 42,
+            "quote": null
+          }
+        ],
+        "hints": [
+          {
+            "level": 1,
+            "text": "回想这一节里“读者-写者问题”是怎么定义的。",
+            "refs": [
+              {
+                "material_id": "m_3zdwy4",
+                "material_title": "第二章 进程管理.pptx",
+                "page": 42,
+                "quote": null
+              }
+            ]
+          }
+        ],
+        "peeked": false,
+        "attempt": {
+          "response": "A",
+          "state": "graded",
+          "correct": false,
+          "score": 0,
+          "marks": null,
+          "answered_at": "2026-11-25T23:38:06-08:00"
+        },
+        "solution": {
+          "answer": "B",
+          "steps": [
+            {
+              "n": 1,
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "“读者-写者问题”：允许多个读者同时读，写者必须独占；第一个读者负责 P(wmutex)，最后一个读者负责 V(wmutex)。"
+                }
+              ],
+              "refs": [
+                {
+                  "material_id": "m_3zdwy4",
+                  "material_title": "第二章 进程管理.pptx",
+                  "page": 42,
+                  "quote": null
+                }
+              ]
+            },
+            {
+              "n": 2,
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "其他选项分别说的是：“临界区与互斥”、“信号量机制”、“PV 操作实现互斥”。"
+                }
+              ],
+              "refs": []
+            }
+          ],
+          "rubric": null
+        }
+      },
+      {
+        "id": "qi_juiudc",
+        "bank_id": "q_5uaafv",
+        "index": 2,
+        "version": 1,
+        "type": "single",
+        "status": "ready",
+        "check": "passed",
+        "check_note": null,
+        "replaced": false,
+        "score": 2,
+        "kp": {
+          "id": "kp_4qj908",
+          "title": "死锁的必要条件"
+        },
+        "course_id": "c_3xn81w",
+        "stem": [
+          {
+            "kind": "text",
+            "text": "下列哪一项不是产生死锁的必要条件？"
+          }
+        ],
+        "options": [
+          {
+            "id": "A",
+            "text": "互斥条件"
+          },
+          {
+            "id": "B",
+            "text": "请求和保持条件"
+          },
+          {
+            "id": "C",
+            "text": "不可抢占条件"
+          },
+          {
+            "id": "D",
+            "text": "进程的优先级各不相同"
+          }
+        ],
+        "refs": [
+          {
+            "material_id": "m_3zdwy4",
+            "material_title": "第二章 进程管理.pptx",
+            "page": 55,
+            "quote": null
+          }
+        ],
+        "hints": [],
+        "peeked": false,
+        "attempt": null,
+        "solution": null
+      }
+    ],
+    "score": 0,
+    "total": 14
+  },
+  "score": 0,
+  "total": 14,
+  "accuracy": 0,
+  "duration_sec": 30,
+  "mastery": [],
+  "chapters": [],
+  "mistakes": [
+    {
+      "id": "qi_jtx694",
+      "bank_id": "q_6ul1tw",
+      "index": 1,
+      "version": 1,
+      "type": "single",
+      "status": "ready",
+      "check": "passed",
+      "check_note": null,
+      "replaced": false,
+      "score": 2,
+      "kp": {
+        "id": "kp_4kcbqm",
+        "title": "读者-写者问题"
+      },
+      "course_id": "c_3xn81w",
+      "stem": [
+        {
+          "kind": "text",
+          "text": "下列哪一项说的是“读者-写者问题”？"
+        }
+      ],
+      "options": [
+        {
+          "id": "A",
+          "text": "一次只允许一个进程使用的资源叫临界资源"
+        },
+        {
+          "id": "B",
+          "text": "允许多个读者同时读"
+        },
+        {
+          "id": "C",
+          "text": "信号量是一个整数加一个等待队列"
+        },
+        {
+          "id": "D",
+          "text": "互斥信号量初值为 1"
+        }
+      ],
+      "refs": [
+        {
+          "material_id": "m_3zdwy4",
+          "material_title": "第二章 进程管理.pptx",
+          "page": 42,
+          "quote": null
+        }
+      ],
+      "hints": [
+        {
+          "level": 1,
+          "text": "回想这一节里“读者-写者问题”是怎么定义的。",
+          "refs": [
+            {
+              "material_id": "m_3zdwy4",
+              "material_title": "第二章 进程管理.pptx",
+              "page": 42,
+              "quote": null
+            }
+          ]
+        }
+      ],
+      "peeked": false,
+      "attempt": {
+        "response": "A",
+        "state": "graded",
+        "correct": false,
+        "score": 0,
+        "marks": null,
+        "answered_at": "2026-11-25T23:38:06-08:00"
+      },
+      "solution": {
+        "answer": "B",
+        "steps": [
+          {
+            "n": 1,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "“读者-写者问题”：允许多个读者同时读，写者必须独占；第一个读者负责 P(wmutex)，最后一个读者负责 V(wmutex)。"
+              }
+            ],
+            "refs": [
+              {
+                "material_id": "m_3zdwy4",
+                "material_title": "第二章 进程管理.pptx",
+                "page": 42,
+                "quote": null
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "其他选项分别说的是：“临界区与互斥”、“信号量机制”、“PV 操作实现互斥”。"
+              }
+            ],
+            "refs": []
+          }
+        ],
+        "rubric": null
+      }
+    }
+  ],
+  "review": {
+    "text": "1 道没拿满分，集中在“读者-写者问题”。先把它再看一遍，再来几道同类题巩固。",
+    "actions": [
+      {
+        "label": "学一遍读者-写者问题",
+        "kind": "kp",
+        "kp_id": "kp_4kcbqm",
+        "session": null
+      },
+      {
+        "label": "来 3 道同类题",
+        "kind": "session",
+        "kp_id": "kp_4kcbqm",
+        "session": {
+          "kind": "kp",
+          "course_id": "c_3xn81w",
+          "kp_id": "kp_4kcbqm",
+          "count": 3
+        }
+      }
+    ]
+  },
+  "task": null
+}

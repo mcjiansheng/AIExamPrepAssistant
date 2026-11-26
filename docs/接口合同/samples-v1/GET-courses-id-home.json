@@ -1,0 +1,515 @@
+{
+  "course": {
+    "id": "c_3xn81w",
+    "name": "操作系统",
+    "color": 0,
+    "exam_date": "2026-12-01",
+    "days_left": 6,
+    "sample": false,
+    "readiness": {
+      "mastered": 2,
+      "total": 7
+    },
+    "organizing": {
+      "state": "idle",
+      "progress": null,
+      "stage": null,
+      "job_id": null,
+      "attention": null
+    },
+    "counts": {
+      "kps": 48,
+      "materials": 4,
+      "fragments": 6,
+      "mistakes": 6
+    },
+    "daily_cap_min": null,
+    "created_at": "2026-11-25T23:38:06-08:00"
+  },
+  "map": {
+    "course_id": "c_3xn81w",
+    "chapters": [
+      {
+        "id": "ch_431tp7",
+        "title": "第二章 进程管理",
+        "mastered": 13,
+        "total": 22,
+        "kps": [
+          {
+            "id": "kp_45uxx6",
+            "title": "进程的概念与特征",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_443y1k"
+          },
+          {
+            "id": "kp_46m51i",
+            "title": "进程状态转换",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_443y1k"
+          },
+          {
+            "id": "kp_47a50b",
+            "title": "进程控制块 PCB",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_443y1k"
+          },
+          {
+            "id": "kp_48gso7",
+            "title": "线程与多线程模型",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_443y1k"
+          },
+          {
+            "id": "kp_4ankp2",
+            "title": "调度的层次",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_49ap61"
+          },
+          {
+            "id": "kp_4bu354",
+            "title": "FCFS 与 SJF",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_49ap61"
+          },
+          {
+            "id": "kp_4cwqbx",
+            "title": "时间片轮转 RR",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_49ap61"
+          },
+          {
+            "id": "kp_4dfqw8",
+            "title": "多级反馈队列",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_49ap61"
+          },
+          {
+            "id": "kp_4e1xwe",
+            "title": "调度算法例题",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_49ap61"
+          },
+          {
+            "id": "kp_4gbl49",
+            "title": "临界区与互斥",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_4f4zzl"
+          },
+          {
+            "id": "kp_4hindm",
+            "title": "信号量机制",
+            "state": "mastered",
+            "level": "none",
+            "topic_id": "tp_4f4zzl"
+          },
+          {
+            "id": "kp_4ioeho",
+            "title": "PV 操作实现互斥",
+            "state": "mastered",
+            "level": "emphasized",
+            "topic_id": "tp_4f4zzl"
+          },
+          {
+            "id": "kp_4jiqxu",
+            "title": "生产者-消费者问题",
+            "state": "mastered",
+            "level": "emphasized",
+            "topic_id": "tp_4f4zzl"
+          },
+          {
+            "id": "kp_4kcbqm",
+            "title": "读者-写者问题",
+            "state": "shaky",
+            "level": "none",
+            "topic_id": "tp_4f4zzl"
+          },
+          {
+            "id": "kp_4mt2kg",
+            "title": "管程的概念",
+            "state": "new",
+            "level": "excluded",
+            "topic_id": "tp_4lza8t"
+          },
+          {
+            "id": "kp_4np3ls",
+            "title": "霍尔管程",
+            "state": "new",
+            "level": "excluded",
+            "topic_id": "tp_4lza8t"
+          },
+          {
+            "id": "kp_4o60d2",
+            "title": "管程实现生产者-消费者",
+            "state": "new",
+            "level": "excluded",
+            "topic_id": "tp_4lza8t"
+          },
+          {
+            "id": "kp_4qj908",
+            "title": "死锁的必要条件",
+            "state": "shaky",
+            "level": "none",
+            "topic_id": "tp_4p96qq"
+          },
+          {
+            "id": "kp_4rncfw",
+            "title": "死锁预防",
+            "state": "shaky",
+            "level": "none",
+            "topic_id": "tp_4p96qq"
+          },
+          {
+            "id": "kp_4sdnwy",
+            "title": "系统安全状态",
+            "state": "shaky",
+            "level": "none",
+            "topic_id": "tp_4p96qq"
+          },
+          {
+            "id": "kp_4t3paf",
+            "title": "银行家算法",
+            "state": "shaky",
+            "level": "emphasized",
+            "topic_id": "tp_4p96qq"
+          },
+          {
+            "id": "kp_4ugjz6",
+            "title": "死锁检测与解除",
+            "state": "shaky",
+            "level": "none",
+            "topic_id": "tp_4p96qq"
+          }
+        ]
+      },
+      {
+        "id": "ch_4vw3ng",
+        "title": "第三章 存储管理",
+        "mastered": 0,
+        "total": 11,
+        "kps": [
+          {
+            "id": "kp_4x4mt8",
+            "title": "固定分区",
+            "state": "learned",
+            "level": "none",
+            "topic_id": "tp_4wavba"
+          },
+          {
+            "id": "kp_4yfrim",
+            "title": "动态分区与首次适应",
+            "state": "learned",
+            "level": "none",
+            "topic_id": "tp_4wavba"
+          },
+          {
+            "id": "kp_4zj1q3",
+            "title": "碎片与紧凑",
+            "state": "learned",
+            "level": "none",
+            "topic_id": "tp_4wavba"
+          },
+          {
+            "id": "kp_51eopx",
+            "title": "分页地址转换",
+            "state": "learned",
+            "level": "none",
+            "topic_id": "tp_50g3ld"
+          },
+          {
+            "id": "kp_52enaz",
+            "title": "快表 TLB",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_50g3ld"
+          },
+          {
+            "id": "kp_530kde",
+            "title": "分段与段页式",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_50g3ld"
+          },
+          {
+            "id": "kp_55s55y",
+            "title": "请求分页",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_54fvo3"
+          },
+          {
+            "id": "kp_56wxwe",
+            "title": "FIFO 置换",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_54fvo3"
+          },
+          {
+            "id": "kp_57bxna",
+            "title": "LRU 置换",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_54fvo3"
+          },
+          {
+            "id": "kp_58xw5t",
+            "title": "OPT 置换",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_54fvo3"
+          },
+          {
+            "id": "kp_593c3x",
+            "title": "抖动与工作集",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_54fvo3"
+          }
+        ]
+      },
+      {
+        "id": "ch_5a6577",
+        "title": "第四章 设备管理",
+        "mastered": 0,
+        "total": 15,
+        "kps": [
+          {
+            "id": "kp_5cqbgb",
+            "title": "程序直接控制",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_5bs47j"
+          },
+          {
+            "id": "kp_5dxr5m",
+            "title": "中断方式",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_5bs47j"
+          },
+          {
+            "id": "kp_5eeev7",
+            "title": "DMA 方式",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_5bs47j"
+          },
+          {
+            "id": "kp_5flced",
+            "title": "通道",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_5bs47j"
+          },
+          {
+            "id": "kp_5hajbc",
+            "title": "磁盘驱动调度",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_5gs50h"
+          },
+          {
+            "id": "kp_5ijd0t",
+            "title": "FCFS 磁盘调度",
+            "state": "new",
+            "level": "mentioned",
+            "topic_id": "tp_5gs50h"
+          },
+          {
+            "id": "kp_5j91rl",
+            "title": "最短寻道时间优先 SSTF",
+            "state": "new",
+            "level": "mentioned",
+            "topic_id": "tp_5gs50h"
+          },
+          {
+            "id": "kp_5krq7o",
+            "title": "电梯算法 SCAN",
+            "state": "new",
+            "level": "mentioned",
+            "topic_id": "tp_5gs50h"
+          },
+          {
+            "id": "kp_5lkfk7",
+            "title": "循环扫描 C-SCAN",
+            "state": "new",
+            "level": "mentioned",
+            "topic_id": "tp_5gs50h"
+          },
+          {
+            "id": "kp_5nuy76",
+            "title": "缓冲技术",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_5mua0x"
+          },
+          {
+            "id": "kp_5omuvg",
+            "title": "SPOOLing 系统概念",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_5mua0x"
+          },
+          {
+            "id": "kp_5px4eu",
+            "title": "SPOOLing 的原理与组成",
+            "state": "new",
+            "level": "none",
+            "topic_id": "tp_5mua0x"
+          },
+          {
+            "id": "kp_5r87lc",
+            "title": "RAID 各级别",
+            "state": "new",
+            "level": "excluded",
+            "topic_id": "tp_5q6iaf"
+          },
+          {
+            "id": "kp_5snf29",
+            "title": "磁盘高速缓存",
+            "state": "new",
+            "level": "excluded",
+            "topic_id": "tp_5q6iaf"
+          },
+          {
+            "id": "kp_5tfp1l",
+            "title": "缓存替换策略",
+            "state": "new",
+            "level": "excluded",
+            "topic_id": "tp_5q6iaf"
+          }
+        ]
+      }
+    ]
+  },
+  "next": [
+    {
+      "id": "t_hc07eq",
+      "course_id": "c_3xn81w",
+      "date": "2026-11-25",
+      "kind": "learn",
+      "title": "FCFS 磁盘调度",
+      "minutes": 20,
+      "status": "todo",
+      "reason": "昨天没做完",
+      "moved_from": "2026-11-24",
+      "pinned": false,
+      "kp_ids": [
+        "kp_5ijd0t"
+      ],
+      "session_id": null,
+      "progress": {
+        "done": 0,
+        "total": 1
+      }
+    },
+    {
+      "id": "t_iisjov",
+      "course_id": "c_3xn81w",
+      "date": "2026-11-25",
+      "status": "todo",
+      "moved_from": null,
+      "pinned": false,
+      "session_id": null,
+      "kind": "review",
+      "title": "到期复习 6 道",
+      "minutes": 10,
+      "reason": "按记忆规律到期",
+      "kp_ids": [
+        "kp_45uxx6",
+        "kp_46m51i",
+        "kp_47a50b"
+      ],
+      "progress": null
+    },
+    {
+      "id": "t_ijusoq",
+      "course_id": "c_3xn81w",
+      "date": "2026-11-25",
+      "status": "todo",
+      "moved_from": null,
+      "pinned": false,
+      "session_id": null,
+      "kind": "learn",
+      "title": "最短寻道时间优先 SSTF",
+      "minutes": 15,
+      "reason": "老师提到过 · 还没学",
+      "kp_ids": [
+        "kp_5j91rl"
+      ],
+      "progress": {
+        "done": 0,
+        "total": 1
+      }
+    },
+    {
+      "id": "t_ikdm1t",
+      "course_id": "c_3xn81w",
+      "date": "2026-11-25",
+      "status": "todo",
+      "moved_from": null,
+      "pinned": false,
+      "session_id": null,
+      "kind": "learn",
+      "title": "电梯算法 SCAN",
+      "minutes": 15,
+      "reason": "老师提到过 · 还没学",
+      "kp_ids": [
+        "kp_5krq7o"
+      ],
+      "progress": {
+        "done": 0,
+        "total": 1
+      }
+    }
+  ],
+  "weak": [
+    {
+      "id": "kp_4t3paf",
+      "course_id": "c_3xn81w",
+      "title": "银行家算法",
+      "state": "shaky",
+      "level": "emphasized",
+      "chapter_title": "第二章 进程管理"
+    },
+    {
+      "id": "kp_4kcbqm",
+      "course_id": "c_3xn81w",
+      "title": "读者-写者问题",
+      "state": "shaky",
+      "level": "none",
+      "chapter_title": "第二章 进程管理"
+    },
+    {
+      "id": "kp_4qj908",
+      "course_id": "c_3xn81w",
+      "title": "死锁的必要条件",
+      "state": "shaky",
+      "level": "none",
+      "chapter_title": "第二章 进程管理"
+    }
+  ],
+  "last_session": {
+    "id": "s_g95zns",
+    "kind": "quick",
+    "course_id": "c_3xn81w",
+    "course_name": "操作系统",
+    "title": "操作系统 · 快练",
+    "status": "finished",
+    "created_at": "2026-11-24T19:10:00-08:00",
+    "finished_at": "2026-11-24T19:28:00-08:00",
+    "question_count": 5,
+    "answered": 5,
+    "score": 21,
+    "total": 22
+  }
+}

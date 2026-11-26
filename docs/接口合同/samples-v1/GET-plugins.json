@@ -1,0 +1,160 @@
+[
+  {
+    "id": "compute-first",
+    "name": "计算题求解",
+    "version": "1.2.0",
+    "description": "先算后写：代码算出数值和表格，模型只写叙述",
+    "source": "builtin",
+    "cost": "每道计算题约多用 3 千 token",
+    "permissions": {
+      "read": [
+        "course.knowledge"
+      ],
+      "write": [
+        "questions"
+      ],
+      "network": [],
+      "model": true
+    },
+    "commands": [
+      {
+        "name": "/计算题",
+        "description": "按当前知识点出一道计算题"
+      }
+    ],
+    "question_types": [
+      {
+        "id": "calc",
+        "name": "计算题"
+      }
+    ],
+    "installed": true,
+    "enabled": true,
+    "scope": "all",
+    "course_ids": [],
+    "granted": true,
+    "usage_tokens": 25000
+  },
+  {
+    "id": "formula",
+    "name": "公式与图形",
+    "version": "1.0.0",
+    "description": "渲染 LaTeX 公式和 Mermaid 图",
+    "source": "builtin",
+    "cost": "不调用模型",
+    "permissions": {
+      "read": [],
+      "write": [],
+      "network": [],
+      "model": false
+    },
+    "commands": [],
+    "question_types": [],
+    "installed": true,
+    "enabled": true,
+    "scope": "all",
+    "course_ids": [],
+    "granted": true,
+    "usage_tokens": 0
+  },
+  {
+    "id": "code-runner",
+    "name": "代码运行与判题",
+    "version": "0.9.0",
+    "description": "运行 Python、C、Java 代码并判分",
+    "source": "builtin",
+    "cost": "不调用模型",
+    "permissions": {
+      "read": [
+        "course.knowledge",
+        "course.materials"
+      ],
+      "write": [
+        "questions"
+      ],
+      "network": [],
+      "model": false
+    },
+    "commands": [
+      {
+        "name": "/运行",
+        "description": "运行一段代码，看输出"
+      }
+    ],
+    "question_types": [
+      {
+        "id": "code-fill",
+        "name": "程序填空"
+      }
+    ],
+    "installed": false,
+    "enabled": false,
+    "scope": "all",
+    "course_ids": [],
+    "granted": false,
+    "usage_tokens": 0
+  },
+  {
+    "id": "export",
+    "name": "导出到 Anki 与日历",
+    "version": "1.0.0",
+    "description": "把错题导出成 Anki 卡组，把日程导出成日历",
+    "source": "builtin",
+    "cost": "不调用模型",
+    "permissions": {
+      "read": [
+        "mistakes",
+        "schedule"
+      ],
+      "write": [],
+      "network": [],
+      "model": false
+    },
+    "commands": [
+      {
+        "name": "/导出错题",
+        "description": "生成 Anki 卡组文件"
+      },
+      {
+        "name": "/导出日程",
+        "description": "生成 ICS 日历文件"
+      }
+    ],
+    "question_types": [],
+    "installed": false,
+    "enabled": false,
+    "scope": "all",
+    "course_ids": [],
+    "granted": false,
+    "usage_tokens": 0
+  },
+  {
+    "id": "web-search",
+    "name": "网页搜索",
+    "version": "0.8.0",
+    "description": "资料里没有时去网页上找，回答会标明来自网页",
+    "source": "builtin",
+    "cost": "每次搜索约多用 2 千 token",
+    "permissions": {
+      "read": [],
+      "write": [],
+      "network": [
+        "search"
+      ],
+      "model": true
+    },
+    "commands": [
+      {
+        "name": "/搜索",
+        "description": "在网页上搜索"
+      }
+    ],
+    "question_types": [],
+    "installed": false,
+    "enabled": false,
+    "scope": "all",
+    "course_ids": [],
+    "granted": false,
+    "usage_tokens": 0
+  }
+]

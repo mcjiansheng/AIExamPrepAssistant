@@ -1,0 +1,27 @@
+{
+  "result": {
+    "id": "t_hdcaop",
+    "course_id": "c_5lic6",
+    "date": "2026-11-25",
+    "kind": "practice",
+    "title": "快练 5 道",
+    "minutes": 10,
+    "status": "done",
+    "reason": "昨天没做完",
+    "moved_from": "2026-11-24",
+    "pinned": false,
+    "kp_ids": [],
+    "session_id": null,
+    "progress": null
+  },
+  "affects": [
+    "today",
+    "schedule",
+    "course"
+  ],
+  "undo": {
+    "id": "ud_jkf579",
+    "label": "已完成",
+    "expires_at": "2026-11-27T07:38:06.402Z"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "course_id": "c_3xn81w",
+  "verdict": "按现在的速度，考前能掌握 4 成重点",
+  "readiness": [
+    {
+      "date": "2026-11-13",
+      "ratio": 0
+    },
+    {
+      "date": "2026-11-16",
+      "ratio": 0
+    },
+    {
+      "date": "2026-11-19",
+      "ratio": 0
+    },
+    {
+      "date": "2026-11-21",
+      "ratio": 0.14285714285714285
+    },
+    {
+      "date": "2026-11-23",
+      "ratio": 0.14285714285714285
+    },
+    {
+      "date": "2026-11-24",
+      "ratio": 0.2857142857142857
+    },
+    {
+      "date": "2026-11-25",
+      "ratio": 0.2857142857142857
+    }
+  ],
+  "chapters": [
+    {
+      "id": "ch_431tp7",
+      "title": "第二章 进程管理",
+      "new": 3,
+      "learned": 0,
+      "shaky": 6,
+      "mastered": 13
+    },
+    {
+      "id": "ch_4vw3ng",
+      "title": "第三章 存储管理",
+      "new": 7,
+      "learned": 4,
+      "shaky": 0,
+      "mastered": 0
+    },
+    {
+      "id": "ch_5a6577",
+      "title": "第四章 设备管理",
+      "new": 15,
+      "learned": 0,
+      "shaky": 0,
+      "mastered": 0
+    }
+  ],
+  "weak": [
+    {
+      "id": "kp_4t3paf",
+      "course_id": "c_3xn81w",
+      "title": "银行家算法",
+      "state": "shaky",
+      "level": "emphasized",
+      "chapter_title": "第二章 进程管理"
+    },
+    {
+      "id": "kp_4kcbqm",
+      "course_id": "c_3xn81w",
+      "title": "读者-写者问题",
+      "state": "shaky",
+      "level": "none",
+      "chapter_title": "第二章 进程管理"
+    },
+    {
+      "id": "kp_4qj908",
+      "course_id": "c_3xn81w",
+      "title": "死锁的必要条件",
+      "state": "shaky",
+      "level": "none",
+      "chapter_title": "第二章 进程管理"
+    },
+    {
+      "id": "kp_4rncfw",
+      "course_id": "c_3xn81w",
+      "title": "死锁预防",
+      "state": "shaky",
+      "level": "none",
+      "chapter_title": "第二章 进程管理"
+    },
+    {
+      "id": "kp_4sdnwy",
+      "course_id": "c_3xn81w",
+      "title": "系统安全状态",
+      "state": "shaky",
+      "level": "none",
+      "chapter_title": "第二章 进程管理"
+    }
+  ],
+  "minutes": {
+    "total": 52,
+    "learn": 0,
+    "practice": 44,
+    "review": 0,
+    "mock": 8
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "daily_minutes": 120,
+  "intensity": "standard",
+  "theme": "system",
+  "reduce_motion": "system",
+  "briefing": true,
+  "proactive_hints": true,
+  "memory": true
+}

@@ -1,0 +1,16 @@
+{
+  "id": "u_2c2q8",
+  "nickname": "林同学",
+  "avatar_url": null,
+  "phone_masked": "138****0000",
+  "guest": false,
+  "school": "示例大学",
+  "major": "计算机科学与技术",
+  "timezone": "America/Los_Angeles",
+  "onboarding": {
+    "ai": "done",
+    "course": "done"
+  },
+  "deletion_at": null,
+  "created_at": "2026-11-11T23:38:06-08:00"
+}
