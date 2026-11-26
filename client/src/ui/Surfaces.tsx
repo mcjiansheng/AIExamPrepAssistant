@@ -53,20 +53,27 @@ const ICON_TONE = {
 
 export function ListItem({ title, subtitle, icon, iconTone = 'accent', leading, value, trailing, chevron, to, onClick, danger, label }: ListItemProps) {
   const pressable = !!(to || onClick);
+  // 可点的行里还有开关、菜单等控件时，只让标题做链接或按钮，并把点击区铺满整行；控件浮在上面。
+  // 这样整行仍然可点，又不会出现按钮套按钮（HTML 不允许，读屏也读不对）。
+  const split = pressable && trailing !== undefined && trailing !== null && trailing !== false;
+  const titleNode = !split ? title
+    : to ? <Link to={to} className={css.itemHit} aria-label={label}>{title}</Link>
+    : <button type="button" className={css.itemHit} onClick={onClick} aria-label={label}>{title}</button>;
   const body = (
     <>
       {icon && <span className={css.itemIcon} style={ICON_TONE[iconTone]}><Icon name={icon} size={18} /></span>}
       {leading}
       <span className={css.itemBody}>
-        <span className={css.itemTitle}>{title}</span>
+        <span className={css.itemTitle}>{titleNode}</span>
         {subtitle && <span className={css.itemSub}>{subtitle}</span>}
       </span>
       {value !== undefined && <span className={css.itemValue}>{value}</span>}
-      {trailing}
+      {split ? <span className={css.itemTrailing}>{trailing}</span> : trailing}
       {(chevron ?? !!to) && <Icon name="chevronRight" size={18} tone="tertiary" />}
     </>
   );
   const className = cx(css.item, pressable && css.itemPress, (icon || leading) && css.withIcon, danger && css.itemDanger);
+  if (split) return <div className={className}>{body}</div>;
   if (to) return <Link to={to} className={className} aria-label={label}>{body}</Link>;
   if (onClick) return <button type="button" className={className} onClick={onClick} aria-label={label}>{body}</button>;
   return <div className={className}>{body}</div>;
