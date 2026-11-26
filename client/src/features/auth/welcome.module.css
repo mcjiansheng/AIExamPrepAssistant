@@ -1,0 +1,26 @@
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 48px 24px calc(32px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+.map { display: grid; grid-template-columns: repeat(8, 22px); gap: 6px; }
+.cell { width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--mastery-new); background: transparent; }
+/* 全产品唯一的进场动画：格子从灰到绿逐格点亮，约 1.2 秒（06 第 1 节） */
+.play .cell { animation: light 360ms var(--ease-standard) both; }
+.lit { background: var(--mastery-mastered); box-shadow: inset 0 0 0 1.5px var(--mastery-mastered); }
+.almost { background: linear-gradient(to top, var(--mastery-shaky) 50%, transparent 50%); box-shadow: inset 0 0 0 1.5px var(--mastery-shaky); }
+@keyframes light {
+  0% { background: transparent; box-shadow: inset 0 0 0 1.5px var(--mastery-new); transform: scale(1); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.brand { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.word { font-size: 40px; line-height: 48px; font-weight: 700; letter-spacing: 2px; }
+.actions { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 320px; }
+.foot { font-size: var(--fs-caption); color: var(--text-tertiary); }
+.loginBox { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 24px; padding: 28px 24px; border-radius: 24px; background: var(--bg-surface); text-align: left; }

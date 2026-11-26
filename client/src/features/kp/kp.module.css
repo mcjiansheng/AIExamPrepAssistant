@@ -1,0 +1,23 @@
+.top { display: flex; flex-direction: column; gap: 12px; }
+.quote { display: flex; gap: 12px; padding: 14px 16px; border-radius: var(--radius-card); background: var(--bg-surface); box-shadow: inset 3px 0 0 var(--mark-emphasis); }
+.section { display: flex; flex-direction: column; gap: 10px; }
+.how { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.quizItem { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: var(--radius-card); background: var(--bg-surface); }
+.bottom {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 0 calc(-1 * var(--pad, 16px));
+  padding: 10px var(--pad, 16px) calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: color-mix(in srgb, var(--bg-page) 90%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 -1px 0 var(--line);
+}
+.actions { display: flex; gap: 8px; }
+.ai { display: flex; flex-direction: column; gap: 12px; }
+.aiHead { display: flex; align-items: center; gap: 8px; }
+.pages { display: flex; flex-direction: column; gap: 12px; }

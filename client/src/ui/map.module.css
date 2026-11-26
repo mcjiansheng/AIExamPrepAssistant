@@ -1,0 +1,68 @@
+/* 知识点地图（07 第 6 节）：格子边长 sm 14、md 16、lg 18，间距 4，圆角为边长的 25% */
+.map { --cell: 14px; display: grid; gap: 20px; position: relative; }
+:global(html[data-bp='md']) .map { --cell: 16px; }
+:global(html[data-bp='lg']) .map, :global(html[data-bp='xl']) .map { --cell: 18px; }
+.map.big { --cell: 22px; }
+.chapters { display: grid; gap: 20px 32px; }
+.chapter { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.chapterHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cells { display: flex; flex-wrap: wrap; gap: 4px; }
+.cell {
+  position: relative;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: calc(var(--cell) * 0.25);
+  box-shadow: inset 0 0 0 1.5px var(--mastery-new);
+  background: transparent;
+  overflow: hidden;
+  flex: none;
+  transition: background-color var(--dur-short), box-shadow var(--dur-short), transform var(--dur-press);
+}
+button.cell:hover { transform: scale(1.12); }
+button.cell:active { transform: scale(0.94); }
+.cell::after { content: ''; position: absolute; transition: inherit; }
+.learned::after {
+  width: 30%;
+  height: 30%;
+  left: 35%;
+  top: 35%;
+  border-radius: 50%;
+  background: var(--mastery-new);
+}
+.shaky { box-shadow: inset 0 0 0 1.5px var(--mastery-shaky); }
+.shaky::after { left: 0; right: 0; bottom: 0; height: 50%; background: var(--mastery-shaky); }
+.mastered { background: var(--mastery-mastered); box-shadow: inset 0 0 0 1.5px var(--mastery-mastered); }
+.emphasis { outline: 2px solid var(--mark-emphasis); outline-offset: 1px; }
+.excluded { opacity: 0.35; box-shadow: none; background-image: none; border: 1.5px dashed var(--mastery-new); }
+.excluded.cell::after { display: none; }
+.current { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: calc(var(--cell) * 0.25); }
+/* M4：变化的格子依次放大回弹 */
+.pulse { animation: pulse var(--spring-bouncy-dur) var(--spring-bouncy) both; }
+@keyframes pulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+/* M5：整理中的骨架格子 */
+.skeleton { box-shadow: none; background: var(--bg-sunken); animation: glow 1.5s ease-in-out infinite; }
+@keyframes glow { 50% { opacity: 0.45; } }
+:global(html[data-motion='reduce']) .skeleton { animation: none; }
+.tip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 92%, transparent);
+  color: var(--bg-surface);
+  font-size: var(--fs-caption);
+  line-height: 16px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-float);
+}
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: var(--fs-caption); color: var(--text-secondary); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .cell { --cell: 12px; }
+.mini { display: block; }

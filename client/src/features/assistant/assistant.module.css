@@ -1,0 +1,46 @@
+.panel { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--bg-surface); }
+.embedded { height: calc(92dvh - 72px); margin: -8px -24px -24px; }
+.head { display: flex; align-items: center; gap: 4px; min-height: 56px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--line); flex: none; }
+.titleBtn { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1; font-weight: 500; font-size: var(--fs-h3); }
+.titleBtn span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.model { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: var(--radius-pill); background: var(--bg-sunken); font-size: var(--fs-caption); color: var(--text-secondary); white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+.list { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; overscroll-behavior: contain; }
+.user { align-self: flex-end; max-width: 85%; padding: 10px 14px; border-radius: 18px 18px 6px 18px; background: var(--bg-sunken); font-size: var(--fs-body-sm); line-height: 22px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reply { display: flex; flex-direction: column; gap: 10px; font-size: var(--fs-body-sm); line-height: 22px; }
+.replyText { white-space: pre-wrap; overflow-wrap: anywhere; }
+.tools { display: flex; align-items: center; gap: 6px; font-size: var(--fs-caption); color: var(--text-tertiary); }
+.toolRunning { animation: blink 1.2s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: 0.4; } }
+.cursor { display: inline-block; width: 6px; height: 14px; margin-left: 2px; border-radius: 1px; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(2) infinite; }
+.memory { display: flex; align-items: center; gap: 6px; font-size: var(--fs-caption); color: var(--text-secondary); }
+.error { color: var(--danger); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.empty { display: flex; flex-direction: column; gap: 12px; margin-top: auto; }
+.suggest { display: flex; flex-wrap: wrap; gap: 8px; }
+.composer { flex: none; padding: 8px 12px 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; background: var(--bg-surface); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.ctx { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 4px 0 10px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); font-size: var(--fs-caption); }
+.ctx button { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; }
+.ctx button:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.inputRow { display: flex; align-items: flex-end; gap: 4px; padding: 4px 4px 4px 14px; border-radius: 22px; background: var(--bg-sunken); }
+.inputRow:focus-within { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.input { flex: 1; min-width: 0; max-height: 160px; padding: 8px 0; border: 0; background: transparent; font-size: var(--fs-body-sm); line-height: 22px; resize: none; }
+.input::placeholder { color: var(--text-tertiary); }
+.commands { display: flex; flex-direction: column; padding: 4px; border-radius: 14px; background: var(--bg-raised); box-shadow: var(--shadow-float), 0 0 0 1px var(--line); }
+.command { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 10px; font-size: var(--fs-body-sm); text-align: left; }
+.command:hover, .commandActive { background: var(--bg-sunken); }
+.command kbd { font-family: var(--font-mono); color: var(--accent); }
+
+/* 卡片：对话的产出物，全宽（03 第 5 节） */
+.card { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 16px; background: var(--bg-page); box-shadow: inset 0 0 0 1px var(--line); }
+.cardHead { display: flex; align-items: center; gap: 8px; }
+.cardTitle { flex: 1; min-width: 0; font-weight: 500; font-size: var(--fs-body-sm); }
+.rows { display: flex; flex-direction: column; gap: 6px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; font-size: var(--fs-caption); line-height: 18px; }
+.row .label { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; }
+.row .to { font-weight: 500; text-align: right; }
+.row .from { color: var(--text-tertiary); text-decoration: line-through; margin-right: 6px; }
+.muted { opacity: 0.55; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.dayRow { display: flex; flex-direction: column; gap: 6px; }
+.taskLine { display: flex; align-items: center; gap: 8px; font-size: var(--fs-caption); }
+.step { display: flex; align-items: center; gap: 8px; font-size: var(--fs-caption); }
