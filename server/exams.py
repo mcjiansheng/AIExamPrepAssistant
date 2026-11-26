@@ -206,12 +206,16 @@ class Exams:
         for index, (kind, score) in enumerate(slots, 1):
             available = [p for p in allowed if p["id"] not in used]
             chosen = next((p for p in available if kind in kp_states[p["id"]]["modes"]), None)
+            planned = kind
             if kind == "calc":
                 chosen = next((p for p in available if "compute" in kp_states[p["id"]]["modes"]), None)
+                if chosen is None:
+                    # 没有可计算的知识点时，计算题注定通不过核对（真实冒烟里一道要耗 5–6 万 token），直接出简答题，分值不变
+                    kind = "short"
             kp = chosen or available[0]
             used.add(kp["id"])
             entry = self.source(kb, kp, by_topic[kp["topic_id"]]["title"])
-            payload["entries"].append({**entry, "qid": uid("q"), "type": kind, "score": score, "position": index})
+            payload["entries"].append({**entry, "qid": uid("q"), "type": kind, "planned": planned, "score": score, "position": index})
         for kp in allowed:
             if kp["id"] not in used:
                 payload["spares"].append(self.source(kb, kp, by_topic[kp["topic_id"]]["title"]))
@@ -290,8 +294,9 @@ class Exams:
                 data.update(comments=comments, hard_tries=hard_tries, soft_used=soft_used, fallback=True, swapped=swapped)
                 save()
                 continue
-            except OutputError:
-                hard, soft, notes, checked = ["题目多次未通过格式或出处核对"], [], [], False
+            except OutputError as error:
+                # 带上具体原因：重写时模型才知道上一版错在哪
+                hard, soft, notes, checked = [f"上一版多次没有通过格式或出处核对，最后一次的问题：{error}"], [], [], False
 
             if hard and hard_tries >= 2:
                 replacement = None
@@ -324,6 +329,8 @@ class Exams:
                 hints = data["hints"] + notes + soft
                 if data.get("fallback"):
                     hints.insert(0, "这道计算题已改为简答题")
+                elif spec.get("planned") == "calc" and spec["type"] == "short":
+                    hints.insert(0, "资料里没有适合出计算题的知识点，这道按简答题出")
                 q = seal(data["draft"], spec, qid)
                 with self.app.db(write=True) as db:
                     db.execute(
