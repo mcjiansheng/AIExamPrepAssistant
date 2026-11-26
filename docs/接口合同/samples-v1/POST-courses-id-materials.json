@@ -1,0 +1,42 @@
+{
+  "materials": [
+    {
+      "id": "m_l2fj44",
+      "course_id": "c_3xnktp",
+      "title": "操作系统 第五章 文件系统.pdf",
+      "kind": "other",
+      "source": "file",
+      "pages": 20,
+      "status": "waiting_confirm",
+      "stage": null,
+      "progress": 0,
+      "kp_count": 0,
+      "question_count": 0,
+      "vision": "none",
+      "superseded_by": null,
+      "decision": null,
+      "skipped_pages": [],
+      "error": null,
+      "uploaded_at": "2026-11-26T00:07:55-08:00"
+    }
+  ],
+  "job": {
+    "id": "j_l3w79v",
+    "kind": "ingest",
+    "status": "needs_input",
+    "progress": 0,
+    "stage": "等待确认用量",
+    "error": null,
+    "course_id": "c_3xnktp",
+    "target_id": "c_3xnktp",
+    "result": null,
+    "estimate": {
+      "tokens_min": 36000,
+      "tokens_max": 84000,
+      "cost_min": 0.14,
+      "cost_max": 0.34,
+      "needs_confirm": true
+    },
+    "created_at": "2026-11-26T00:07:55-08:00"
+  }
+}

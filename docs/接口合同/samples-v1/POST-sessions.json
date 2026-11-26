@@ -1,31 +1,32 @@
 {
-  "id": "s_jq1wq4",
+  "id": "s_jqg920",
   "kind": "quick",
-  "course_id": "c_3xn81w",
+  "course_id": "c_3xnktp",
   "title": "操作系统 · 快练",
   "status": "preparing",
-  "created_at": "2026-11-25T23:38:06-08:00",
+  "created_at": "2026-11-26T00:07:55-08:00",
   "started_at": null,
   "finished_at": null,
   "time_limit_min": null,
   "position": 0,
   "task_id": null,
   "job": {
-    "id": "j_jrf59l",
+    "id": "j_jr7oh3",
     "kind": "session",
     "status": "running",
     "progress": 0,
     "stage": "出题中",
     "error": null,
-    "course_id": "c_3xn81w",
-    "target_id": "s_jq1wq4",
+    "course_id": "c_3xnktp",
+    "target_id": "s_jqg920",
     "result": null,
-    "created_at": "2026-11-25T23:38:06-08:00"
+    "estimate": null,
+    "created_at": "2026-11-26T00:07:55-08:00"
   },
   "questions": [
     {
-      "id": "qi_jstken",
-      "bank_id": "q_5wk7l5",
+      "id": "qi_jsd7im",
+      "bank_id": "q_5wqy3m",
       "index": 0,
       "version": 1,
       "type": "calc",
@@ -35,15 +36,15 @@
       "replaced": false,
       "score": 10,
       "kp": {
-        "id": "kp_4t3paf",
+        "id": "kp_4t59l2",
         "title": "银行家算法"
       },
-      "course_id": "c_3xn81w",
+      "course_id": "c_3xnktp",
       "stem": [],
       "options": null,
       "refs": [
         {
-          "material_id": "m_3zdwy4",
+          "material_id": "m_3zeyhz",
           "material_title": "第二章 进程管理.pptx",
           "page": 63,
           "quote": null
@@ -55,8 +56,8 @@
       "solution": null
     },
     {
-      "id": "qi_jtx694",
-      "bank_id": "q_6ul1tw",
+      "id": "qi_jt3p1k",
+      "bank_id": "q_6ueauk",
       "index": 1,
       "version": 1,
       "type": "single",
@@ -66,15 +67,15 @@
       "replaced": false,
       "score": 2,
       "kp": {
-        "id": "kp_4kcbqm",
+        "id": "kp_4k6qzc",
         "title": "读者-写者问题"
       },
-      "course_id": "c_3xn81w",
+      "course_id": "c_3xnktp",
       "stem": [],
       "options": null,
       "refs": [
         {
-          "material_id": "m_3zdwy4",
+          "material_id": "m_3zeyhz",
           "material_title": "第二章 进程管理.pptx",
           "page": 42,
           "quote": null
@@ -86,8 +87,8 @@
       "solution": null
     },
     {
-      "id": "qi_juiudc",
-      "bank_id": "q_5uaafv",
+      "id": "qi_ju4azb",
+      "bank_id": "q_5u0g70",
       "index": 2,
       "version": 1,
       "type": "single",
@@ -97,15 +98,15 @@
       "replaced": false,
       "score": 2,
       "kp": {
-        "id": "kp_4qj908",
+        "id": "kp_4qsspj",
         "title": "死锁的必要条件"
       },
-      "course_id": "c_3xn81w",
+      "course_id": "c_3xnktp",
       "stem": [],
       "options": null,
       "refs": [
         {
-          "material_id": "m_3zdwy4",
+          "material_id": "m_3zeyhz",
           "material_title": "第二章 进程管理.pptx",
           "page": 55,
           "quote": null

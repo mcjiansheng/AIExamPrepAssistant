@@ -1,15 +1,15 @@
 {
   "roles": {
     "chat": {
-      "connection_id": "pv_4u657",
+      "connection_id": "pv_4m0tb",
       "model": "deepseek-chat"
     },
     "organize": {
-      "connection_id": "pv_4u657",
+      "connection_id": "pv_4m0tb",
       "model": "deepseek-chat"
     },
     "generate": {
-      "connection_id": "pv_4u657",
+      "connection_id": "pv_4m0tb",
       "model": "deepseek-chat"
     },
     "vision": null

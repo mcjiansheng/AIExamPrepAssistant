@@ -1,13 +1,13 @@
 {
-  "id": "kp_4t3paf",
-  "course_id": "c_3xn81w",
+  "id": "kp_4t59l2",
+  "course_id": "c_3xnktp",
   "title": "银行家算法",
   "chapter": {
-    "id": "ch_431tp7",
+    "id": "ch_434xyt",
     "title": "第二章 进程管理"
   },
   "topic": {
-    "id": "tp_4p96qq",
+    "id": "tp_4p72s9",
     "title": "死锁"
   },
   "state": "shaky",
@@ -24,7 +24,7 @@
   "teacher": [
     {
       "text": "银行家算法一定会考大题。",
-      "fragment_id": "fr_8syutb"
+      "fragment_id": "fr_8s4db2"
     }
   ],
   "sections": [
@@ -37,7 +37,7 @@
       ],
       "refs": [
         {
-          "material_id": "m_3zdwy4",
+          "material_id": "m_3zeyhz",
           "material_title": "第二章 进程管理.pptx",
           "page": 63,
           "quote": "分配资源前先试探分配"
@@ -74,7 +74,7 @@
   ],
   "pages": [
     {
-      "material_id": "m_3zdwy4",
+      "material_id": "m_3zeyhz",
       "material_title": "第二章 进程管理.pptx",
       "page": 63,
       "quote": "分配资源前先试探分配"
@@ -82,8 +82,8 @@
   ],
   "quiz": [
     {
-      "id": "qi_jmomtb",
-      "bank_id": "q_5wk7l5",
+      "id": "qi_jm054h",
+      "bank_id": "q_5wqy3m",
       "index": 0,
       "version": 1,
       "type": "calc",
@@ -93,10 +93,10 @@
       "replaced": false,
       "score": 10,
       "kp": {
-        "id": "kp_4t3paf",
+        "id": "kp_4t59l2",
         "title": "银行家算法"
       },
-      "course_id": "c_3xn81w",
+      "course_id": "c_3xnktp",
       "stem": [
         {
           "kind": "text",
@@ -141,7 +141,7 @@
       "options": null,
       "refs": [
         {
-          "material_id": "m_3zdwy4",
+          "material_id": "m_3zeyhz",
           "material_title": "第二章 进程管理.pptx",
           "page": 63,
           "quote": null
@@ -153,8 +153,8 @@
       "solution": null
     },
     {
-      "id": "qi_jnwle1",
-      "bank_id": "q_78vd97",
+      "id": "qi_jncrx1",
+      "bank_id": "q_78llqy",
       "index": 1,
       "version": 1,
       "type": "single",
@@ -164,10 +164,10 @@
       "replaced": false,
       "score": 2,
       "kp": {
-        "id": "kp_4t3paf",
+        "id": "kp_4t59l2",
         "title": "银行家算法"
       },
-      "course_id": "c_3xn81w",
+      "course_id": "c_3xnktp",
       "stem": [
         {
           "kind": "text",
@@ -194,7 +194,7 @@
       ],
       "refs": [
         {
-          "material_id": "m_3zdwy4",
+          "material_id": "m_3zeyhz",
           "material_title": "第二章 进程管理.pptx",
           "page": 63,
           "quote": null
@@ -206,8 +206,8 @@
       "solution": null
     },
     {
-      "id": "qi_jonklo",
-      "bank_id": "q_793vkg",
+      "id": "qi_jod18h",
+      "bank_id": "q_79lojl",
       "index": 2,
       "version": 1,
       "type": "short",
@@ -217,10 +217,10 @@
       "replaced": false,
       "score": 6,
       "kp": {
-        "id": "kp_4t3paf",
+        "id": "kp_4t59l2",
         "title": "银行家算法"
       },
-      "course_id": "c_3xn81w",
+      "course_id": "c_3xnktp",
       "stem": [
         {
           "kind": "text",
@@ -230,7 +230,7 @@
       "options": null,
       "refs": [
         {
-          "material_id": "m_3zdwy4",
+          "material_id": "m_3zeyhz",
           "material_title": "第二章 进程管理.pptx",
           "page": 63,
           "quote": null
@@ -243,169 +243,169 @@
     }
   ],
   "map": {
-    "id": "ch_431tp7",
+    "id": "ch_434xyt",
     "title": "第二章 进程管理",
     "mastered": 13,
     "total": 22,
     "kps": [
       {
-        "id": "kp_45uxx6",
+        "id": "kp_4561ud",
         "title": "进程的概念与特征",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_443y1k"
+        "topic_id": "tp_44jd5w"
       },
       {
-        "id": "kp_46m51i",
+        "id": "kp_46b09m",
         "title": "进程状态转换",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_443y1k"
+        "topic_id": "tp_44jd5w"
       },
       {
-        "id": "kp_47a50b",
+        "id": "kp_47lyp5",
         "title": "进程控制块 PCB",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_443y1k"
+        "topic_id": "tp_44jd5w"
       },
       {
-        "id": "kp_48gso7",
+        "id": "kp_48tozf",
         "title": "线程与多线程模型",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_443y1k"
+        "topic_id": "tp_44jd5w"
       },
       {
-        "id": "kp_4ankp2",
+        "id": "kp_4a3eot",
         "title": "调度的层次",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_49ap61"
+        "topic_id": "tp_49ccki"
       },
       {
-        "id": "kp_4bu354",
+        "id": "kp_4bvm60",
         "title": "FCFS 与 SJF",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_49ap61"
+        "topic_id": "tp_49ccki"
       },
       {
-        "id": "kp_4cwqbx",
+        "id": "kp_4csuim",
         "title": "时间片轮转 RR",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_49ap61"
+        "topic_id": "tp_49ccki"
       },
       {
-        "id": "kp_4dfqw8",
+        "id": "kp_4de0yq",
         "title": "多级反馈队列",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_49ap61"
+        "topic_id": "tp_49ccki"
       },
       {
-        "id": "kp_4e1xwe",
+        "id": "kp_4epksn",
         "title": "调度算法例题",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_49ap61"
+        "topic_id": "tp_49ccki"
       },
       {
-        "id": "kp_4gbl49",
+        "id": "kp_4gmg3v",
         "title": "临界区与互斥",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_4f4zzl"
+        "topic_id": "tp_4frros"
       },
       {
-        "id": "kp_4hindm",
+        "id": "kp_4hvar8",
         "title": "信号量机制",
         "state": "mastered",
         "level": "none",
-        "topic_id": "tp_4f4zzl"
+        "topic_id": "tp_4frros"
       },
       {
-        "id": "kp_4ioeho",
+        "id": "kp_4iv206",
         "title": "PV 操作实现互斥",
         "state": "mastered",
         "level": "emphasized",
-        "topic_id": "tp_4f4zzl"
+        "topic_id": "tp_4frros"
       },
       {
-        "id": "kp_4jiqxu",
+        "id": "kp_4jza3d",
         "title": "生产者-消费者问题",
         "state": "mastered",
         "level": "emphasized",
-        "topic_id": "tp_4f4zzl"
+        "topic_id": "tp_4frros"
       },
       {
-        "id": "kp_4kcbqm",
+        "id": "kp_4k6qzc",
         "title": "读者-写者问题",
         "state": "shaky",
         "level": "none",
-        "topic_id": "tp_4f4zzl"
+        "topic_id": "tp_4frros"
       },
       {
-        "id": "kp_4mt2kg",
+        "id": "kp_4mih70",
         "title": "管程的概念",
         "state": "new",
         "level": "excluded",
-        "topic_id": "tp_4lza8t"
+        "topic_id": "tp_4l4983"
       },
       {
-        "id": "kp_4np3ls",
+        "id": "kp_4njv89",
         "title": "霍尔管程",
         "state": "new",
         "level": "excluded",
-        "topic_id": "tp_4lza8t"
+        "topic_id": "tp_4l4983"
       },
       {
-        "id": "kp_4o60d2",
+        "id": "kp_4om3qg",
         "title": "管程实现生产者-消费者",
         "state": "new",
         "level": "excluded",
-        "topic_id": "tp_4lza8t"
+        "topic_id": "tp_4l4983"
       },
       {
-        "id": "kp_4qj908",
+        "id": "kp_4qsspj",
         "title": "死锁的必要条件",
         "state": "shaky",
         "level": "none",
-        "topic_id": "tp_4p96qq"
+        "topic_id": "tp_4p72s9"
       },
       {
-        "id": "kp_4rncfw",
+        "id": "kp_4rkimd",
         "title": "死锁预防",
         "state": "shaky",
         "level": "none",
-        "topic_id": "tp_4p96qq"
+        "topic_id": "tp_4p72s9"
       },
       {
-        "id": "kp_4sdnwy",
+        "id": "kp_4s62d9",
         "title": "系统安全状态",
         "state": "shaky",
         "level": "none",
-        "topic_id": "tp_4p96qq"
+        "topic_id": "tp_4p72s9"
       },
       {
-        "id": "kp_4t3paf",
+        "id": "kp_4t59l2",
         "title": "银行家算法",
         "state": "shaky",
         "level": "emphasized",
-        "topic_id": "tp_4p96qq"
+        "topic_id": "tp_4p72s9"
       },
       {
-        "id": "kp_4ugjz6",
+        "id": "kp_4upx3h",
         "title": "死锁检测与解除",
         "state": "shaky",
         "level": "none",
-        "topic_id": "tp_4p96qq"
+        "topic_id": "tp_4p72s9"
       }
     ]
   },
-  "prev_id": "kp_4sdnwy",
-  "next_id": "kp_4ugjz6",
+  "prev_id": "kp_4s62d9",
+  "next_id": "kp_4upx3h",
   "task": null,
   "understood_at": null
 }

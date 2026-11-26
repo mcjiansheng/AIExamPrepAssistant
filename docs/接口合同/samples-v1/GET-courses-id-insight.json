@@ -1,39 +1,39 @@
 {
-  "course_id": "c_3xn81w",
+  "course_id": "c_3xnktp",
   "verdict": "按现在的速度，考前能掌握 4 成重点",
   "readiness": [
     {
-      "date": "2026-11-13",
+      "date": "2026-11-14",
       "ratio": 0
     },
     {
-      "date": "2026-11-16",
+      "date": "2026-11-17",
       "ratio": 0
     },
     {
-      "date": "2026-11-19",
+      "date": "2026-11-20",
       "ratio": 0
     },
     {
-      "date": "2026-11-21",
-      "ratio": 0.14285714285714285
-    },
-    {
-      "date": "2026-11-23",
+      "date": "2026-11-22",
       "ratio": 0.14285714285714285
     },
     {
       "date": "2026-11-24",
-      "ratio": 0.2857142857142857
+      "ratio": 0.14285714285714285
     },
     {
       "date": "2026-11-25",
+      "ratio": 0.2857142857142857
+    },
+    {
+      "date": "2026-11-26",
       "ratio": 0.2857142857142857
     }
   ],
   "chapters": [
     {
-      "id": "ch_431tp7",
+      "id": "ch_434xyt",
       "title": "第二章 进程管理",
       "new": 3,
       "learned": 0,
@@ -41,7 +41,7 @@
       "mastered": 13
     },
     {
-      "id": "ch_4vw3ng",
+      "id": "ch_4vj9xa",
       "title": "第三章 存储管理",
       "new": 7,
       "learned": 4,
@@ -49,7 +49,7 @@
       "mastered": 0
     },
     {
-      "id": "ch_5a6577",
+      "id": "ch_5a28o7",
       "title": "第四章 设备管理",
       "new": 15,
       "learned": 0,
@@ -59,40 +59,40 @@
   ],
   "weak": [
     {
-      "id": "kp_4t3paf",
-      "course_id": "c_3xn81w",
+      "id": "kp_4t59l2",
+      "course_id": "c_3xnktp",
       "title": "银行家算法",
       "state": "shaky",
       "level": "emphasized",
       "chapter_title": "第二章 进程管理"
     },
     {
-      "id": "kp_4kcbqm",
-      "course_id": "c_3xn81w",
+      "id": "kp_4k6qzc",
+      "course_id": "c_3xnktp",
       "title": "读者-写者问题",
       "state": "shaky",
       "level": "none",
       "chapter_title": "第二章 进程管理"
     },
     {
-      "id": "kp_4qj908",
-      "course_id": "c_3xn81w",
+      "id": "kp_4qsspj",
+      "course_id": "c_3xnktp",
       "title": "死锁的必要条件",
       "state": "shaky",
       "level": "none",
       "chapter_title": "第二章 进程管理"
     },
     {
-      "id": "kp_4rncfw",
-      "course_id": "c_3xn81w",
+      "id": "kp_4rkimd",
+      "course_id": "c_3xnktp",
       "title": "死锁预防",
       "state": "shaky",
       "level": "none",
       "chapter_title": "第二章 进程管理"
     },
     {
-      "id": "kp_4sdnwy",
-      "course_id": "c_3xn81w",
+      "id": "kp_4s62d9",
+      "course_id": "c_3xnktp",
       "title": "系统安全状态",
       "state": "shaky",
       "level": "none",

@@ -4,7 +4,7 @@
     "text": "回想这一节里“读者-写者问题”是怎么定义的。",
     "refs": [
       {
-        "material_id": "m_3zdwy4",
+        "material_id": "m_3zeyhz",
         "material_title": "第二章 进程管理.pptx",
         "page": 42,
         "quote": null
@@ -12,8 +12,8 @@
     ]
   },
   "question": {
-    "id": "qi_jtx694",
-    "bank_id": "q_6ul1tw",
+    "id": "qi_jt3p1k",
+    "bank_id": "q_6ueauk",
     "index": 1,
     "version": 1,
     "type": "single",
@@ -23,10 +23,10 @@
     "replaced": false,
     "score": 2,
     "kp": {
-      "id": "kp_4kcbqm",
+      "id": "kp_4k6qzc",
       "title": "读者-写者问题"
     },
-    "course_id": "c_3xn81w",
+    "course_id": "c_3xnktp",
     "stem": [
       {
         "kind": "text",
@@ -53,7 +53,7 @@
     ],
     "refs": [
       {
-        "material_id": "m_3zdwy4",
+        "material_id": "m_3zeyhz",
         "material_title": "第二章 进程管理.pptx",
         "page": 42,
         "quote": null
@@ -65,7 +65,7 @@
         "text": "回想这一节里“读者-写者问题”是怎么定义的。",
         "refs": [
           {
-            "material_id": "m_3zdwy4",
+            "material_id": "m_3zeyhz",
             "material_title": "第二章 进程管理.pptx",
             "page": 42,
             "quote": null

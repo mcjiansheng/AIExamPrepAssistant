@@ -1,42 +1,42 @@
 {
-  "from": "2026-11-25",
-  "to": "2026-12-01",
+  "from": "2026-11-26",
+  "to": "2026-12-02",
   "daily_minutes": 120,
   "intensity": "standard",
   "days": [
     {
-      "date": "2026-11-25",
+      "date": "2026-11-26",
       "minutes_available": 120,
       "minutes_planned": 120,
       "tasks": [
         {
-          "id": "t_hdcaop",
-          "course_id": "c_5lic6",
-          "date": "2026-11-25",
+          "id": "t_hd8kp3",
+          "course_id": "c_50gpd",
+          "date": "2026-11-26",
           "kind": "practice",
           "title": "快练 5 道",
           "minutes": 10,
           "status": "done",
           "reason": "昨天没做完",
-          "moved_from": "2026-11-24",
+          "moved_from": "2026-11-25",
           "pinned": false,
           "kp_ids": [],
           "session_id": null,
           "progress": null
         },
         {
-          "id": "t_hc07eq",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-25",
+          "id": "t_hc0xti",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-26",
           "kind": "learn",
           "title": "FCFS 磁盘调度",
           "minutes": 20,
           "status": "todo",
           "reason": "昨天没做完",
-          "moved_from": "2026-11-24",
+          "moved_from": "2026-11-25",
           "pinned": false,
           "kp_ids": [
-            "kp_5ijd0t"
+            "kp_5igua2"
           ],
           "session_id": null,
           "progress": {
@@ -45,9 +45,9 @@
           }
         },
         {
-          "id": "t_igsp08",
-          "course_id": "c_5lic6",
-          "date": "2026-11-25",
+          "id": "t_ig1fqj",
+          "course_id": "c_50gpd",
+          "date": "2026-11-26",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -57,15 +57,15 @@
           "minutes": 5,
           "reason": "按记忆规律到期",
           "kp_ids": [
-            "kp_ck9v7",
-            "kp_d923m"
+            "kp_cy3kr",
+            "kp_dc4l2"
           ],
           "progress": null
         },
         {
-          "id": "t_ih0a33",
-          "course_id": "c_5lic6",
-          "date": "2026-11-25",
+          "id": "t_ih15e5",
+          "course_id": "c_50gpd",
+          "date": "2026-11-26",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -75,9 +75,9 @@
           "minutes": 45,
           "reason": "老师强调 · 还没学",
           "kp_ids": [
-            "kp_1g2zfa",
-            "kp_1hkpel",
-            "kp_1i1yc0"
+            "kp_1glbtz",
+            "kp_1hp7lt",
+            "kp_1i6x05"
           ],
           "progress": {
             "done": 0,
@@ -85,9 +85,9 @@
           }
         },
         {
-          "id": "t_iisjov",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-25",
+          "id": "t_ii6z5s",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-26",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -97,16 +97,16 @@
           "minutes": 10,
           "reason": "按记忆规律到期",
           "kp_ids": [
-            "kp_45uxx6",
-            "kp_46m51i",
-            "kp_47a50b"
+            "kp_4561ud",
+            "kp_46b09m",
+            "kp_47lyp5"
           ],
           "progress": null
         },
         {
-          "id": "t_ijusoq",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-25",
+          "id": "t_ijslf8",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-26",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -116,7 +116,7 @@
           "minutes": 15,
           "reason": "老师提到过 · 还没学",
           "kp_ids": [
-            "kp_5j91rl"
+            "kp_5j5hnr"
           ],
           "progress": {
             "done": 0,
@@ -124,9 +124,9 @@
           }
         },
         {
-          "id": "t_ikdm1t",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-25",
+          "id": "t_ika5hx",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-26",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -136,133 +136,7 @@
           "minutes": 15,
           "reason": "老师提到过 · 还没学",
           "kp_ids": [
-            "kp_5krq7o"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 1
-          }
-        }
-      ],
-      "exams": []
-    },
-    {
-      "date": "2026-11-26",
-      "minutes_available": 120,
-      "minutes_planned": 120,
-      "tasks": [
-        {
-          "id": "t_iltdog",
-          "course_id": "c_5lic6",
-          "date": "2026-11-26",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "定积分",
-          "minutes": 40,
-          "reason": "课件内容 · 还没学",
-          "kp_ids": [
-            "kp_1k65rl",
-            "kp_1lx0rv",
-            "kp_1mccjg"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 3
-          }
-        },
-        {
-          "id": "t_imdsih",
-          "course_id": "c_5lic6",
-          "date": "2026-11-26",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "practice",
-          "title": "快练 5 道",
-          "minutes": 10,
-          "reason": "有 5 个知识点不稳",
-          "kp_ids": [],
-          "progress": null
-        },
-        {
-          "id": "t_infdas",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-26",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "磁盘调度",
-          "minutes": 25,
-          "reason": "老师提到过 · 还没学",
-          "kp_ids": [
-            "kp_5lkfk7",
-            "kp_5hajbc"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 2
-          }
-        },
-        {
-          "id": "t_io26d4",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-26",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "快表 TLB",
-          "minutes": 15,
-          "reason": "课件内容 · 还没学",
-          "kp_ids": [
-            "kp_52enaz"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 1
-          }
-        },
-        {
-          "id": "t_ipgqmp",
-          "course_id": "c_8yq1ed",
-          "date": "2026-11-26",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "Kruskal 算法",
-          "minutes": 15,
-          "reason": "老师强调 · 还没学",
-          "kp_ids": [
-            "kp_9s6rlk"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 1
-          }
-        },
-        {
-          "id": "t_iq9vpb",
-          "course_id": "c_8yq1ed",
-          "date": "2026-11-26",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "Dijkstra 算法",
-          "minutes": 15,
-          "reason": "老师强调 · 还没学",
-          "kp_ids": [
-            "kp_9thpht"
+            "kp_5kdi87"
           ],
           "progress": {
             "done": 0,
@@ -275,75 +149,34 @@
     {
       "date": "2026-11-27",
       "minutes_available": 120,
-      "minutes_planned": 115,
+      "minutes_planned": 120,
       "tasks": [
         {
-          "id": "t_irwg0a",
-          "course_id": "c_5lic6",
-          "date": "2026-11-27",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "mock",
-          "title": "模拟卷",
-          "minutes": 90,
-          "reason": "明天考试，做一套整卷",
-          "kp_ids": [],
-          "progress": null
-        },
-        {
-          "id": "t_isa1s2",
-          "course_id": "c_3xn81w",
+          "id": "t_ilbcl2",
+          "course_id": "c_50gpd",
           "date": "2026-11-27",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
           "session_id": null,
           "kind": "learn",
-          "title": "分段与段页式",
-          "minutes": 15,
+          "title": "定积分",
+          "minutes": 40,
           "reason": "课件内容 · 还没学",
           "kp_ids": [
-            "kp_530kde"
+            "kp_1k4sqv",
+            "kp_1lp4nc",
+            "kp_1mukfr"
           ],
           "progress": {
             "done": 0,
-            "total": 1
+            "total": 3
           }
         },
         {
-          "id": "t_itdnw6",
-          "course_id": "c_3xn81w",
+          "id": "t_imxoxw",
+          "course_id": "c_50gpd",
           "date": "2026-11-27",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "请求分页",
-          "minutes": 10,
-          "reason": "课件内容 · 还没学",
-          "kp_ids": [
-            "kp_55s55y"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 1
-          }
-        }
-      ],
-      "exams": []
-    },
-    {
-      "date": "2026-11-28",
-      "minutes_available": 120,
-      "minutes_planned": 90,
-      "tasks": [
-        {
-          "id": "t_iutaj8",
-          "course_id": "c_5lic6",
-          "date": "2026-11-28",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -356,138 +189,40 @@
           "progress": null
         },
         {
-          "id": "t_iv7vlo",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-28",
+          "id": "t_infdrg",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-27",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
           "session_id": null,
           "kind": "learn",
-          "title": "虚拟存储与页面置换",
-          "minutes": 35,
-          "reason": "课件内容 · 还没学",
+          "title": "磁盘调度",
+          "minutes": 25,
+          "reason": "老师提到过 · 还没学",
           "kp_ids": [
-            "kp_56wxwe",
-            "kp_57bxna",
-            "kp_58xw5t"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 3
-          }
-        },
-        {
-          "id": "t_iwu1j5",
-          "course_id": "c_8yq1ed",
-          "date": "2026-11-28",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "拓扑排序",
-          "minutes": 15,
-          "reason": "老师强调 · 还没学",
-          "kp_ids": [
-            "kp_9uh6hi"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 1
-          }
-        },
-        {
-          "id": "t_ixtc4b",
-          "course_id": "c_8yq1ed",
-          "date": "2026-11-28",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "图的应用",
-          "minutes": 30,
-          "reason": "老师强调 · 还没学",
-          "kp_ids": [
-            "kp_9vq2zy",
-            "kp_9ri6kc"
+            "kp_5lhbwe",
+            "kp_5hurim"
           ],
           "progress": {
             "done": 0,
             "total": 2
           }
-        }
-      ],
-      "exams": [
-        {
-          "course_id": "c_5lic6",
-          "name": "高等数学",
-          "color": 1
-        }
-      ]
-    },
-    {
-      "date": "2026-11-29",
-      "minutes_available": 120,
-      "minutes_planned": 100,
-      "tasks": [
-        {
-          "id": "t_iy869o",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-29",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "抖动与工作集",
-          "minutes": 10,
-          "reason": "课件内容 · 还没学",
-          "kp_ids": [
-            "kp_593c3x"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 1
-          }
         },
         {
-          "id": "t_izqjqq",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-29",
+          "id": "t_io8x1n",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-27",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
           "session_id": null,
           "kind": "learn",
-          "title": "I/O 控制方式",
+          "title": "快表 TLB",
           "minutes": 15,
           "reason": "课件内容 · 还没学",
           "kp_ids": [
-            "kp_5cqbgb",
-            "kp_5dxr5m",
-            "kp_5eeev7"
-          ],
-          "progress": {
-            "done": 0,
-            "total": 3
-          }
-        },
-        {
-          "id": "t_j0ba6h",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-29",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "learn",
-          "title": "通道",
-          "minutes": 5,
-          "reason": "课件内容 · 还没学",
-          "kp_ids": [
-            "kp_5flced"
+            "kp_52voq8"
           ],
           "progress": {
             "done": 0,
@@ -495,76 +230,57 @@
           }
         },
         {
-          "id": "t_j1rqsb",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-29",
+          "id": "t_ipnx5q",
+          "course_id": "c_8yvv9e",
+          "date": "2026-11-27",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
           "session_id": null,
           "kind": "learn",
-          "title": "SPOOLing 与缓冲",
-          "minutes": 20,
-          "reason": "课件内容 · 还没学",
+          "title": "Kruskal 算法",
+          "minutes": 15,
+          "reason": "老师强调 · 还没学",
           "kp_ids": [
-            "kp_5nuy76",
-            "kp_5omuvg",
-            "kp_5px4eu"
+            "kp_9s1wyp"
           ],
           "progress": {
             "done": 0,
-            "total": 3
+            "total": 1
           }
         },
         {
-          "id": "t_j2i266",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-29",
-          "status": "todo",
-          "moved_from": null,
-          "pinned": false,
-          "session_id": null,
-          "kind": "practice",
-          "title": "快练 5 道",
-          "minutes": 10,
-          "reason": "有 6 个知识点不稳",
-          "kp_ids": [],
-          "progress": null
-        },
-        {
-          "id": "t_j3fi69",
-          "course_id": "c_8yq1ed",
-          "date": "2026-11-29",
+          "id": "t_iqtkti",
+          "course_id": "c_8yvv9e",
+          "date": "2026-11-27",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
           "session_id": null,
           "kind": "learn",
-          "title": "排序",
-          "minutes": 40,
+          "title": "Dijkstra 算法",
+          "minutes": 15,
           "reason": "老师强调 · 还没学",
           "kp_ids": [
-            "kp_a3g1dz",
-            "kp_a4lgmk",
-            "kp_a5pfoa"
+            "kp_9tufxr"
           ],
           "progress": {
             "done": 0,
-            "total": 3
+            "total": 1
           }
         }
       ],
       "exams": []
     },
     {
-      "date": "2026-11-30",
+      "date": "2026-11-28",
       "minutes_available": 120,
-      "minutes_planned": 120,
+      "minutes_planned": 115,
       "tasks": [
         {
-          "id": "t_j4mb56",
-          "course_id": "c_3xn81w",
-          "date": "2026-11-30",
+          "id": "t_ira5yf",
+          "course_id": "c_50gpd",
+          "date": "2026-11-28",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -577,20 +293,125 @@
           "progress": null
         },
         {
-          "id": "t_j5t3y3",
-          "course_id": "c_8yq1ed",
-          "date": "2026-11-30",
+          "id": "t_isa3zx",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-28",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
           "session_id": null,
           "kind": "learn",
-          "title": "排序",
+          "title": "分段与段页式",
+          "minutes": 15,
+          "reason": "课件内容 · 还没学",
+          "kp_ids": [
+            "kp_53yld3"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 1
+          }
+        },
+        {
+          "id": "t_itsmj4",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-28",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "请求分页",
+          "minutes": 10,
+          "reason": "课件内容 · 还没学",
+          "kp_ids": [
+            "kp_55pr7x"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 1
+          }
+        }
+      ],
+      "exams": []
+    },
+    {
+      "date": "2026-11-29",
+      "minutes_available": 120,
+      "minutes_planned": 90,
+      "tasks": [
+        {
+          "id": "t_iu3wdx",
+          "course_id": "c_50gpd",
+          "date": "2026-11-29",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "practice",
+          "title": "快练 5 道",
+          "minutes": 10,
+          "reason": "有 5 个知识点不稳",
+          "kp_ids": [],
+          "progress": null
+        },
+        {
+          "id": "t_ivkmt3",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-29",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "虚拟存储与页面置换",
+          "minutes": 35,
+          "reason": "课件内容 · 还没学",
+          "kp_ids": [
+            "kp_56wr2y",
+            "kp_576w7e",
+            "kp_58tx0v"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 3
+          }
+        },
+        {
+          "id": "t_iwel4a",
+          "course_id": "c_8yvv9e",
+          "date": "2026-11-29",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "拓扑排序",
+          "minutes": 15,
+          "reason": "老师强调 · 还没学",
+          "kp_ids": [
+            "kp_9uhoh7"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 1
+          }
+        },
+        {
+          "id": "t_ixomj1",
+          "course_id": "c_8yvv9e",
+          "date": "2026-11-29",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "图的应用",
           "minutes": 30,
           "reason": "老师强调 · 还没学",
           "kp_ids": [
-            "kp_a6lsil",
-            "kp_a2e66b"
+            "kp_9vx2wp",
+            "kp_9r28v8"
           ],
           "progress": {
             "done": 0,
@@ -598,17 +419,107 @@
           }
         }
       ],
-      "exams": []
+      "exams": [
+        {
+          "course_id": "c_50gpd",
+          "name": "高等数学",
+          "color": 1
+        }
+      ]
     },
     {
-      "date": "2026-12-01",
+      "date": "2026-11-30",
       "minutes_available": 120,
-      "minutes_planned": 65,
+      "minutes_planned": 100,
       "tasks": [
         {
-          "id": "t_j62k9r",
-          "course_id": "c_3xn81w",
-          "date": "2026-12-01",
+          "id": "t_iyg7nc",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-30",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "抖动与工作集",
+          "minutes": 10,
+          "reason": "课件内容 · 还没学",
+          "kp_ids": [
+            "kp_59itxo"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 1
+          }
+        },
+        {
+          "id": "t_izzc7t",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-30",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "I/O 控制方式",
+          "minutes": 15,
+          "reason": "课件内容 · 还没学",
+          "kp_ids": [
+            "kp_5cy1vx",
+            "kp_5djg8q",
+            "kp_5ejf57"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 3
+          }
+        },
+        {
+          "id": "t_j0sk7b",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-30",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "通道",
+          "minutes": 5,
+          "reason": "课件内容 · 还没学",
+          "kp_ids": [
+            "kp_5fh776"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 1
+          }
+        },
+        {
+          "id": "t_j14lyi",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-30",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "SPOOLing 与缓冲",
+          "minutes": 20,
+          "reason": "课件内容 · 还没学",
+          "kp_ids": [
+            "kp_5n9rk3",
+            "kp_5om37s",
+            "kp_5phy5a"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 3
+          }
+        },
+        {
+          "id": "t_j26t3s",
+          "course_id": "c_3xnktp",
+          "date": "2026-11-30",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -621,9 +532,98 @@
           "progress": null
         },
         {
-          "id": "t_j7wux7",
-          "course_id": "c_8yq1ed",
+          "id": "t_j3r3cg",
+          "course_id": "c_8yvv9e",
+          "date": "2026-11-30",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "排序",
+          "minutes": 40,
+          "reason": "老师强调 · 还没学",
+          "kp_ids": [
+            "kp_a3dgib",
+            "kp_a4llnr",
+            "kp_a5rdyu"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 3
+          }
+        }
+      ],
+      "exams": []
+    },
+    {
+      "date": "2026-12-01",
+      "minutes_available": 120,
+      "minutes_planned": 120,
+      "tasks": [
+        {
+          "id": "t_j4dcqo",
+          "course_id": "c_3xnktp",
           "date": "2026-12-01",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "mock",
+          "title": "模拟卷",
+          "minutes": 90,
+          "reason": "明天考试，做一套整卷",
+          "kp_ids": [],
+          "progress": null
+        },
+        {
+          "id": "t_j5hyi3",
+          "course_id": "c_8yvv9e",
+          "date": "2026-12-01",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "learn",
+          "title": "排序",
+          "minutes": 30,
+          "reason": "老师强调 · 还没学",
+          "kp_ids": [
+            "kp_a69eua",
+            "kp_a273do"
+          ],
+          "progress": {
+            "done": 0,
+            "total": 2
+          }
+        }
+      ],
+      "exams": []
+    },
+    {
+      "date": "2026-12-02",
+      "minutes_available": 120,
+      "minutes_planned": 65,
+      "tasks": [
+        {
+          "id": "t_j6awk7",
+          "course_id": "c_3xnktp",
+          "date": "2026-12-02",
+          "status": "todo",
+          "moved_from": null,
+          "pinned": false,
+          "session_id": null,
+          "kind": "practice",
+          "title": "快练 5 道",
+          "minutes": 10,
+          "reason": "有 6 个知识点不稳",
+          "kp_ids": [],
+          "progress": null
+        },
+        {
+          "id": "t_j7lrf9",
+          "course_id": "c_8yvv9e",
+          "date": "2026-12-02",
           "status": "todo",
           "moved_from": null,
           "pinned": false,
@@ -633,9 +633,9 @@
           "minutes": 55,
           "reason": "课件内容 · 还没学",
           "kp_ids": [
-            "kp_9i83me",
-            "kp_9j7l18",
-            "kp_9kxi3r"
+            "kp_9ie8kb",
+            "kp_9j0aho",
+            "kp_9k1f2v"
           ],
           "progress": {
             "done": 0,
@@ -645,7 +645,7 @@
       ],
       "exams": [
         {
-          "course_id": "c_3xn81w",
+          "course_id": "c_3xnktp",
           "name": "操作系统",
           "color": 0
         }

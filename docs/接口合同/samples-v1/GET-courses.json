@@ -1,9 +1,9 @@
 [
   {
-    "id": "c_5lic6",
+    "id": "c_50gpd",
     "name": "高等数学",
     "color": 1,
-    "exam_date": "2026-11-28",
+    "exam_date": "2026-11-29",
     "days_left": 3,
     "sample": false,
     "readiness": {
@@ -24,13 +24,13 @@
       "mistakes": 5
     },
     "daily_cap_min": null,
-    "created_at": "2026-11-25T23:38:06-08:00"
+    "created_at": "2026-11-26T00:07:55-08:00"
   },
   {
-    "id": "c_3xn81w",
+    "id": "c_3xnktp",
     "name": "操作系统",
     "color": 0,
-    "exam_date": "2026-12-01",
+    "exam_date": "2026-12-02",
     "days_left": 6,
     "sample": false,
     "readiness": {
@@ -51,13 +51,13 @@
       "mistakes": 6
     },
     "daily_cap_min": null,
-    "created_at": "2026-11-25T23:38:06-08:00"
+    "created_at": "2026-11-26T00:07:55-08:00"
   },
   {
-    "id": "c_8yq1ed",
+    "id": "c_8yvv9e",
     "name": "数据结构",
     "color": 3,
-    "exam_date": "2026-12-08",
+    "exam_date": "2026-12-09",
     "days_left": 13,
     "sample": false,
     "readiness": {
@@ -78,6 +78,6 @@
       "mistakes": 3
     },
     "daily_cap_min": null,
-    "created_at": "2026-11-25T23:38:06-08:00"
+    "created_at": "2026-11-26T00:07:55-08:00"
   }
 ]
