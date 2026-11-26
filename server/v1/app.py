@@ -3,6 +3,7 @@ import os
 import sqlite3
 import time
 import traceback
+from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import uuid4
 
@@ -12,9 +13,10 @@ from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException
 from starlette.responses import FileResponse, JSONResponse
 
-from . import accounts, auth, courses, demo, events, focus, jobs, learning, materials, plans, practice, undo
-from .db import Database, dump, utc_now
+from . import accounts, auth, courses, demo, events, focus, jobs, learning, materials, pipeline, plans, practice, providers, undo
+from .db import Database, dump, load, utc_now
 from .errors import ApiError, not_found
+from .vault import KeyVault
 
 ROOT = Path(__file__).resolve().parents[2]
 logger = logging.getLogger("fullgrid.http")
@@ -88,11 +90,26 @@ def initialize_courses(conn, user_id, kind):
     demo.seed_user(conn, user_id, kind)
 
 
-def initialize_user(conn, user_id, kind):
+def seed_demo_provider(conn, app, user_id):
+    if not app.state.mock_model:
+        return
+    row = conn.execute("SELECT timezone,guest FROM users WHERE id=?", (user_id,)).fetchone()
+    user = auth.Principal(user_id, "", row["timezone"], bool(row["guest"]))
+    item = providers.create_connection(
+        conn, app, user, providers.PresetInput(preset_id="deepseek", key="fullgrid-demo-only"), mock_only=True,
+    )
+    caps = {"chat": True, "json": True, "tools": True, "vision": False, "stream": True, "context_k": 128}
+    conn.execute("UPDATE provider_connections SET status='ok',capabilities=?,checked_at=? WHERE id=?",
+                 (dump(caps), utc_now().isoformat(), item["id"]))
+    providers.bind_defaults(conn, user, item, caps, item["default_model"], True)
+
+
+def initialize_user(conn, user_id, kind, app):
     conn.execute("INSERT INTO model_limits (user_id) VALUES (?)", (user_id,))
     initialize_courses(conn, user_id, kind)
     if kind == "demo":
         demo.seed_study(conn, user_id)
+        seed_demo_provider(conn, app, user_id)
 
 
 def initialize_existing_courses(conn, sms_mode):
@@ -113,21 +130,44 @@ def initialize_existing_study(conn, sms_mode):
             demo.seed_study(conn, found["id"])
 
 
-def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=None):
+def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=None, worker_enabled=True):
     base = Path(data_dir or os.environ.get("FULLGRID_DATA_DIR", ROOT / "local" / "data"))
     dist = Path(client_dir or ROOT / "client" / "dist").resolve()
-    app = FastAPI(title="满格 API", docs_url=None, redoc_url=None, openapi_url=None)
+
+    @asynccontextmanager
+    async def serving(app):
+        worker = pipeline.Worker(app) if worker_enabled else None
+        if worker is not None:
+            worker.start()
+        try:
+            yield
+        finally:
+            if worker is not None:
+                worker.close()
+
+    app = FastAPI(title="满格 API", docs_url=None, redoc_url=None, openapi_url=None, lifespan=serving)
     sms_mode = sms_mode or os.environ.get("SMS_MODE", "dev")
+    app.state.mock_model = mock_model
+    app.state.vault = KeyVault(base / "v1")
+    app.state.presets = {item["id"]: item for item in load(demo.FIXTURE.read_text(encoding="utf-8"))["presets"]}
+    app.state.ocr_engine = None
+
+    def add_demo_provider(conn):
+        row = conn.execute("SELECT id FROM users WHERE phone=?", ("13800000000",)).fetchone()
+        if row is not None and sms_mode == "dev":
+            seed_demo_provider(conn, app, row["id"])
+
     app.state.db = Database(
         base / "v1.sqlite", data_migrations={
             4: lambda conn: initialize_existing_courses(conn, sms_mode),
             5: lambda conn: initialize_existing_study(conn, sms_mode),
+            6: add_demo_provider,
         },
     )
     app.state.data_dir = base
     app.state.mock_model = mock_model
     app.state.sms_mode = sms_mode
-    app.state.initialize_user = initialize_user
+    app.state.initialize_user = lambda conn, user_id, kind: initialize_user(conn, user_id, kind, app)
     app.state.events = events.EventBus()
     app.add_middleware(RequestLog)
 
@@ -150,9 +190,9 @@ def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=Non
 
     @app.get("/api/v1/health")
     def health():
-        return {"ok": True, "version": "1.0", "capabilities": {"ocr": False, "speech": False}, "sms": app.state.sms_mode}
+        return {"ok": True, "version": "1.0", "capabilities": {"ocr": True, "speech": False}, "sms": app.state.sms_mode}
 
-    for module in (auth, accounts, jobs, undo, events, courses, materials, focus, plans, learning, practice):
+    for module in (auth, accounts, jobs, undo, events, courses, materials, focus, plans, learning, practice, providers, pipeline):
         app.include_router(module.router, prefix="/api/v1")
 
     @app.get("/{path:path}", include_in_schema=False)

@@ -74,7 +74,7 @@ class StageOneTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="fullgrid-v1-test-")
         self.addCleanup(self.temp.cleanup)
         self.data_dir = Path(self.temp.name)
-        self.app = create_app(data_dir=self.data_dir, mock_model=True, sms_mode="dev")
+        self.app = create_app(data_dir=self.data_dir, mock_model=True, sms_mode="dev", worker_enabled=False)
         self.client = self.enterContext(TestClient(self.app))
 
     def request(self, method, path, token=None, **kwargs):
@@ -391,8 +391,14 @@ class StageOneTest(unittest.TestCase):
                          ("memory_a", a["user"]["id"], "讲解先给例子", "user", stamp))
             conn.execute("INSERT INTO notifications(id,user_id,kind,title,created_at) VALUES(?,?,?,?,?)",
                          ("notice_a", a["user"]["id"], "job_done", "整理好了", stamp))
-            conn.execute("INSERT INTO jobs(id,user_id,kind,status,target_id,created_at) VALUES(?,?,?,?,?,?)",
-                         ("job_a", a["user"]["id"], "ingest", "done", "course_a", stamp))
+            conn.execute(
+                """INSERT INTO materials(id,user_id,course_id,title,kind,source,status,vision,uploaded_at)
+                   VALUES (?,?,'course_a','演示资料','slides','file','ready','none',?)""",
+                ("material_a", a["user"]["id"], stamp),
+            )
+            conn.execute("INSERT INTO jobs(id,user_id,kind,status,target_id,created_at,payload) VALUES(?,?,?,?,?,?,?)",
+                         ("job_a", a["user"]["id"], "ingest", "done", "material_a", stamp,
+                          json.dumps({"materials": ["material_a"], "index": 0, "units": 1})))
         memories = self.request("GET", "/me/memory", a["access_token"]).json()
         self.assertEqual(len(memories), 1)
         self.assertEqual(set(memories[0]), {"id", "text", "source", "created_at"})

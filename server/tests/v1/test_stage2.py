@@ -14,7 +14,7 @@ from server.v1.app import create_app
 class CourseContractTest(unittest.TestCase):
     def setUp(self):
         temp = self.enterContext(tempfile.TemporaryDirectory(prefix="fullgrid-course-test-"))
-        self.app = create_app(data_dir=Path(temp), mock_model=True, sms_mode="dev")
+        self.app = create_app(data_dir=Path(temp), mock_model=True, sms_mode="dev", worker_enabled=False)
         self.client = self.enterContext(TestClient(self.app))
 
     def api(self, method, path, token=None, **kwargs):

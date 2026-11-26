@@ -193,19 +193,22 @@ def mistakes_bank(conn, user, request, cid):
     return out
 
 
-def insert_questions(conn, user, sid, slots):
+def insert_questions(conn, user, sid, slots, *, generating=False):
+    ids = [new_id("qi") for _ in slots]
     conn.executemany(
         """INSERT INTO practice_questions
            (id,user_id,session_id,course_id,kp_id,bank_id,position,type,score,status,check_state,check_note)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
-        [(new_id("qi"), user.id, sid, point["course_id"], point["id"], bank["id"] if bank is not None else None,
-          index, kind, score, "ready" if bank is not None else "failed", "passed" if bank is not None else "unchecked",
-          None if bank is not None else "题库中没有足够的这类题目")
+        [(ids[index], user.id, sid, point["course_id"], point["id"], bank["id"] if bank is not None else None,
+          index, kind, score, "ready" if bank is not None else "pending" if generating else "failed",
+          "passed" if bank is not None else "unchecked",
+          None if bank is not None or generating else "题库中没有足够的这类题目")
          for index, (point, bank, kind, score) in enumerate(slots)],
     )
+    return [qid for qid, slot in zip(ids, slots) if slot[1] is None]
 
 
-def build_session(conn, user, request, *, quiz=False, exclude=None):
+def build_session(conn, user, request, *, quiz=False, exclude=None, app=None):
     cid = request.course_id
     if request.kind == "kp" and request.kp_id is None:
         raise ApiError(400, "bad_request", "请选一个知识点")
@@ -228,6 +231,7 @@ def build_session(conn, user, request, *, quiz=False, exclude=None):
         cid = scope[0]["id"]
     points = scoped_points(conn, user, scope, kind, request.kp_id)
     duration = None
+    count = 0
     if kind == "mistakes":
         selected = mistakes_bank(conn, user, request, cid)
         slots = [(point, bank, bank["type"], bank["score"]) for point, bank in selected]
@@ -240,6 +244,24 @@ def build_session(conn, user, request, *, quiz=False, exclude=None):
     else:
         count = request.count or (min(len(points), 20) if kind == "review" else 3 if kind == "kp" else 5)
         slots = [(point, bank, bank["type"], bank["score"]) for point, bank in scatter_bank(conn, points, count, exclude=exclude)]
+    generate = app is not None and kind != "mistakes" and bool(points) and not all(row["sample"] for row in scope)
+    if generate and kind != "mock":
+        missing = count - len(slots)
+        if missing:
+            common = [("single", 2), ("fill", 4), ("short", 6)]
+            for index in range(missing):
+                point = points[index % len(points)]
+                desired, score = common[index % len(common)]
+                slots.append((point, None, desired, score))
+    missing_slots = sum(slot[1] is None for slot in slots) if generate else 0
+    if missing_slots:
+        from .model_runtime import binding
+        from .providers import estimate
+        if binding(conn, user.id, "generate", app.state.mock_model) is None:
+            raise ApiError(409, "ai_required", "还没有连接 AI 模型")
+        quote = estimate(conn, app, user, "session", missing_slots)
+        if quote["needs_confirm"] and not request.confirm:
+            raise ApiError(409, "needs_confirmation", "这次出题需要先确认用量", detail={"estimate": quote})
     if not slots:
         if kind in {"review", "mock", "mistakes"}:
             raise conflict("这个范围里没有可出题的知识点")
@@ -255,13 +277,18 @@ def build_session(conn, user, request, *, quiz=False, exclude=None):
         """INSERT INTO practice_sessions
            (id,user_id,course_id,title,kind,status,created_at,started_at,question_count,total,time_limit_min,task_id)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
-        (sid, user.id, cid, title, kind, "active" if available else "failed", now, now if available else None,
+        (sid, user.id, cid, title, kind, "active" if available else "preparing" if missing_slots else "failed", now, now if available else None,
          len(slots), sum(slot[3] for slot in available), duration, request.task_id),
     )
-    insert_questions(conn, user, sid, slots)
+    pending = insert_questions(conn, user, sid, slots, generating=bool(missing_slots))
+    if missing_slots:
+        from .jobs import new_job
+        job = new_job(conn, user, "session", sid, course_id=cid, stage="正在出题",
+                      payload={"question_ids": pending, "units": len(pending), "index": 0})
+        conn.execute("UPDATE practice_sessions SET job_id=? WHERE id=?", (job["id"], sid))
     if target is not None:
         conn.execute("UPDATE schedule_items SET session_id=? WHERE id=?", (sid, target["id"]))
-    return session_view(conn, user, session_row(conn, user.id, sid), preparing=not quiz and bool(available))
+    return session_view(conn, user, session_row(conn, user.id, sid), preparing=not quiz and bool(available or missing_slots))
 
 
 def ensure_kp_quiz(conn, user, point):
@@ -526,7 +553,7 @@ def publish(request, user, cid=None):
 @router.post("/sessions")
 def start(body: NewSession, request: Request, user: Principal = Depends(principal)):
     with request.app.state.db.transaction(write=True) as conn:
-        status, result = run(conn, request, user, lambda: (200, build_session(conn, user, body)))
+        status, result = run(conn, request, user, lambda: (200, build_session(conn, user, body, app=request.app)))
     publish(request, user, result["course_id"])
     return JSONResponse(result, status_code=status)
 
@@ -583,6 +610,9 @@ def delete_session(sid: str, request: Request, user: Principal = Depends(princip
 def attempt(qid: str, body: Answer, request: Request, user: Principal = Depends(principal)):
     with request.app.state.db.transaction(write=True) as conn:
         result = attempt_question(conn, user, qid, body.response)
+    if result["question"]["attempt"]["state"] == "needs_self_grade":
+        from .generation import grade_assistance
+        result = grade_assistance(request.app, user, result)
     publish(request, user, result["question"]["course_id"])
     return result
 
@@ -663,6 +693,8 @@ def similar(bank_id: str, request: Request, user: Principal = Depends(principal)
         row = owned_mistake(conn, user, bank_id)
         bank = owned(conn, "bank_questions", user.id, bank_id, "题目")
         args = NewSession(kind="kp", course_id=row["course_id"], kp_id=bank["kp_id"], count=1)
-        status, result = run(conn, request, user, lambda: (200, build_session(conn, user, args, exclude=bank_id)))
+        status, result = run(conn, request, user, lambda: (200, build_session(
+            conn, user, args, exclude=bank_id, app=request.app,
+        )))
     publish(request, user, row["course_id"])
     return JSONResponse(result, status_code=status)

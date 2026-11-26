@@ -13,7 +13,7 @@ from server.v1.app import create_app
 class StudyTest(unittest.TestCase):
     def setUp(self):
         directory = self.enterContext(tempfile.TemporaryDirectory(prefix="fullgrid-study-test-"))
-        self.app = create_app(data_dir=Path(directory), mock_model=True, sms_mode="dev")
+        self.app = create_app(data_dir=Path(directory), mock_model=True, sms_mode="dev", worker_enabled=False)
         self.client = self.enterContext(TestClient(self.app))
 
     def api(self, method, path, token=None, *, status=200, **kwargs):

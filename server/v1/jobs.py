@@ -74,9 +74,20 @@ def requeue(job_id, request, user, *, retry):
                 raise conflict("这项任务当前不能继续")
             if reached_daily_limit(conn, user):
                 raise conflict("已达今日上限，提高上限后可继续")
+        payload = load(row["payload"])
+        if retry:
+            from .pipeline import prepare_retry
+            prepare_retry(conn, row, payload)
+        elif row["estimate"] is not None:
+            payload["approved"] = True
+            if row["kind"] == "ingest":
+                conn.executemany(
+                    "UPDATE materials SET status='reading',stage='读取资料' WHERE id=? AND status='waiting_confirm'",
+                    [(mid,) for mid in payload["materials"]],
+                )
         conn.execute(
             "UPDATE jobs SET status = 'queued', stage = ?, error = NULL, estimate = NULL, "
-            "failure_count = 0, run_after = NULL WHERE id = ?", ("等待开始", job_id),
+            "failure_count = 0, run_after = NULL, payload=? WHERE id = ?", ("等待开始", dump(payload), job_id),
         )
         result = view(owned_job(conn, user.id, job_id), user.timezone)
     request.app.state.events.publish(user.id, {"type": "job", "job": result})
