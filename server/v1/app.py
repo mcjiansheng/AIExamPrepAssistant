@@ -12,8 +12,8 @@ from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException
 from starlette.responses import FileResponse, JSONResponse
 
-from . import accounts, auth, events, jobs, undo
-from .db import Database, dump
+from . import accounts, auth, courses, demo, events, focus, jobs, materials, undo
+from .db import Database, dump, utc_now
 from .errors import ApiError, not_found
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -80,18 +80,41 @@ class RequestLog:
             }))
 
 
+def initialize_courses(conn, user_id, kind):
+    conn.execute(
+        "INSERT INTO chat_threads (id,user_id,title,kind,updated_at) VALUES (?,?,'全局','global',?)",
+        (auth.new_id("th"), user_id, utc_now().isoformat()),
+    )
+    demo.seed_user(conn, user_id, kind)
+
+
 def initialize_user(conn, user_id, kind):
     conn.execute("INSERT INTO model_limits (user_id) VALUES (?)", (user_id,))
+    initialize_courses(conn, user_id, kind)
+
+
+def initialize_existing_courses(conn, sms_mode):
+    for user in conn.execute("SELECT id, phone, guest FROM users").fetchall():
+        if user["guest"]:
+            kind = "guest"
+        elif sms_mode == "dev" and user["phone"] == "13800000000":
+            kind = "demo"
+        else:
+            kind = "new"
+        initialize_courses(conn, user["id"], kind)
 
 
 def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=None):
     base = Path(data_dir or os.environ.get("FULLGRID_DATA_DIR", ROOT / "local" / "data"))
     dist = Path(client_dir or ROOT / "client" / "dist").resolve()
     app = FastAPI(title="满格 API", docs_url=None, redoc_url=None, openapi_url=None)
-    app.state.db = Database(base / "v1.sqlite")
+    sms_mode = sms_mode or os.environ.get("SMS_MODE", "dev")
+    app.state.db = Database(
+        base / "v1.sqlite", data_migrations={4: lambda conn: initialize_existing_courses(conn, sms_mode)},
+    )
     app.state.data_dir = base
     app.state.mock_model = mock_model
-    app.state.sms_mode = sms_mode or os.environ.get("SMS_MODE", "dev")
+    app.state.sms_mode = sms_mode
     app.state.initialize_user = initialize_user
     app.state.events = events.EventBus()
     app.add_middleware(RequestLog)
@@ -117,7 +140,7 @@ def create_app(*, data_dir=None, mock_model=False, sms_mode=None, client_dir=Non
     def health():
         return {"ok": True, "version": "1.0", "capabilities": {"ocr": False, "speech": False}, "sms": app.state.sms_mode}
 
-    for module in (auth, accounts, jobs, undo, events):
+    for module in (auth, accounts, jobs, undo, events, courses, materials, focus):
         app.include_router(module.router, prefix="/api/v1")
 
     @app.get("/{path:path}", include_in_schema=False)

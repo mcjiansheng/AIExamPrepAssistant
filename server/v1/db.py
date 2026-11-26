@@ -34,7 +34,7 @@ def statements(script):
 
 
 class Database:
-    def __init__(self, path):
+    def __init__(self, path, *, data_migrations=None):
         self.path = path
         path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self.connect()) as conn:
@@ -49,6 +49,8 @@ class Database:
                     continue
                 for statement in statements(migration.read_text(encoding="utf-8")):
                     conn.execute(statement)
+                if data_migrations and version in data_migrations:
+                    data_migrations[version](conn)
                 conn.execute(
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
                     (version, utc_now().isoformat()),

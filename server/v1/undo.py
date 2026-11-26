@@ -11,7 +11,10 @@ from .events import changed
 router = APIRouter()
 
 # Tables with undo support have an invalidation trigger keyed by this column.
-UNDO_KEYS = {"settings": "user_id"}
+UNDO_KEYS = {
+    "settings": "user_id", "courses": "id", "course_formats": "course_id", "materials": "id",
+    "fragments": "id", "focus_matches": "id", "focus_conflicts": "id", "kp_refs": "id",
+}
 
 
 def record(conn, user, *, label, summary, affects, rows):
