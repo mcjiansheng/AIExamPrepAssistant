@@ -28,6 +28,8 @@ export interface Job {
   course_id: ID | null;
   target_id: ID;
   result: { url: string | null } | null;
+  /** needs_input 且在等用户确认用量时非空（合同 v1.1 第 3 节） */
+  estimate: Estimate | null;
   created_at: string;
 }
 
@@ -131,7 +133,7 @@ export type KpState = 'new' | 'learned' | 'shaky' | 'mastered';
 export type Level = 'emphasized' | 'conflict' | 'mentioned' | 'none' | 'excluded';
 export type Mode = 'memory' | 'understand' | 'compute' | 'design' | 'proof' | 'linked' | 'major';
 export interface Organizing {
-  state: 'idle' | 'working' | 'waiting_ai' | 'attention'; progress: number | null; stage: string | null;
+  state: 'idle' | 'working' | 'waiting_ai' | 'waiting_confirm' | 'attention'; progress: number | null; stage: string | null;
   job_id: ID | null; attention: string | null;
 }
 export interface Course {
@@ -165,7 +167,7 @@ export interface KpDetail {
 export type MaterialKind = 'slides' | 'homework' | 'notes' | 'review' | 'past_paper' | 'photo' | 'other';
 export interface Material {
   id: ID; course_id: ID; title: string; kind: MaterialKind; source: 'file' | 'photo'; pages: number | null;
-  status: 'waiting_ai' | 'reading' | 'extracting' | 'ready' | 'failed'; stage: string | null; progress: number | null;
+  status: 'waiting_ai' | 'waiting_confirm' | 'reading' | 'extracting' | 'ready' | 'failed'; stage: string | null; progress: number | null;
   kp_count: number | null; question_count: number; vision: 'none' | 'partial' | 'done' | 'unsupported';
   superseded_by: ID | null;
   decision: { kind: 'version' | 'role'; text: string; options: { id: string; label: string }[]; choice: string } | null;

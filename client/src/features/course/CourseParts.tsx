@@ -3,9 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../../api/endpoints';
-import { invalidate, useApply, useCourseHome } from '../../api/hooks';
-import type { Course } from '../../api/types';
-import { longDate } from '../../lib/format';
+import { errorText, invalidate, useApply, useCourseHome, useJob } from '../../api/hooks';
+import type { Course, ID, Job } from '../../api/types';
+import { longDate, tokens } from '../../lib/format';
 import { useUi } from '../../state/ui';
 import { s } from '../../strings/zh-CN';
 import { Notice } from '../../ui/Blocks';
@@ -64,8 +64,8 @@ export function CourseCard({ course }: { course: Course }) {
         </div>
         {organizing ? (
           <Column gap={8}><Text variant="caption" tone="accent">{course.organizing.stage ?? s.course.organizing}</Text><ProgressBar value={course.organizing.progress ?? 0} label={s.course.organizing} /></Column>
-        ) : course.organizing.state === 'waiting_ai' ? (
-          <Text variant="caption" tone="warning">{s.course.waitingAi}</Text>
+        ) : course.organizing.state === 'waiting_ai' || course.organizing.state === 'waiting_confirm' ? (
+          <Text variant="caption" tone="warning">{course.organizing.state === 'waiting_ai' ? s.course.waitingAi : s.course.waitingConfirm}</Text>
         ) : (
           <div className={css.readyLine}>
             <Text variant="bodySm" strong as="span">{course.readiness.total ? `${Math.round((course.readiness.mastered / course.readiness.total) * 100)}%` : '—'}</Text>
@@ -94,6 +94,7 @@ export function OrganizingNotice({ course }: { course: Course }) {
       </Card>
     );
   }
+  if (course.organizing.state === 'waiting_confirm' && course.organizing.job_id) return <ConfirmIngestNotice jobId={course.organizing.job_id} />;
   if (course.organizing.state === 'working') {
     return (
       <Column gap={8}>
@@ -106,6 +107,44 @@ export function OrganizingNotice({ course }: { course: Course }) {
     return <Notice tone="warn" icon="warning">{course.organizing.attention}</Notice>;
   }
   return null;
+}
+
+/**
+ * 整理预计超过确认阈值时，任务暂停在 needs_input（合同 v1.1 第 3 节）。
+ * 刚上传时直接弹出估算；用户取消或之后才暂停的（例如连接 AI 后自动整理），在课程主页和资料页显示这条提示。
+ */
+function ConfirmIngestNotice({ jobId }: { jobId: ID }) {
+  const qc = useQueryClient();
+  const job = useJob(jobId);
+  const [busy, setBusy] = useState(false);
+  const estimate = job.data?.estimate;
+  const start = async () => {
+    setBusy(true);
+    try {
+      await api.continueJob(jobId);
+      invalidate(qc, ['materials', 'course', 'courses']);
+    } catch (e) {
+      useUi.getState().toast(errorText(e), 'danger');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Card tone="tinted">
+      <Row gap={12} justify="between" wrap>
+        <Text>{estimate ? s.course.confirmIngest(`${tokens(estimate.tokens_min)}–${tokens(estimate.tokens_max)}`) : s.course.waitingConfirm}</Text>
+        <Button variant="primary" size="sm" loading={busy} onClick={() => void start()}>{s.course.startOrganize}</Button>
+      </Row>
+    </Card>
+  );
+}
+
+/** 上传后：任务在等确认用量时弹出估算，确认后继续整理。返回是否已开始整理。 */
+export async function confirmIngest(job: Job | null): Promise<boolean> {
+  if (job?.status !== 'needs_input' || !job.estimate) return false;
+  if (!(await useUi.getState().requestEstimate(job.estimate))) return false;
+  await api.continueJob(job.id);
+  return true;
 }
 
 export function CourseSettingsSheet({ course, open, onClose }: { course: Course; open: boolean; onClose: () => void }) {

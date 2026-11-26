@@ -11,7 +11,7 @@ import {
 import { addDays, byId, daysBetween, db, nowIso, persist, removeWhere, resetDb, today, uid, type CourseRow, type KpRow, type UserRow } from './db';
 import { mockConfig, wait as pause } from './config';
 import { ApiErr } from './errors';
-import { newJob } from './jobs';
+import { continueJob, ingestEstimate, newJob, startIngest } from './jobs';
 import { planUser, replanTracked, scheduleView, taskView, todayView } from './plan';
 import {
   attempt, createSession, finish, grade, hasAi, hint, insightView, kpQuizSession, mistakesView, practiceHub, questionView,
@@ -90,6 +90,14 @@ add('POST', '/undo/{id}', ({ user, params }) => {
 add('GET', '/jobs/{id}', ({ user, params }) => {
   const job = db.jobs.find((j) => j.id === params[0] && j.user_id === user.id);
   if (!job) throw new ApiErr(404, 'not_found', '任务不存在');
+  return jobView(job);
+});
+add('POST', '/jobs/{id}/continue', ({ user, params }) => {
+  const job = db.jobs.find((j) => j.id === params[0] && j.user_id === user.id);
+  if (!job) throw new ApiErr(404, 'not_found', '任务不存在');
+  if (job.status !== 'needs_input') throw new ApiErr(409, 'conflict', '这项任务不需要确认');
+  continueJob(job);
+  changed(user.id, ['materials', 'course', 'courses'], job.course_id);
   return jobView(job);
 });
 add('POST', '/jobs/{id}/retry', ({ user, params }) => {
@@ -279,11 +287,8 @@ add('POST', '/me/providers/{id}/check', async ({ user, params }) => {
     if (user.onboarding.ai !== 'done') user.onboarding.ai = 'done';
     const waiting = db.materials.filter((m) => m.user_id === user.id && m.status === 'waiting_ai');
     for (const courseId of new Set(waiting.map((m) => m.course_id))) {
-      const ids = waiting.filter((m) => m.course_id === courseId).map((m) => m.id);
-      for (const m of waiting.filter((x) => x.course_id === courseId)) m.status = 'reading';
-      const job = newJob(user.id, 'ingest', courseId, courseId, { material_ids: ids, step: 0 });
       const course = byId('courses', courseId);
-      if (course) course.organizing = { state: 'working', progress: 0, stage: '读取资料', job_id: job.id, attention: null };
+      if (course) startIngest(user, course, waiting.filter((m) => m.course_id === courseId));
     }
   }
   p.checked_at = nowIso();
@@ -319,10 +324,14 @@ add('PUT', '/me/limits', ({ user, body }) => {
   if ('daily_tokens' in body) user.limits.daily_tokens = (body.daily_tokens as number | null) ?? null;
   return { ...user.limits, today_tokens: 0 };
 });
-add('POST', '/estimate', ({ body }) => {
-  const count = Number(body.count ?? 5);
-  const tokens = body.op === 'ingest' ? 110_000 * ((body.material_ids as unknown[] | undefined)?.length ?? 1) : count * 2_800;
-  return { tokens_min: Math.round(tokens * 0.8), tokens_max: Math.round(tokens * 1.2), cost_min: +(tokens * 0.8 * 4e-6).toFixed(2), cost_max: +(tokens * 1.2 * 4e-6).toFixed(2), needs_confirm: tokens > 20_000 };
+add('POST', '/estimate', ({ user, body }) => {
+  if (body.op === 'ingest') {
+    const ids = new Set((body.material_ids as T.ID[] | undefined) ?? []);
+    const pages = db.materials.filter((m) => m.user_id === user.id && ids.has(m.id)).reduce((sum, m) => sum + (m.pages ?? 1), 0);
+    return ingestEstimate(pages, user);
+  }
+  const tokens = Number(body.count ?? 5) * 2_800;
+  return { tokens_min: Math.round(tokens * 0.8), tokens_max: Math.round(tokens * 1.2), cost_min: +(tokens * 0.8 * 4e-6).toFixed(2), cost_max: +(tokens * 1.2 * 4e-6).toFixed(2), needs_confirm: tokens > user.limits.confirm_tokens };
 });
 
 // —— 今天与日程 ——
@@ -478,7 +487,17 @@ add('POST', '/kps/{id}/mark', ({ user, params, body }) => {
 // —— 资料 ——
 const ALLOWED = /\.(pdf|pptx?|docx?|txt|md|png|jpe?g|heic)$/i;
 add('GET', '/courses/{id}/materials', ({ user, params }) => db.materials.filter((m) => m.course_id === courseOf(user, params[0]!).id).sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at)).map(materialView));
-add('POST', '/courses/{id}/materials', ({ user, params, form }) => {
+/** 读页数不调用模型：PDF 数页对象，图片算 1 页，其他按大小粗估 */
+async function countPages(file: File): Promise<number> {
+  if (/\.(png|jpe?g|heic)$/i.test(file.name)) return 1;
+  if (/\.pdf$/i.test(file.name)) {
+    const pages = ((await file.text()).match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
+    if (pages) return pages;
+  }
+  return Math.max(1, Math.round(file.size / 60_000));
+}
+
+add('POST', '/courses/{id}/materials', async ({ user, params, form }) => {
   writer(user);
   const course = courseOf(user, params[0]!);
   const files = (form?.getAll('files') ?? []).filter((f): f is File => typeof f !== 'string');
@@ -488,15 +507,14 @@ add('POST', '/courses/{id}/materials', ({ user, params, form }) => {
     if (!ALLOWED.test(f.name)) throw new ApiErr(415, 'unsupported_type', `不支持这种格式：${f.name}`);
     if (f.size > 50 * 1024 * 1024) throw new ApiErr(413, 'too_large', `${f.name} 超过 50 MB`);
   }
-  const ai = hasAi(user) || course.sample;
   const source = form?.get('source') === 'photo' ? 'photo' : 'file';
-  const rows = files.map((f) => addMaterial(user, course, f.name, source === 'photo' || /\.(png|jpe?g|heic)$/i.test(f.name) ? 'photo' : 'other', ai ? 'reading' : 'waiting_ai', null));
-  if (!ai) {
+  const pages = await Promise.all(files.map(countPages));
+  const rows = files.map((f, i) => addMaterial(user, course, f.name, source === 'photo' || /\.(png|jpe?g|heic)$/i.test(f.name) ? 'photo' : 'other', 'waiting_ai', pages[i]!));
+  if (!hasAi(user)) {
     course.organizing = { state: 'waiting_ai', progress: null, stage: '等待连接 AI 后整理', job_id: null, attention: null };
     return { materials: rows.map(materialView), job: null };
   }
-  const job = newJob(user.id, 'ingest', course.id, course.id, { material_ids: rows.map((m) => m.id), step: 0 }, 500);
-  course.organizing = { state: 'working', progress: 0, stage: '读取资料', job_id: job.id, attention: null };
+  const job = startIngest(user, course, rows);
   return { materials: rows.map(materialView), job: jobView(job) };
 });
 add('PATCH', '/materials/{id}', ({ user, params, body }) => {

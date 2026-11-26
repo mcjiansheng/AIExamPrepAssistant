@@ -9,6 +9,7 @@ import { usePageContext } from '../features/assistant/context';
 import css from '../features/materials/page.module.css';
 import { PageBrowser } from '../features/materials/PageBrowser';
 import { QrPattern } from '../features/auth/QrPattern';
+import { confirmIngest, OrganizingNotice } from '../features/course/CourseParts';
 import { cx } from '../lib/cx';
 import { isCompact, useBreakpoint } from '../state/breakpoint';
 import { useUi } from '../state/ui';
@@ -51,7 +52,11 @@ export function MaterialsPage() {
     try {
       const r = await api.upload(cid, files, source);
       invalidate(qc, ['materials', 'course', 'courses']);
-      useUi.getState().toast(r.job ? `已添加 ${files.length} 份，正在整理` : `已添加 ${files.length} 份，${s.materials.waitingAi}`);
+      const paused = r.job?.status === 'needs_input';
+      const started = paused ? await confirmIngest(r.job) : !!r.job;
+      if (paused) invalidate(qc, ['materials', 'course', 'courses']);
+      const tail = !r.job ? s.materials.waitingAi : started ? '正在整理' : s.materials.waitingConfirm;
+      useUi.getState().toast(`已添加 ${files.length} 份，${tail}`);
     } catch (e) { useUi.getState().toast(errorText(e), 'danger'); }
   };
   useEffect(() => {
@@ -93,6 +98,7 @@ export function MaterialsPage() {
         </Row>
         {(m.status === 'reading' || m.status === 'extracting') && <Column gap={4}><Text variant="caption" tone="accent">{m.stage ?? '整理中'}</Text><ProgressBar value={m.progress ?? 0} label={m.stage ?? ''} /></Column>}
         {m.status === 'waiting_ai' && <Text variant="caption" tone="warning">{s.materials.waitingAi}</Text>}
+        {m.status === 'waiting_confirm' && <Text variant="caption" tone="warning">{s.materials.waitingConfirm}</Text>}
         {m.status === 'failed' && m.error && (
           <Row gap={8} wrap><Text variant="caption" tone="danger">{m.error.message}</Text><Button size="sm" variant="text" onClick={() => fileInput.current?.click()}>{s.action.reupload}</Button></Row>
         )}
@@ -125,6 +131,7 @@ export function MaterialsPage() {
   const listBlock = (
     <Column gap={16}>
       {uploadButtons}
+      {course.data && <OrganizingNotice course={course.data} />}
       {materials.isError ? <ErrorState error={materials.error} onRetry={() => void materials.refetch()} />
         : materials.isLoading ? <Column gap={8}>{[0, 1, 2].map((i) => <Skeleton key={i} height={72} radius={16} />)}</Column>
         : active.length === 0 ? <EmptyState icon="file" title={s.materials.empty} />

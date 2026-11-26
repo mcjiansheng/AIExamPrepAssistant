@@ -42,6 +42,7 @@ export const keys = {
   reminders: ['reminders'] as const,
   memory: ['memory'] as const,
   devices: ['devices'] as const,
+  job: (id: ID) => ['job', id] as const,
 };
 
 const AREA_PREFIXES: Record<Area, string[]> = {
@@ -70,6 +71,7 @@ export const useCourses = () => useQuery({ queryKey: keys.courses, queryFn: api.
 export const useCourse = (cid: ID) => useQuery({ queryKey: keys.course(cid), queryFn: () => api.course(cid) });
 export const useCourseHome = (cid: ID) => useQuery({ queryKey: keys.home(cid), queryFn: () => api.courseHome(cid) });
 export const useKp = (kid: ID, task?: ID | null) => useQuery({ queryKey: keys.kp(kid, task), queryFn: () => api.kp(kid, task) });
+export const useJob = (id: ID | null) => useQuery({ queryKey: keys.job(id ?? ''), queryFn: () => api.job(id!), enabled: !!id });
 export const useMaterials = (cid: ID) => useQuery({ queryKey: keys.materials(cid), queryFn: () => api.materials(cid) });
 export const usePages = (mid: ID | null) => useQuery({ queryKey: keys.pages(mid ?? ''), queryFn: () => api.pages(mid!), enabled: !!mid });
 export const usePage = (mid: ID | null, n: number) => useQuery({ queryKey: keys.page(mid ?? '', n), queryFn: () => api.page(mid!, n), enabled: !!mid && n > 0 });

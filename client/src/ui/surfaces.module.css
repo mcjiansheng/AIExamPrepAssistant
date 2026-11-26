@@ -25,6 +25,14 @@
 .item.withIcon + .item.withIcon::before { left: 56px; }
 .itemPress:hover { background: color-mix(in srgb, var(--text-primary) 3%, transparent); }
 .itemPress:active { background: color-mix(in srgb, var(--text-primary) 6%, transparent); }
+/* 行里有控件时：标题的点击区铺满整行，控件浮在上面 */
+.itemHit { color: inherit; text-align: inherit; }
+.itemHit::after { content: ''; position: absolute; inset: 0; }
+.itemHit:focus-visible { outline: none; }
+.itemHit:focus-visible::after { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: inherit; }
+.itemTrailing { position: relative; z-index: 1; display: flex; align-items: center; flex: none; pointer-events: none; }
+/* 只有控件本身接住点击，图标、角标等透过去点到整行 */
+.itemTrailing :is(a, button, input, select, textarea, [role='switch'], [role='button']) { pointer-events: auto; }
 .itemIcon {
   display: grid;
   place-items: center;

@@ -44,8 +44,8 @@ export async function* respond(turn: Turn): AsyncGenerator<T.ChatEvent> {
   yield { type: 'start', message_id: reply.id, user_message_id: userMsg.id };
 
   const course = context.course_id ? byId('courses', context.course_id) ?? null : thread.course_id ? byId('courses', thread.course_id) ?? null : null;
-  const sampleOnly = db.courses.filter((c) => c.user_id === user.id).every((c) => c.sample);
-  if (!hasAi(user) && !(course?.sample || sampleOnly)) {
+  // 没有连接时一律回连接卡，访客和示例课程也一样（03 第 10 节、合同第 14 节）
+  if (!hasAi(user)) {
     const card: T.Card = { id: uid('card'), created_at: nowIso(), kind: 'connect', reason: '连接 AI 模型后，助手就能回答和操作' };
     reply.cards.push(card);
     reply.text = '还没有连接 AI 模型。';

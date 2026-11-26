@@ -63,7 +63,7 @@ AI 备考助手：用课件和老师的重点生成复习计划和模拟试卷�
 - `docs/评测/`：验证组回归评测的数字和稳定性报告（11-08）；含课件内容的完整报告在 `local/评测/`。
 - `docs/展示网页/设计全景.html`：知识库、工作流、项目架构的展示页，浏览器直接打开。
 - `schema/`：数据结构 v0.2（JSON Schema、示例、校验脚本）；v0.3 改动清单见 `设计修订v2.md` 第 4 节。
-- `docs/接口合同/`：后端 API，`api-v0.md`（v0.1，已确认）；`api-v1.md`（v1 草案）和 `samples-v1/` 样例。
+- `docs/接口合同/`：后端 API，`api-v0.md`（v0.1，已确认）；`api-v1.md`（v1.1）和 `samples-v1/` 样例。
 - `client/`：新前端（TypeScript + React + Vite），按 `产品v1/08-工程与服务端.md` 和 `10-前端设计逻辑与交互准则.md` 搭建。`cd client && npm run dev` 启动（127.0.0.1:5173，没有服务端 v1 时用浏览器内的演示后端 `src/mock/`）；检查命令 `npm run typecheck`、`npm test`、`npm run build`、`npm run e2e`（本机 Chrome；`E2E_API=real` 时连服务端 v1）。说明见 `client/README.md`。
 - `web/`：v0 WebUI（原生 JS，无依赖、无构建），`client/` 达到 P0 后删除。`cd web && python3 -m http.server 8811` 即可打开；没有后端时自动用演示数据。说明见 `web/README.md`。
 - `docs/实施记录/`：已完成任务的过程与验证记录。

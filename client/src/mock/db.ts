@@ -91,7 +91,7 @@ export interface Tables {
 export type TableName = keyof Tables;
 export type Db = { v: number; seq: number } & { [K in TableName]: Tables[K][] };
 
-const VERSION = 3;
+const VERSION = 4;
 const STORAGE = 'fullgrid.mock.v1';
 const TABLES: TableName[] = [
   'users', 'tokens', 'devices', 'qr', 'courses', 'chapters', 'topics', 'kps', 'materials', 'pages', 'fragments',

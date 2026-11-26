@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { api } from '../api/endpoints';
 import { errorText, invalidate, useExamFormat } from '../api/hooks';
 import type { Course, ExamFormat } from '../api/types';
+import { confirmIngest } from '../features/course/CourseParts';
 import css from '../features/course/wizard.module.css';
 import { cx } from '../lib/cx';
 import { duration } from '../lib/format';
@@ -81,9 +82,10 @@ export function NewCoursePage() {
     go(2);
   });
   const upload = (list: File[], source: 'file' | 'photo' = 'file') => course && list.length && guard(async () => {
-    await api.upload(course.id, list, source);
+    const r = await api.upload(course.id, list, source);
     setFiles((f) => [...f, ...list.map((x) => x.name)]);
     invalidate(qc, ['courses', 'materials']);
+    if (await confirmIngest(r.job)) invalidate(qc, ['courses', 'materials']);
   });
   const next = () => {
     if (step === 1) return void create();
