@@ -1,0 +1,13 @@
+{
+  "id": "j_l3w79v",
+  "kind": "ingest",
+  "status": "queued",
+  "progress": 0,
+  "stage": null,
+  "error": null,
+  "course_id": "c_3xnktp",
+  "target_id": "c_3xnktp",
+  "result": null,
+  "estimate": null,
+  "created_at": "2026-11-26T00:07:55-08:00"
+}

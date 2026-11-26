@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-25",
+  "date": "2026-11-26",
   "briefing": "高等数学还有 3 天，今天优先它。先学“FCFS 磁盘调度”，再做一组快练。高等数学有 4 道到期了。",
   "minutes_available": 120,
   "minutes_planned": 120,
@@ -9,68 +9,68 @@
   },
   "countdowns": [
     {
-      "course_id": "c_5lic6",
+      "course_id": "c_50gpd",
       "name": "高等数学",
       "color": 1,
-      "exam_date": "2026-11-28",
+      "exam_date": "2026-11-29",
       "days_left": 3,
       "urgent": true
     },
     {
-      "course_id": "c_3xn81w",
+      "course_id": "c_3xnktp",
       "name": "操作系统",
       "color": 0,
-      "exam_date": "2026-12-01",
+      "exam_date": "2026-12-02",
       "days_left": 6,
       "urgent": false
     },
     {
-      "course_id": "c_8yq1ed",
+      "course_id": "c_8yvv9e",
       "name": "数据结构",
       "color": 3,
-      "exam_date": "2026-12-08",
+      "exam_date": "2026-12-09",
       "days_left": 13,
       "urgent": false
     }
   ],
   "resume": {
     "kind": "kp",
-    "course_id": "c_3xn81w",
+    "course_id": "c_3xnktp",
     "title": "FCFS 磁盘调度",
     "detail": "讲解看到一半",
-    "href": "/c/c_3xn81w/kp/kp_5ijd0t",
-    "updated_at": "2026-11-25T21:38:06-08:00",
+    "href": "/c/c_3xnktp/kp/kp_5igua2",
+    "updated_at": "2026-11-25T22:07:55-08:00",
     "device": "华为 MatePad"
   },
   "tasks": [
     {
-      "id": "t_hdcaop",
-      "course_id": "c_5lic6",
-      "date": "2026-11-25",
+      "id": "t_hd8kp3",
+      "course_id": "c_50gpd",
+      "date": "2026-11-26",
       "kind": "practice",
       "title": "快练 5 道",
       "minutes": 10,
       "status": "todo",
       "reason": "昨天没做完",
-      "moved_from": "2026-11-24",
+      "moved_from": "2026-11-25",
       "pinned": false,
       "kp_ids": [],
       "session_id": null,
       "progress": null
     },
     {
-      "id": "t_hc07eq",
-      "course_id": "c_3xn81w",
-      "date": "2026-11-25",
+      "id": "t_hc0xti",
+      "course_id": "c_3xnktp",
+      "date": "2026-11-26",
       "kind": "learn",
       "title": "FCFS 磁盘调度",
       "minutes": 20,
       "status": "todo",
       "reason": "昨天没做完",
-      "moved_from": "2026-11-24",
+      "moved_from": "2026-11-25",
       "pinned": false,
       "kp_ids": [
-        "kp_5ijd0t"
+        "kp_5igua2"
       ],
       "session_id": null,
       "progress": {
@@ -79,9 +79,9 @@
       }
     },
     {
-      "id": "t_igsp08",
-      "course_id": "c_5lic6",
-      "date": "2026-11-25",
+      "id": "t_ig1fqj",
+      "course_id": "c_50gpd",
+      "date": "2026-11-26",
       "status": "todo",
       "moved_from": null,
       "pinned": false,
@@ -91,15 +91,15 @@
       "minutes": 5,
       "reason": "按记忆规律到期",
       "kp_ids": [
-        "kp_ck9v7",
-        "kp_d923m"
+        "kp_cy3kr",
+        "kp_dc4l2"
       ],
       "progress": null
     },
     {
-      "id": "t_ih0a33",
-      "course_id": "c_5lic6",
-      "date": "2026-11-25",
+      "id": "t_ih15e5",
+      "course_id": "c_50gpd",
+      "date": "2026-11-26",
       "status": "todo",
       "moved_from": null,
       "pinned": false,
@@ -109,9 +109,9 @@
       "minutes": 45,
       "reason": "老师强调 · 还没学",
       "kp_ids": [
-        "kp_1g2zfa",
-        "kp_1hkpel",
-        "kp_1i1yc0"
+        "kp_1glbtz",
+        "kp_1hp7lt",
+        "kp_1i6x05"
       ],
       "progress": {
         "done": 0,
@@ -119,9 +119,9 @@
       }
     },
     {
-      "id": "t_iisjov",
-      "course_id": "c_3xn81w",
-      "date": "2026-11-25",
+      "id": "t_ii6z5s",
+      "course_id": "c_3xnktp",
+      "date": "2026-11-26",
       "status": "todo",
       "moved_from": null,
       "pinned": false,
@@ -131,16 +131,16 @@
       "minutes": 10,
       "reason": "按记忆规律到期",
       "kp_ids": [
-        "kp_45uxx6",
-        "kp_46m51i",
-        "kp_47a50b"
+        "kp_4561ud",
+        "kp_46b09m",
+        "kp_47lyp5"
       ],
       "progress": null
     },
     {
-      "id": "t_ijusoq",
-      "course_id": "c_3xn81w",
-      "date": "2026-11-25",
+      "id": "t_ijslf8",
+      "course_id": "c_3xnktp",
+      "date": "2026-11-26",
       "status": "todo",
       "moved_from": null,
       "pinned": false,
@@ -150,7 +150,7 @@
       "minutes": 15,
       "reason": "老师提到过 · 还没学",
       "kp_ids": [
-        "kp_5j91rl"
+        "kp_5j5hnr"
       ],
       "progress": {
         "done": 0,
@@ -158,9 +158,9 @@
       }
     },
     {
-      "id": "t_ikdm1t",
-      "course_id": "c_3xn81w",
-      "date": "2026-11-25",
+      "id": "t_ika5hx",
+      "course_id": "c_3xnktp",
+      "date": "2026-11-26",
       "status": "todo",
       "moved_from": null,
       "pinned": false,
@@ -170,7 +170,7 @@
       "minutes": 15,
       "reason": "老师提到过 · 还没学",
       "kp_ids": [
-        "kp_5krq7o"
+        "kp_5kdi87"
       ],
       "progress": {
         "done": 0,

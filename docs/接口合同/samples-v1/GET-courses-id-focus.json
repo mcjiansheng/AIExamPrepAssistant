@@ -1,14 +1,14 @@
 {
-  "course_id": "c_3xn81w",
+  "course_id": "c_3xnktp",
   "fragments": [
     {
-      "id": "fr_8syutb",
+      "id": "fr_8s4db2",
       "text": "银行家算法一定会考大题。",
       "found": true,
-      "created_at": "2026-11-25T23:38:06-08:00",
+      "created_at": "2026-11-26T00:07:55-08:00",
       "kps": [
         {
-          "id": "kp_4t3paf",
+          "id": "kp_4t59l2",
           "title": "银行家算法",
           "level": "emphasized",
           "certainty": "sure",
@@ -16,7 +16,7 @@
           "included": true
         },
         {
-          "id": "kp_4ugjz6",
+          "id": "kp_4upx3h",
           "title": "死锁检测与解除",
           "level": "emphasized",
           "certainty": "maybe",
@@ -26,13 +26,13 @@
       ]
     },
     {
-      "id": "fr_8thnzr",
+      "id": "fr_8trf92",
       "text": "PV 操作要会写，生产者消费者必考。",
       "found": true,
-      "created_at": "2026-11-25T23:38:06-08:00",
+      "created_at": "2026-11-26T00:07:55-08:00",
       "kps": [
         {
-          "id": "kp_4ioeho",
+          "id": "kp_4iv206",
           "title": "PV 操作实现互斥",
           "level": "emphasized",
           "certainty": "sure",
@@ -40,7 +40,7 @@
           "included": true
         },
         {
-          "id": "kp_4jiqxu",
+          "id": "kp_4jza3d",
           "title": "生产者-消费者问题",
           "level": "emphasized",
           "certainty": "sure",
@@ -48,7 +48,7 @@
           "included": true
         },
         {
-          "id": "kp_4kcbqm",
+          "id": "kp_4k6qzc",
           "title": "读者-写者问题",
           "level": "emphasized",
           "certainty": "maybe",
@@ -58,13 +58,13 @@
       ]
     },
     {
-      "id": "fr_8u1hpo",
+      "id": "fr_8uc2r5",
       "text": "磁盘移臂调度看一下。",
       "found": true,
-      "created_at": "2026-11-25T23:38:06-08:00",
+      "created_at": "2026-11-26T00:07:55-08:00",
       "kps": [
         {
-          "id": "kp_5hajbc",
+          "id": "kp_5hurim",
           "title": "磁盘驱动调度",
           "level": "mentioned",
           "certainty": "maybe",
@@ -72,7 +72,7 @@
           "included": false
         },
         {
-          "id": "kp_5ijd0t",
+          "id": "kp_5igua2",
           "title": "FCFS 磁盘调度",
           "level": "mentioned",
           "certainty": "sure",
@@ -80,7 +80,7 @@
           "included": true
         },
         {
-          "id": "kp_5j91rl",
+          "id": "kp_5j5hnr",
           "title": "最短寻道时间优先 SSTF",
           "level": "mentioned",
           "certainty": "sure",
@@ -88,7 +88,7 @@
           "included": true
         },
         {
-          "id": "kp_5krq7o",
+          "id": "kp_5kdi87",
           "title": "电梯算法 SCAN",
           "level": "mentioned",
           "certainty": "sure",
@@ -96,7 +96,7 @@
           "included": true
         },
         {
-          "id": "kp_5lkfk7",
+          "id": "kp_5lhbwe",
           "title": "循环扫描 C-SCAN",
           "level": "mentioned",
           "certainty": "sure",
@@ -106,13 +106,13 @@
       ]
     },
     {
-      "id": "fr_8vb2d5",
+      "id": "fr_8vrfw9",
       "text": "管程今年不作要求。",
       "found": true,
-      "created_at": "2026-11-25T23:38:06-08:00",
+      "created_at": "2026-11-26T00:07:55-08:00",
       "kps": [
         {
-          "id": "kp_4mt2kg",
+          "id": "kp_4mih70",
           "title": "管程的概念",
           "level": "excluded",
           "certainty": "sure",
@@ -120,7 +120,7 @@
           "included": true
         },
         {
-          "id": "kp_4np3ls",
+          "id": "kp_4njv89",
           "title": "霍尔管程",
           "level": "excluded",
           "certainty": "sure",
@@ -128,7 +128,7 @@
           "included": true
         },
         {
-          "id": "kp_4o60d2",
+          "id": "kp_4om3qg",
           "title": "管程实现生产者-消费者",
           "level": "excluded",
           "certainty": "sure",
@@ -138,13 +138,13 @@
       ]
     },
     {
-      "id": "fr_8wdi5b",
+      "id": "fr_8w8wnq",
       "text": "RAID 了解一下就行，不会考。",
       "found": true,
-      "created_at": "2026-11-25T23:38:06-08:00",
+      "created_at": "2026-11-26T00:07:55-08:00",
       "kps": [
         {
-          "id": "kp_5r87lc",
+          "id": "kp_5rsikf",
           "title": "RAID 各级别",
           "level": "excluded",
           "certainty": "sure",
@@ -152,7 +152,7 @@
           "included": true
         },
         {
-          "id": "kp_5snf29",
+          "id": "kp_5sv3dz",
           "title": "磁盘高速缓存",
           "level": "excluded",
           "certainty": "sure",
@@ -160,7 +160,7 @@
           "included": true
         },
         {
-          "id": "kp_5tfp1l",
+          "id": "kp_5tg26s",
           "title": "缓存替换策略",
           "level": "excluded",
           "certainty": "sure",
@@ -170,10 +170,10 @@
       ]
     },
     {
-      "id": "fr_8xzqzf",
+      "id": "fr_8xmfhe",
       "text": "Linux 内核源码会考一道简答。",
       "found": false,
-      "created_at": "2026-11-25T23:38:06-08:00",
+      "created_at": "2026-11-26T00:07:55-08:00",
       "kps": []
     }
   ],

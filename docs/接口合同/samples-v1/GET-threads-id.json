@@ -1,19 +1,19 @@
 {
   "thread": {
-    "id": "th_3ywzko",
-    "course_id": "c_3xn81w",
+    "id": "th_3ype4z",
+    "course_id": "c_3xnktp",
     "title": "操作系统",
     "kind": "course",
     "model": null,
-    "updated_at": "2026-11-25T23:38:06-08:00",
+    "updated_at": "2026-11-26T00:07:55-08:00",
     "preview": "已把操作系统今天的 4 项挪到明天，固定在那天，不会被自动重排。"
   },
   "messages": [
     {
-      "id": "msg_ielc86",
+      "id": "msg_iezpp2",
       "role": "user",
       "text": "页面置换的三种算法有什么区别？",
-      "created_at": "2026-11-24T17:38:06-08:00",
+      "created_at": "2026-11-24T18:07:55-08:00",
       "tools": [],
       "refs": [],
       "cards": [],
@@ -22,9 +22,9 @@
       "error": null
     },
     {
-      "id": "msg_ifncei",
+      "id": "msg_ifql63",
       "role": "assistant",
-      "created_at": "2026-11-24T17:38:10-08:00",
+      "created_at": "2026-11-24T18:07:59-08:00",
       "memory": [],
       "status": "done",
       "error": null,
@@ -38,10 +38,10 @@
       "cards": []
     },
     {
-      "id": "msg_kx0m37",
+      "id": "msg_kx0n1b",
       "role": "user",
       "text": "把操作系统挪到明天",
-      "created_at": "2026-11-25T23:38:06-08:00",
+      "created_at": "2026-11-26T00:07:55-08:00",
       "tools": [],
       "refs": [],
       "cards": [],
@@ -50,10 +50,10 @@
       "error": null
     },
     {
-      "id": "msg_ky10co",
+      "id": "msg_ky4qk0",
       "role": "assistant",
       "text": "已把操作系统今天的 4 项挪到明天，固定在那天，不会被自动重排。",
-      "created_at": "2026-11-25T23:38:06-08:00",
+      "created_at": "2026-11-26T00:07:55-08:00",
       "tools": [
         {
           "label": "挪动了操作系统今天的 4 项任务"
@@ -62,8 +62,8 @@
       "refs": [],
       "cards": [
         {
-          "id": "card_l1b3vn",
-          "created_at": "2026-11-25T23:38:06-08:00",
+          "id": "card_l139x9",
+          "created_at": "2026-11-26T00:07:55-08:00",
           "kind": "change",
           "title": "操作系统挪到明天",
           "changes": [
@@ -92,7 +92,7 @@
             "today",
             "schedule"
           ],
-          "undo_id": "ud_l03ssl",
+          "undo_id": "ud_l0h0z1",
           "state": "applied",
           "href": "/schedule"
         }

@@ -1,6 +1,11 @@
 # 后端 API 合同 v1
 
-状态：v1 草案，2026-11-25（PST），待确认。依据 `docs/设计/产品v1/08-工程与服务端.md` 第 3 节的大纲和 `09-核心流程细节.md` 的规则。`client/src/mock/` 按本文实现了一份浏览器内的演示后端，可作为每个接口的可运行样例；`client/src/api/types.ts` 与本文的类型一一对应。
+状态：v1.1，2026-11-26（PST）。v1 于 2026-11-25 确认合并；v1.1 的改动：
+
+- 后台任务的用量确认（第 2、3、7、9、10 节）：整理资料预计超过确认阈值时任务暂停等确认，新增 `Job.estimate`、`POST /jobs/{id}/continue`，资料和课程增加 `waiting_confirm`；上传不再需要确认。
+- 明确访客和示例课程用助手也需要连接（第 14 节）。
+
+依据 `docs/设计/产品v1/08-工程与服务端.md` 第 3 节的大纲和 `09-核心流程细节.md` 的规则。`client/src/mock/` 按本文实现了一份浏览器内的演示后端，可作为每个接口的可运行样例；`client/src/api/types.ts` 与本文的类型一一对应。
 
 v0（`api-v0.md`）在 v1 上线前继续可用；v1 的前端只调用 v1。
 
@@ -51,7 +56,7 @@ Area = "today" | "schedule" | "courses" | "course" | "map" | "kp" | "materials" 
 | 404 | `not_found` | ID 不存在或不属于当前用户 | |
 | 409 | `conflict` | 状态不允许（重复作答、撤销已失效等） | 显示 message |
 | 409 | `ai_required` | 需要 AI 但没有可用连接 | 弹连接 AI 层，连接后重发 |
-| 409 | `needs_confirmation` | 预计用量超过确认阈值；`detail.estimate` 为 `Estimate` | 显示估算，确认后带 `confirm: true` 重发 |
+| 409 | `needs_confirmation` | 同步请求（如出模拟卷）预计用量超过确认阈值；`detail.estimate` 为 `Estimate`。后台任务不用它，见第 3 节 | 显示估算，确认后带 `confirm: true` 重发 |
 | 413 | `too_large` | 上传超过上限 | |
 | 415 | `unsupported_type` | 不支持的文件格式 | |
 | 429 | `rate_limited` | 短信、登录、对话限流；`detail.retry_after_sec` | 倒计时后可重试 |
@@ -72,14 +77,21 @@ Job {
   course_id: string | null
   target_id: string                // material / course / session / message / user 的 id
   result: { url: string | null } | null   // export 完成后的下载地址
+  estimate: Estimate | null        // status 为 needs_input 且在等用户确认用量时非空（第 7 节）
   created_at: string
 }
 ```
+
+`needs_input` 表示任务在等用户，已完成的部分保留：
+
+- **确认用量**：预计用量超过确认阈值，`estimate` 非空，`stage` 为“等待确认用量”。暂停发生在第一次调用模型之前，不需要模型的步骤（读文件、数页数、文字识别）可以先做。
+- **每日上限**：执行中到达每日上限，做完当前这一步后暂停，`estimate` 为 null，`stage` 为“已达今日上限”。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/jobs/{id}` | 查询 |
 | POST | `/jobs/{id}/retry` | `retryable: true` 的失败后重试，只重做失败的部分（沿用 v0.1） |
+| POST | `/jobs/{id}/continue` | `needs_input` 的任务继续，返回 `Job`：等确认用量的，这次调用即确认；到达每日上限的，提高上限后再调。任务不是 `needs_input`、或仍超每日上限时 409 `conflict` |
 
 进度变化通过事件流推送（第 15 节），客户端不轮询。
 
@@ -226,6 +238,7 @@ Limits { confirm_tokens: number, daily_tokens: number | null, today_tokens: numb
 | PUT | `/me/limits` | `{ confirm_tokens?, daily_tokens? }` | `Limits` |
 | POST | `/estimate` | `{ op: "ingest", course_id, material_ids }` 或 `{ op: "session", kind, course_id, count }` | `Estimate` |
 
+- `Estimate.needs_confirm`：估算中值（`tokens_min` 与 `tokens_max` 的平均）超过 `Limits.confirm_tokens`。
 - 第一次连接成功且 `roles` 全空时，服务端把四个角色都指向这个连接的默认模型（能看图时 `vision` 也指向它）。
 - 密钥用信封加密存储，任何接口都不返回明文（04 第 6 节）。
 
@@ -289,7 +302,7 @@ Course {
   created_at: string
 }
 Organizing {
-  state: "idle" | "working" | "waiting_ai" | "attention"
+  state: "idle" | "working" | "waiting_ai" | "waiting_confirm" | "attention"   // waiting_confirm 时 job_id 指向等确认的整理任务
   progress: number | null
   stage: string | null
   job_id: string | null
@@ -351,7 +364,7 @@ Material {
   kind: MaterialKind
   source: "file" | "photo"
   pages: number | null
-  status: "waiting_ai" | "reading" | "extracting" | "ready" | "failed"
+  status: "waiting_ai" | "waiting_confirm" | "reading" | "extracting" | "ready" | "failed"
   stage: string | null, progress: number | null
   kp_count: number | null, question_count: number
   vision: "none" | "partial" | "done" | "unsupported"
@@ -367,7 +380,7 @@ Page { material_id: string, material_title: string, page: number, total: number,
 | 方法 | 路径 | 请求 | 响应 |
 |---|---|---|---|
 | GET | `/courses/{cid}/materials` | | `Material[]`，新的在前 |
-| POST | `/courses/{cid}/materials` | multipart：`files`（可多个）、`source`（`file` / `photo`） | `{ materials: Material[], job: Job \| null }`；没有连接 AI 时资料为 `waiting_ai`、`job` 为 null |
+| POST | `/courses/{cid}/materials` | multipart：`files`（可多个）、`source`（`file` / `photo`） | `{ materials: Material[], job: Job \| null }`；没有连接 AI 时资料为 `waiting_ai`、`job` 为 null；预计用量超过确认阈值时 `job.status` 为 `needs_input`、资料为 `waiting_confirm` |
 | PATCH | `/materials/{mid}` | `{ kind }` | `Change<Material>` |
 | POST | `/materials/{mid}/decision` | `{ choice }` | `Change<Material>`：改自动判断的结果，重算受影响部分 |
 | DELETE | `/materials/{mid}` | | `204`，按 v2 第 2.4 节级联 |
@@ -377,6 +390,8 @@ Page { material_id: string, material_title: string, page: number, total: number,
 | POST | `/courses/{cid}/photo-link` | | `{ url, expires_at }`：电脑上“用手机拍”的二维码内容 |
 
 上传限制：类型和大小见 09 第 10 节，超出返回 413 / 415。
+
+整理的用量确认（第 3 节）：上传本身不要求确认，也不返回 `needs_confirmation`，文件不用重传。上传时就能数出页数的格式（PDF、PPTX、DOCX、图片），响应里的 `job` 已经是 `needs_input`，客户端当场弹出估算；要读完才知道的，读完后、调用模型之前暂停，客户端在课程主页和资料页显示“开始整理”。连接 AI 后自动开始的整理按同样的规则。
 
 ## 11. 老师重点与考试形式
 
@@ -591,7 +606,7 @@ TemplateNode = { type: "text" | "title" | "image" | "table" | "code" | "formula"
 | POST | `/agent-tasks/{job_id}/stop` | | `204` |
 
 - 改动卡的撤销走 `POST /undo/{undo_id}`；撤销后卡片 `state` 变为 `undone`。
-- 工具和权限分级见 03 第 3 节；做题时的提示与答案规则见 09 第 7.4 节；没有连接时流里第一条是 `card`（kind `connect`），随后 `done`。
+- 工具和权限分级见 03 第 3 节；做题时的提示与答案规则见 09 第 7.4 节；没有连接时流里第一条是 `card`（kind `connect`），随后 `done`。访客和示例课程也一样：示例课程的讲解和题目是静态数据，学习、练习不需要连接，助手需要。
 - `attachments` 是先用 `POST /courses/{cid}/materials`（`source: photo`）上传得到的资料 id。
 
 ## 15. 事件流

@@ -1,14 +1,14 @@
 {
   "result": {
     "kp": {
-      "id": "kp_4t3paf",
-      "course_id": "c_3xn81w",
+      "id": "kp_4t59l2",
+      "course_id": "c_3xnktp",
       "title": "银行家算法",
       "state": "shaky",
       "level": "emphasized",
       "chapter_title": "第二章 进程管理"
     },
-    "next_kp_id": "kp_4qj908",
+    "next_kp_id": "kp_4qsspj",
     "task": null
   },
   "affects": [
@@ -18,8 +18,8 @@
     "kp"
   ],
   "undo": {
-    "id": "ud_jpbxmx",
+    "id": "ud_jpcule",
     "label": "已标记懂了",
-    "expires_at": "2026-11-27T07:38:06.404Z"
+    "expires_at": "2026-11-27T08:07:55.209Z"
   }
 }
