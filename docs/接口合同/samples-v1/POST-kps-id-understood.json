@@ -1,0 +1,25 @@
+{
+  "result": {
+    "kp": {
+      "id": "kp_4t3paf",
+      "course_id": "c_3xn81w",
+      "title": "银行家算法",
+      "state": "shaky",
+      "level": "emphasized",
+      "chapter_title": "第二章 进程管理"
+    },
+    "next_kp_id": "kp_4qj908",
+    "task": null
+  },
+  "affects": [
+    "map",
+    "today",
+    "course",
+    "kp"
+  ],
+  "undo": {
+    "id": "ud_jpbxmx",
+    "label": "已标记懂了",
+    "expires_at": "2026-11-27T07:38:06.404Z"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "material_id": "m_3zdwy4",
+  "material_title": "第二章 进程管理.pptx",
+  "page": 63,
+  "total": 72,
+  "text": "银行家算法\n分配资源前先试探分配，检查分配后系统是否仍处于安全状态，不安全就不分配。",
+  "image_url": null,
+  "kps": [
+    {
+      "id": "kp_4t3paf",
+      "course_id": "c_3xn81w",
+      "title": "银行家算法",
+      "state": "shaky",
+      "level": "emphasized",
+      "chapter_title": "第二章 进程管理"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "connection": {
+    "id": "pv_4u657",
+    "preset_id": "deepseek",
+    "name": "DeepSeek",
+    "protocol": "openai",
+    "base_url": "https://api.deepseek.com",
+    "key_last4": "7f3a",
+    "status": "ok",
+    "status_message": null,
+    "checked_at": "2026-11-25T23:38:06-08:00",
+    "capabilities": {
+      "chat": true,
+      "json": true,
+      "tools": true,
+      "vision": false,
+      "stream": true,
+      "context_k": 128
+    },
+    "models": [
+      "deepseek-chat",
+      "deepseek-reasoner"
+    ]
+  },
+  "steps": [
+    {
+      "id": "connect",
+      "ok": true,
+      "message": null
+    },
+    {
+      "id": "models",
+      "ok": true,
+      "message": "默认用 DeepSeek Chat"
+    },
+    {
+      "id": "json",
+      "ok": true,
+      "message": null
+    },
+    {
+      "id": "tools",
+      "ok": true,
+      "message": null
+    },
+    {
+      "id": "vision",
+      "ok": false,
+      "message": "图里的文字仍会识别，示意图和流程图不会被理解"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+[
+  {
+    "id": "c_5lic6",
+    "name": "高等数学",
+    "color": 1,
+    "exam_date": "2026-11-28",
+    "days_left": 3,
+    "sample": false,
+    "readiness": {
+      "mastered": 0,
+      "total": 5
+    },
+    "organizing": {
+      "state": "idle",
+      "progress": null,
+      "stage": null,
+      "job_id": null,
+      "attention": null
+    },
+    "counts": {
+      "kps": 35,
+      "materials": 3,
+      "fragments": 4,
+      "mistakes": 5
+    },
+    "daily_cap_min": null,
+    "created_at": "2026-11-25T23:38:06-08:00"
+  },
+  {
+    "id": "c_3xn81w",
+    "name": "操作系统",
+    "color": 0,
+    "exam_date": "2026-12-01",
+    "days_left": 6,
+    "sample": false,
+    "readiness": {
+      "mastered": 2,
+      "total": 7
+    },
+    "organizing": {
+      "state": "idle",
+      "progress": null,
+      "stage": null,
+      "job_id": null,
+      "attention": null
+    },
+    "counts": {
+      "kps": 48,
+      "materials": 4,
+      "fragments": 6,
+      "mistakes": 6
+    },
+    "daily_cap_min": null,
+    "created_at": "2026-11-25T23:38:06-08:00"
+  },
+  {
+    "id": "c_8yq1ed",
+    "name": "数据结构",
+    "color": 3,
+    "exam_date": "2026-12-08",
+    "days_left": 13,
+    "sample": false,
+    "readiness": {
+      "mastered": 0,
+      "total": 11
+    },
+    "organizing": {
+      "state": "idle",
+      "progress": null,
+      "stage": null,
+      "job_id": null,
+      "attention": null
+    },
+    "counts": {
+      "kps": 28,
+      "materials": 3,
+      "fragments": 4,
+      "mistakes": 3
+    },
+    "daily_cap_min": null,
+    "created_at": "2026-11-25T23:38:06-08:00"
+  }
+]

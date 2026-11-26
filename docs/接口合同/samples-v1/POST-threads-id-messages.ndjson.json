@@ -1,0 +1,84 @@
+[
+  {
+    "type": "start",
+    "message_id": "msg_ky10co",
+    "user_message_id": "msg_kx0m37"
+  },
+  {
+    "type": "tool",
+    "id": "tool_kzhyzw",
+    "label": "挪动了操作系统今天的 4 项任务",
+    "status": "running"
+  },
+  {
+    "type": "tool",
+    "id": "tool_kzhyzw",
+    "label": "挪动了操作系统今天的 4 项任务",
+    "status": "done"
+  },
+  {
+    "type": "text",
+    "delta": "已把操作系统"
+  },
+  {
+    "type": "text",
+    "delta": "今天的 4 "
+  },
+  {
+    "type": "text",
+    "delta": "项挪到明天，"
+  },
+  {
+    "type": "text",
+    "delta": "固定在那天，"
+  },
+  {
+    "type": "text",
+    "delta": "不会被自动重"
+  },
+  {
+    "type": "text",
+    "delta": "排。"
+  },
+  {
+    "type": "card",
+    "card": {
+      "id": "card_l1b3vn",
+      "created_at": "2026-11-25T23:38:06-08:00",
+      "kind": "change",
+      "title": "操作系统挪到明天",
+      "changes": [
+        {
+          "label": "FCFS 磁盘调度",
+          "from": "今天",
+          "to": "明天"
+        },
+        {
+          "label": "到期复习 6 道",
+          "from": "今天",
+          "to": "明天"
+        },
+        {
+          "label": "最短寻道时间优先 SSTF",
+          "from": "今天",
+          "to": "明天"
+        },
+        {
+          "label": "电梯算法 SCAN",
+          "from": "今天",
+          "to": "明天"
+        }
+      ],
+      "affects": [
+        "today",
+        "schedule"
+      ],
+      "undo_id": "ud_l03ssl",
+      "state": "applied",
+      "href": "/schedule"
+    }
+  },
+  {
+    "type": "done"
+  }
+]

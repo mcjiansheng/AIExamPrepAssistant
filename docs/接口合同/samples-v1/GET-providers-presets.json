@@ -1,0 +1,238 @@
+[
+  {
+    "id": "bailian",
+    "name": "阿里云百炼（通义千问）",
+    "tagline": "模型多，有看图模型",
+    "price_tier": 1,
+    "protocol": "openai",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "key_url": "https://bailian.console.aliyun.com/",
+    "key_steps": [
+      "打开阿里云百炼控制台，登录或注册账号",
+      "进入“API Keys”页面，新建一个密钥",
+      "复制密钥，粘贴到上面的输入框"
+    ],
+    "models": [
+      {
+        "id": "qwen-plus",
+        "name": "通义千问 Plus",
+        "vision": false,
+        "context_k": 128,
+        "price": {
+          "input": 0.8,
+          "output": 2
+        }
+      },
+      {
+        "id": "qwen-vl-plus",
+        "name": "通义千问 VL Plus",
+        "vision": true,
+        "context_k": 32,
+        "price": {
+          "input": 1.5,
+          "output": 4.5
+        }
+      }
+    ],
+    "default_model": "qwen-plus"
+  },
+  {
+    "id": "siliconflow",
+    "name": "硅基流动",
+    "tagline": "聚合多家开源模型",
+    "price_tier": 1,
+    "protocol": "openai",
+    "base_url": "https://api.siliconflow.cn/v1",
+    "key_url": "https://cloud.siliconflow.cn/account/ak",
+    "key_steps": [
+      "打开硅基流动控制台，登录或注册账号",
+      "进入“API Keys”页面，新建一个密钥",
+      "复制密钥，粘贴到上面的输入框"
+    ],
+    "models": [
+      {
+        "id": "deepseek-ai/DeepSeek-V3",
+        "name": "DeepSeek V3",
+        "vision": false,
+        "context_k": 64,
+        "price": {
+          "input": 2,
+          "output": 8
+        }
+      },
+      {
+        "id": "Qwen/Qwen2.5-VL-72B-Instruct",
+        "name": "Qwen2.5 VL 72B",
+        "vision": true,
+        "context_k": 32,
+        "price": {
+          "input": 4,
+          "output": 12
+        }
+      }
+    ],
+    "default_model": "deepseek-ai/DeepSeek-V3"
+  },
+  {
+    "id": "volcengine",
+    "name": "火山方舟（豆包）",
+    "tagline": "速度快，有看图模型",
+    "price_tier": 1,
+    "protocol": "openai",
+    "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+    "key_url": "https://console.volcengine.com/ark",
+    "key_steps": [
+      "打开火山方舟控制台，登录或注册账号",
+      "进入“API Keys”页面，新建一个密钥",
+      "复制密钥，粘贴到上面的输入框"
+    ],
+    "models": [
+      {
+        "id": "doubao-seed-1.6",
+        "name": "豆包 Seed 1.6",
+        "vision": true,
+        "context_k": 256,
+        "price": {
+          "input": 0.8,
+          "output": 8
+        }
+      }
+    ],
+    "default_model": "doubao-seed-1.6"
+  },
+  {
+    "id": "zhipu",
+    "name": "智谱开放平台（GLM）",
+    "tagline": "中文理解好",
+    "price_tier": 2,
+    "protocol": "openai",
+    "base_url": "https://open.bigmodel.cn/api/paas/v4",
+    "key_url": "https://open.bigmodel.cn/usercenter/apikeys",
+    "key_steps": [
+      "打开智谱开放平台，登录或注册账号",
+      "进入“API Keys”页面，新建一个密钥",
+      "复制密钥，粘贴到上面的输入框"
+    ],
+    "models": [
+      {
+        "id": "glm-4.5",
+        "name": "GLM-4.5",
+        "vision": false,
+        "context_k": 128,
+        "price": {
+          "input": 2,
+          "output": 8
+        }
+      },
+      {
+        "id": "glm-4.5v",
+        "name": "GLM-4.5V",
+        "vision": true,
+        "context_k": 64,
+        "price": {
+          "input": 2,
+          "output": 6
+        }
+      }
+    ],
+    "default_model": "glm-4.5"
+  },
+  {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "tagline": "便宜、推理强，不能看图",
+    "price_tier": 1,
+    "protocol": "openai",
+    "base_url": "https://api.deepseek.com",
+    "key_url": "https://platform.deepseek.com/api_keys",
+    "key_steps": [
+      "打开DeepSeek 开放平台，登录或注册账号",
+      "进入“API Keys”页面，新建一个密钥",
+      "复制密钥，粘贴到上面的输入框"
+    ],
+    "models": [
+      {
+        "id": "deepseek-chat",
+        "name": "DeepSeek Chat",
+        "vision": false,
+        "context_k": 128,
+        "price": {
+          "input": 2,
+          "output": 8
+        }
+      },
+      {
+        "id": "deepseek-reasoner",
+        "name": "DeepSeek Reasoner",
+        "vision": false,
+        "context_k": 128,
+        "price": {
+          "input": 4,
+          "output": 16
+        }
+      }
+    ],
+    "default_model": "deepseek-chat"
+  },
+  {
+    "id": "kimi",
+    "name": "Kimi（月之暗面）",
+    "tagline": "长上下文，适合整份课件",
+    "price_tier": 2,
+    "protocol": "openai",
+    "base_url": "https://api.moonshot.cn/v1",
+    "key_url": "https://platform.moonshot.cn/console/api-keys",
+    "key_steps": [
+      "打开Moonshot 开放平台，登录或注册账号",
+      "进入“API Keys”页面，新建一个密钥",
+      "复制密钥，粘贴到上面的输入框"
+    ],
+    "models": [
+      {
+        "id": "kimi-k2",
+        "name": "Kimi K2",
+        "vision": false,
+        "context_k": 256,
+        "price": {
+          "input": 4,
+          "output": 16
+        }
+      },
+      {
+        "id": "kimi-latest",
+        "name": "Kimi Latest",
+        "vision": true,
+        "context_k": 128,
+        "price": {
+          "input": 10,
+          "output": 30
+        }
+      }
+    ],
+    "default_model": "kimi-k2"
+  },
+  {
+    "id": "longcat",
+    "name": "LongCat（美团）",
+    "tagline": "项目原型一直在用",
+    "price_tier": 1,
+    "protocol": "longcat",
+    "base_url": "https://api.longcat.chat/openai/v1",
+    "key_url": "https://longcat.chat/platform",
+    "key_steps": [
+      "打开LongCat 开放平台，登录或注册账号",
+      "进入“API Keys”页面，新建一个密钥",
+      "复制密钥，粘贴到上面的输入框"
+    ],
+    "models": [
+      {
+        "id": "LongCat-2.5",
+        "name": "LongCat 2.5",
+        "vision": false,
+        "context_k": 128,
+        "price": null
+      }
+    ],
+    "default_model": "LongCat-2.5"
+  }
+]

@@ -1,0 +1,105 @@
+{
+  "thread": {
+    "id": "th_3ywzko",
+    "course_id": "c_3xn81w",
+    "title": "操作系统",
+    "kind": "course",
+    "model": null,
+    "updated_at": "2026-11-25T23:38:06-08:00",
+    "preview": "已把操作系统今天的 4 项挪到明天，固定在那天，不会被自动重排。"
+  },
+  "messages": [
+    {
+      "id": "msg_ielc86",
+      "role": "user",
+      "text": "页面置换的三种算法有什么区别？",
+      "created_at": "2026-11-24T17:38:06-08:00",
+      "tools": [],
+      "refs": [],
+      "cards": [],
+      "memory": [],
+      "status": "done",
+      "error": null
+    },
+    {
+      "id": "msg_ifncei",
+      "role": "assistant",
+      "created_at": "2026-11-24T17:38:10-08:00",
+      "memory": [],
+      "status": "done",
+      "error": null,
+      "text": "区别在于缺页时换出哪一页：FIFO 换出最早进来的，LRU 换出最久没用的，OPT 换出以后最久不用的。OPT 缺页最少但做不到，只作比较基准。",
+      "tools": [
+        {
+          "label": "查了课件第 24、25 页"
+        }
+      ],
+      "refs": [],
+      "cards": []
+    },
+    {
+      "id": "msg_kx0m37",
+      "role": "user",
+      "text": "把操作系统挪到明天",
+      "created_at": "2026-11-25T23:38:06-08:00",
+      "tools": [],
+      "refs": [],
+      "cards": [],
+      "memory": [],
+      "status": "done",
+      "error": null
+    },
+    {
+      "id": "msg_ky10co",
+      "role": "assistant",
+      "text": "已把操作系统今天的 4 项挪到明天，固定在那天，不会被自动重排。",
+      "created_at": "2026-11-25T23:38:06-08:00",
+      "tools": [
+        {
+          "label": "挪动了操作系统今天的 4 项任务"
+        }
+      ],
+      "refs": [],
+      "cards": [
+        {
+          "id": "card_l1b3vn",
+          "created_at": "2026-11-25T23:38:06-08:00",
+          "kind": "change",
+          "title": "操作系统挪到明天",
+          "changes": [
+            {
+              "label": "FCFS 磁盘调度",
+              "from": "今天",
+              "to": "明天"
+            },
+            {
+              "label": "到期复习 6 道",
+              "from": "今天",
+              "to": "明天"
+            },
+            {
+              "label": "最短寻道时间优先 SSTF",
+              "from": "今天",
+              "to": "明天"
+            },
+            {
+              "label": "电梯算法 SCAN",
+              "from": "今天",
+              "to": "明天"
+            }
+          ],
+          "affects": [
+            "today",
+            "schedule"
+          ],
+          "undo_id": "ud_l03ssl",
+          "state": "applied",
+          "href": "/schedule"
+        }
+      ],
+      "memory": [],
+      "status": "done",
+      "error": null
+    }
+  ]
+}

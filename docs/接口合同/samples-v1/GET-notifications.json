@@ -1,0 +1,23 @@
+{
+  "items": [
+    {
+      "id": "n_hf102b",
+      "kind": "exam_soon",
+      "title": "高等数学还有 3 天考试",
+      "body": "今天的任务已经按它优先排好了",
+      "href": "/c/c_5lic6",
+      "created_at": "2026-11-25T22:38:06-08:00",
+      "read": false
+    },
+    {
+      "id": "n_hgyges",
+      "kind": "job_done",
+      "title": "数据结构的资料整理完了",
+      "body": "整理出 39 个知识点",
+      "href": "/c/c_8yq1ed",
+      "created_at": "2026-11-24T21:38:06-08:00",
+      "read": true
+    }
+  ],
+  "unread": 1
+}

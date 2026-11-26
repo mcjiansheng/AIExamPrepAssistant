@@ -1,0 +1,19 @@
+{
+  "roles": {
+    "chat": {
+      "connection_id": "pv_4u657",
+      "model": "deepseek-chat"
+    },
+    "organize": {
+      "connection_id": "pv_4u657",
+      "model": "deepseek-chat"
+    },
+    "generate": {
+      "connection_id": "pv_4u657",
+      "model": "deepseek-chat"
+    },
+    "vision": null
+  },
+  "ocr": "builtin",
+  "speech": "disabled"
+}

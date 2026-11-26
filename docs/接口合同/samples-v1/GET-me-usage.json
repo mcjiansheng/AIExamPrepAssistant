@@ -1,0 +1,140 @@
+{
+  "period": "week",
+  "from": "2026-11-19",
+  "to": "2026-11-25",
+  "total": {
+    "tokens_in": 88340,
+    "tokens_out": 37860,
+    "cost": 0.4
+  },
+  "by_feature": [
+    {
+      "feature": "generate",
+      "tokens_in": 33110,
+      "tokens_out": 14190,
+      "cost": 0.15
+    },
+    {
+      "feature": "organize",
+      "tokens_in": 25760,
+      "tokens_out": 11040,
+      "cost": 0.12
+    },
+    {
+      "feature": "verify",
+      "tokens_in": 16590,
+      "tokens_out": 7110,
+      "cost": 0.07
+    },
+    {
+      "feature": "chat",
+      "tokens_in": 12880,
+      "tokens_out": 5520,
+      "cost": 0.06
+    }
+  ],
+  "by_course": [
+    {
+      "course_id": "c_3xn81w",
+      "name": "操作系统",
+      "tokens_in": 35840,
+      "tokens_out": 15360,
+      "cost": 0.16
+    },
+    {
+      "course_id": "c_8yq1ed",
+      "name": "数据结构",
+      "tokens_in": 30380,
+      "tokens_out": 13020,
+      "cost": 0.14
+    },
+    {
+      "course_id": "c_5lic6",
+      "name": "高等数学",
+      "tokens_in": 22120,
+      "tokens_out": 9480,
+      "cost": 0.1
+    }
+  ],
+  "by_plugin": [
+    {
+      "plugin_id": "compute-first",
+      "name": "计算题求解",
+      "tokens_in": 11060,
+      "tokens_out": 4740,
+      "cost": 0.05
+    }
+  ],
+  "daily": [
+    {
+      "date": "2026-11-19",
+      "tokens": 19700
+    },
+    {
+      "date": "2026-11-20",
+      "tokens": 14500
+    },
+    {
+      "date": "2026-11-21",
+      "tokens": 21000
+    },
+    {
+      "date": "2026-11-22",
+      "tokens": 23600
+    },
+    {
+      "date": "2026-11-23",
+      "tokens": 18400
+    },
+    {
+      "date": "2026-11-24",
+      "tokens": 13200
+    },
+    {
+      "date": "2026-11-25",
+      "tokens": 15800
+    }
+  ],
+  "recent": [
+    {
+      "id": "us_hyvu9i",
+      "label": "对话",
+      "course_name": "操作系统",
+      "tokens": 14400,
+      "cost": 0.046,
+      "created_at": "2026-11-19T21:10:00-08:00"
+    },
+    {
+      "id": "us_i5np6r",
+      "label": "出题",
+      "course_name": "数据结构",
+      "tokens": 13100,
+      "cost": 0.042,
+      "created_at": "2026-11-22T22:13:00-08:00"
+    },
+    {
+      "id": "us_i3kowi",
+      "label": "出题",
+      "course_name": "操作系统",
+      "tokens": 11800,
+      "cost": 0.038,
+      "created_at": "2026-11-21T21:14:00-08:00"
+    },
+    {
+      "id": "us_i7kyc1",
+      "label": "整理资料",
+      "course_name": "数据结构",
+      "tokens": 11800,
+      "cost": 0.038,
+      "created_at": "2026-11-23T22:12:00-08:00"
+    },
+    {
+      "id": "us_i0gjr1",
+      "label": "出题",
+      "course_name": "高等数学",
+      "tokens": 10500,
+      "cost": 0.034,
+      "created_at": "2026-11-20T20:15:00-08:00"
+    }
+  ]
+}

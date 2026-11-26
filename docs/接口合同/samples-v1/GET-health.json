@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "version": "1.0-mock",
+  "capabilities": {
+    "ocr": true,
+    "speech": false
+  },
+  "sms": "dev"
+}

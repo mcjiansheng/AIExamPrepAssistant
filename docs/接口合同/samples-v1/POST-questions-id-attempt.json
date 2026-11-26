@@ -1,0 +1,109 @@
+{
+  "question": {
+    "id": "qi_jtx694",
+    "bank_id": "q_6ul1tw",
+    "index": 1,
+    "version": 1,
+    "type": "single",
+    "status": "ready",
+    "check": "passed",
+    "check_note": null,
+    "replaced": false,
+    "score": 2,
+    "kp": {
+      "id": "kp_4kcbqm",
+      "title": "读者-写者问题"
+    },
+    "course_id": "c_3xn81w",
+    "stem": [
+      {
+        "kind": "text",
+        "text": "下列哪一项说的是“读者-写者问题”？"
+      }
+    ],
+    "options": [
+      {
+        "id": "A",
+        "text": "一次只允许一个进程使用的资源叫临界资源"
+      },
+      {
+        "id": "B",
+        "text": "允许多个读者同时读"
+      },
+      {
+        "id": "C",
+        "text": "信号量是一个整数加一个等待队列"
+      },
+      {
+        "id": "D",
+        "text": "互斥信号量初值为 1"
+      }
+    ],
+    "refs": [
+      {
+        "material_id": "m_3zdwy4",
+        "material_title": "第二章 进程管理.pptx",
+        "page": 42,
+        "quote": null
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "text": "回想这一节里“读者-写者问题”是怎么定义的。",
+        "refs": [
+          {
+            "material_id": "m_3zdwy4",
+            "material_title": "第二章 进程管理.pptx",
+            "page": 42,
+            "quote": null
+          }
+        ]
+      }
+    ],
+    "peeked": false,
+    "attempt": {
+      "response": "A",
+      "state": "graded",
+      "correct": false,
+      "score": 0,
+      "marks": null,
+      "answered_at": "2026-11-25T23:38:06-08:00"
+    },
+    "solution": {
+      "answer": "B",
+      "steps": [
+        {
+          "n": 1,
+          "blocks": [
+            {
+              "kind": "text",
+              "text": "“读者-写者问题”：允许多个读者同时读，写者必须独占；第一个读者负责 P(wmutex)，最后一个读者负责 V(wmutex)。"
+            }
+          ],
+          "refs": [
+            {
+              "material_id": "m_3zdwy4",
+              "material_title": "第二章 进程管理.pptx",
+              "page": 42,
+              "quote": null
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "blocks": [
+            {
+              "kind": "text",
+              "text": "其他选项分别说的是：“临界区与互斥”、“信号量机制”、“PV 操作实现互斥”。"
+            }
+          ],
+          "refs": []
+        }
+      ],
+      "rubric": null
+    }
+  },
+  "mastery": [],
+  "mistake_added": true
+}
