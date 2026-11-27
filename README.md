@@ -17,7 +17,11 @@ AI 备考助手。大学生期中、期末备考时，把课件、作业、笔�
 
 ## 本机运行
 
-执行 `python3 server/app.py --mock-model`，打开 [127.0.0.1:8765](http://127.0.0.1:8765)。这会启动真实 HTTP 和 SQLite，模型使用离线模拟。去掉 `--mock-model` 时，服务从 `LONGCAT_API_KEY` 或 `local/api_key/` 读取配置。上传原件、数据库和模型调用用量记录保存在被忽略的 `local/data/`。
+服务端 v1 使用 Python 3.12 或以上版本。安装 `server/requirements.txt` 的固定版本后，在仓库根目录执行 `python3 -m server.v1 --mock-model`，默认监听 [127.0.0.1:8765](http://127.0.0.1:8765)。前端开发服务器打开 [127.0.0.1:5173/?api=real](http://127.0.0.1:5173/?api=real) 即可联调。开发模式用演示账号 `13800000000`，随机验证码显示在登录页。`python3 -m server.v1 --mock-model reset-demo` 可重建演示账号及数据。
+
+v1 的 SQLite 库和上传的原文件保存在 `local/data/`。连接真实模型时在设置里添加用户自己的连接，API 密钥加密保存在服务端。可用 `python3 -m server.v1 smoke-preflight` 检查本机是否具备 LongCat 冒烟材料，预检不发送请求。
+
+v0 可继续用 `python3 server/app.py --mock-model` 启动。两个版本默认使用同一端口，按需选择。
 
 后端离线测试命令为 `python3 -m unittest discover -s server/tests`。
 
@@ -36,10 +40,10 @@ AI 备考助手。大学生期中、期末备考时，把课件、作业、笔�
 | `docs/评测/` | 验证组回归评测的数字和稳定性报告 |
 | `docs/展示网页/` | 设计全景展示页，浏览器直接打开 |
 | `schema/` | 数据结构 v0.2 和校验脚本 |
-| `docs/接口合同/` | 后端 API 合同：v0.1（`api-v0.md`）、v1 草案（`api-v1.md`）和样例 |
+| `docs/接口合同/` | 后端 API 合同：v0.1（`api-v0.md`）、v1.1（`api-v1.md`）和样例 |
 | `client/` | 新前端（TypeScript + React + Vite）：满格 P0 页面和按合同 v1 实现的浏览器内演示后端，见 `client/README.md` |
 | `web/` | v0 WebUI，已被 `client/` 取代，删除前需用户确认 |
-| `server/` | Python 标准库后端和离线测试 |
+| `server/` | FastAPI + SQLite 多用户服务端 v1、单用户服务端 v0 和离线测试 |
 | `docs/实施记录/` | 已完成任务的过程与验证记录 |
 | `docs/协作/` | 任务合同、验证者提示词、实施记录、本地交接的模板 |
 | `local/` | 课件资料、API key、含课件内容的评测报告、截图、交接文档。只在本机，被 git 忽略 |
@@ -53,4 +57,4 @@ AI 备考助手。大学生期中、期末备考时，把课件、作业、笔�
 | AI 工具 | 参与内容 |
 |---|---|
 | Claude | 设计（含产品设计 v1、核心流程细节、接口合同 v1）、文档、开发（WebUI 前端、`client/` 新前端与演示后端、v0.1 后端修复）、测试（前端走查、端到端测试） |
-| Codex | 设计、文档、开发（后端与 WebUI 联调）、测试 |
+| Codex | 设计、文档、开发（服务端 v0、v1 与前端联调）、测试 |
