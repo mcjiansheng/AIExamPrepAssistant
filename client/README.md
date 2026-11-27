@@ -12,7 +12,7 @@ npm run dev                 # http://127.0.0.1:5173
 
 - 找不到后端（`/api/v1/health` 不通）时自动用浏览器内的**演示后端**（`src/mock/`），数据存在 localStorage，`我的 → 数据` 里可以重置。
 - 地址带 `?api=mock` / `?api=real` / `?api=auto` 可以强制切换（会记住）；`/api` 在开发时转发到 `127.0.0.1:8765`（服务端 v1 的默认端口）。
-- 演示账号：手机号 `13800000000`，验证码 `123456`（三门课和两周的学习记录）；其他号码是新用户，走首次引导；“先看看示例”是访客，只有示例课程。
+- 演示账号用手机号 `13800000000`，预置三门课和两周的学习记录。浏览器内的演示后端用验证码 `123456`。连接 v1 服务端的开发模式时，随机验证码显示在登录页。其他号码进入首次引导，“先看看示例”以访客身份进入示例课程。
 
 ## 检查
 
@@ -21,9 +21,11 @@ npm run dev                 # http://127.0.0.1:5173
 | `npm run typecheck` | 生成 token 后 `tsc`（strict） |
 | `npm test` | Vitest：演示后端按合同走主流程（`tests/unit/`） |
 | `npm run build` | 生产构建 |
-| `npm run e2e` | Playwright，用本机 Chrome（`channel: 'chrome'`，不下载浏览器）：`flows.spec.ts` 六条端到端流程（`E2E_API=real` 时连服务端 v1）；`screens.spec.ts` 在 390 / 768 / 1280 / 1600 四种宽度下给 15 个页面截图，存 `../local/证据/client-p0/` |
+| `npm run e2e` | Playwright，用本机 Chrome（`channel: 'chrome'`，不下载浏览器）：`flows.spec.ts` 六条端到端流程（`E2E_API=real` 时连服务端 v1）；`screens.spec.ts` 在 390 / 768 / 1280 / 1600 四种宽度下给 15 个页面截图，存 `../local/证据/client-p0/`，连 v1 服务端时存 `../local/证据/server-v1/` |
 | `SAMPLES_DIR=<目录> npx vitest run tests/unit/samples.test.ts` | 从演示后端生成合同样例（`docs/接口合同/samples-v1/`） |
 | `FIXTURES_DIR=<目录> npx vitest run tests/unit/fixtures.test.ts` | 导出示例课程、服务商预设、插件目录（服务端做示例数据用） |
+
+`E2E_API=real` 的演示账号用例共用一个设备会话。用例应在 15 分钟的访问令牌有效期内跑完，避免共享的刷新令牌因轮换后被重放而吊销。
 
 ## 目录
 

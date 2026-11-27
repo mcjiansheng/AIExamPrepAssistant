@@ -26,8 +26,22 @@ export async function login(page: Page, phone: string) {
 }
 
 export async function loginDemo(page: Page) {
-  await login(page, '13800000000');
-  await expect(page).toHaveURL(/\/$/);
+  if (API === 'real') {
+    const session = process.env.FULLGRID_E2E_DEMO_SESSION;
+    if (!session) throw new Error('真实端到端测试的演示会话没有初始化');
+    const { origin, value } = JSON.parse(session) as { origin: string; value: string };
+    await page.context().setStorageState({
+      cookies: [],
+      origins: [{
+        origin,
+        localStorage: [{ name: 'fullgrid.session', value }],
+      }],
+    });
+    await page.goto(first('/'));
+  } else {
+    await login(page, '13800000000');
+  }
+  await expect(page).toHaveURL((url) => url.pathname === '/');
   await expect(page.getByRole('link', { name: /高等数学，还有 3 天考试/ })).toBeVisible();
 }
 
