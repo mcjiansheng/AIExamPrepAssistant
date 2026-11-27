@@ -21,7 +21,7 @@ AI 备考助手：用课件和老师的重点生成复习计划和模拟试卷�
   - 改界面时在 DevEco 模拟器上运行，截图存 `local/证据/`。
   - 用了不熟悉的 ArkTS/ArkUI 接口时，在回复里给出依据（官方文档或 DevEco 类型提示），不凭记忆。
   - 没有真机，注明“未在真机验证”。
-- 改到后端（`server/`）：`python3 -m unittest discover -s server/tests` 通过。入口为 `python3 server/app.py --mock-model`。调用真实模型时写明用量。
+- 改到后端（`server/`）：`python3 -m unittest discover -s server/tests` 通过。入口为 `python3 -m server.v1 --mock-model`（v0 为 `python3 server/app.py --mock-model`）。调用真实模型时写明用量。
 - 改到数据结构（`schema/`）或接口：先走「接口变更」；`python3 schema/validate_exam_prep.py` 通过（需要 jsonschema 4 以上）。
 - 较大改动在 `docs/实施记录/<日期>-<主题>.md` 记录修改与验证结果（模板 `docs/协作/实施记录模板.md`）。
 - 测试失败时，先判断该测试表达的是需求（用户要求、`schema/`、`docs/接口合同/`、`docs/设计/`）还是临时限制或旧需求：前者修改实现；后者与当前需求矛盾时可以更新测试，并在回复中说明改了哪个测试、依据哪条需求。任何情况下都不为通过而跳过、放宽或删除测试。
