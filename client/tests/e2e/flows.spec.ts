@@ -69,19 +69,23 @@ test('上传资料：预计用量超过确认阈值时先确认再整理', async
   const os = await page.getByRole('link', { name: /^操作系统，/ }).last().getAttribute('href');
   const ds = await page.getByRole('link', { name: /^数据结构，/ }).last().getAttribute('href');
   const sheet = page.getByRole('dialog', { name: '这次会用较多 token' });
-  // 取消：资料等待确认，提示里点“开始整理”
+  // 两份都在任何一次整理完成之前上传：服务端有了该用户整理过的记录后，按历史平均估算（模拟模型用量很小），
+  // 之后再上传就不一定超过阈值。所以连服务端时要用全新的数据目录跑。
+  // 1. 取消：资料停在“等待确认后整理”
   await page.goto(`${os}/materials`);
   await page.locator('input[type=file]').first().setInputFiles({ name: '操作系统 第五章 文件系统.pdf', mimeType: 'application/pdf', buffer: pdf(20) });
   await expect(sheet).toBeVisible();
   await expect(sheet.getByText(/约 .+ token/)).toBeVisible();
   await sheet.getByRole('button', { name: '取消' }).click();
   await expect(page.getByText('等待确认后整理').first()).toBeVisible();
-  await page.getByRole('button', { name: '开始整理' }).click();
-  await expect(page.getByRole('progressbar', { name: '整理中' })).toBeVisible();
-  // 当场确认：直接开始整理
+  // 2. 当场确认：直接开始整理
   await page.goto(`${ds}/materials`);
   await page.locator('input[type=file]').first().setInputFiles({ name: '数据结构 第七章 排序.pdf', mimeType: 'application/pdf', buffer: pdf(20) });
   await expect(sheet).toBeVisible();
   await sheet.getByRole('button', { name: '继续' }).click();
+  await expect(page.getByRole('progressbar', { name: '整理中' })).toBeVisible();
+  // 3. 回到第一门课，从提示里开始整理（暂停时已经估算过，不再问）
+  await page.goto(`${os}/materials`);
+  await page.getByRole('button', { name: '开始整理' }).click();
   await expect(page.getByRole('progressbar', { name: '整理中' })).toBeVisible();
 });
