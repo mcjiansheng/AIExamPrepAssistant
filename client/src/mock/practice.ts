@@ -68,7 +68,7 @@ export function createSession(user: UserRow, input: T.NewSession): SessionRow {
     picked = bankForKp(kp.id).slice(0, input.count ?? 3);
   } else if (kind === 'review') {
     const d0 = today();
-    const due = courses.flatMap((c) => db.kps.filter((k) => k.course_id === c.id && k.due && k.due <= d0));
+    const due = courses.flatMap((c) => db.kps.filter((k) => k.course_id === c.id && k.level !== 'excluded' && k.due && k.due <= d0));
     for (const kp of due.slice(0, input.count ?? 20)) {
       const b = pickBank(kp, used);
       if (b) { picked.push(b); used.add(b.id); }
@@ -344,17 +344,22 @@ export function finish(user: UserRow, s: SessionRow): T.Result {
   }
   const course = s.course_id ? byId('courses', s.course_id) : byId('courses', byId('kps', kpIds[0] ?? '')?.course_id ?? '');
   const states = course ? kpStates(course.id) : new Map<T.ID, T.KpState>();
+  const answered = counted.filter((i) => i.attempt !== null).length;
   const wrong = counted.filter((i) => i.attempt && (i.attempt.score ?? 0) < (byId('bank', i.bank_id)?.score ?? 0));
   const weakest = wrong.map((i) => byId('kps', byId('bank', i.bank_id)!.kp_id)!).find(Boolean);
-  const review = wrong.length === 0
-    ? { text: counted.length ? '这组题全部做对了。可以去学下一个知识点，或者挑战一套模拟卷。' : '这次没有作答。', actions: [] as T.ReviewAction[] }
-    : {
+  const review = wrong.length > 0
+    ? {
         text: `${wrong.length} 道没拿满分，集中在“${weakest?.title ?? ''}”。先把它再看一遍，再来几道同类题巩固。`,
         actions: weakest ? [
           { label: `学一遍${weakest.title}`, kind: 'kp' as const, kp_id: weakest.id, session: null },
           { label: '来 3 道同类题', kind: 'session' as const, kp_id: weakest.id, session: { kind: 'kp' as const, course_id: weakest.course_id, kp_id: weakest.id, count: 3 } },
         ] : [],
-      };
+      }
+    : answered === 0
+      ? { text: '这次没有作答。', actions: [] as T.ReviewAction[] }
+      : answered < counted.length
+        ? { text: `这次答了 ${answered} 道，另有 ${counted.length - answered} 道未答。可以继续复习相关知识点。`, actions: [] as T.ReviewAction[] }
+        : { text: '这组题全部做对了。可以学下一个知识点，或者试一套模拟卷。', actions: [] as T.ReviewAction[] };
   let task: T.Task | null = null;
   if (s.task_id) {
     const t = db.tasks.find((x) => x.id === s.task_id);
@@ -364,7 +369,7 @@ export function finish(user: UserRow, s: SessionRow): T.Result {
     session: sessionView(s), score, total, accuracy: counted.length ? correct / counted.length : 0,
     duration_sec: Math.max(30, Math.round((Date.parse(finished) - started) / 1000)), mastery,
     chapters: [...chapters].map((id) => chapterView(id, states)), mistakes: wrong.map(questionView),
-    review: s.kind === 'kp' && wrong.length === 0 ? null : review, task,
+    review: s.kind === 'kp' && wrong.length === 0 && answered === counted.length && counted.length > 0 ? null : review, task,
   };
   s.result = result;
   result.session = sessionView(s);
@@ -376,14 +381,14 @@ export function finish(user: UserRow, s: SessionRow): T.Result {
 export function practiceHub(user: UserRow, courseId: T.ID | null): T.PracticeHub {
   const courses = courseId ? db.courses.filter((c) => c.id === courseId) : userCourses(user);
   const d0 = today();
-  const due = courses.flatMap((c) => db.kps.filter((k) => k.course_id === c.id && k.due && k.due <= d0)).length;
+  const due = Math.min(20, courses.flatMap((c) => db.kps.filter((k) => k.course_id === c.id && k.level !== 'excluded' && k.due && k.due <= d0)).length);
   const mistakes = db.mistakes.filter((m) => m.user_id === user.id && !m.removed && (!courseId || m.course_id === courseId)).length;
   const course = courseId ? byId('courses', courseId) : courses.filter((c) => c.exam_date).sort((a, b) => (a.exam_date! < b.exam_date! ? -1 : 1))[0];
   const mockCount = course ? course.format.types.reduce((s, t) => s + t.count, 0) : 0;
   return {
     course_id: courseId,
     quick: { count: 5, minutes: 10 },
-    review: { count: Math.min(due * 2, 20), minutes: Math.max(5, due * 3) },
+    review: { count: due, minutes: Math.max(5, Math.ceil(due * 1.5)) },
     mistakes: { count: mistakes },
     mock: { available: !!course, count: mockCount, minutes: course?.format.duration_min ?? 120, basis: course?.format.basis ?? 'default' },
     history: db.sessions.filter((s) => s.user_id === user.id && (!courseId || s.course_id === courseId))

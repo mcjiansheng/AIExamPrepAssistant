@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type * as T from '../../src/api/types';
 import { mockConfig } from '../../src/mock/config';
-import { resetDb } from '../../src/mock/db';
+import { db, resetDb } from '../../src/mock/db';
 import { tick } from '../../src/mock/jobs';
 import { mockFetch } from '../../src/mock/server';
 
@@ -228,5 +228,60 @@ describe('演示后端', () => {
     const bad = (await call<T.Connection>('POST', '/me/providers', { preset_id: 'kimi', key: 'sk-bad-key-000000' }, t)).data;
     const failed = (await call<T.CheckResult>('POST', `/me/providers/${bad.id}/check`, {}, t)).data;
     expect(failed.steps[0]!.ok).toBe(false);
+  });
+
+  it('09 对齐：同课先到期复习再顺延、复习每题约 1.5 分钟、提前交卷复盘写明未答题数', async () => {
+    await call('POST', '/auth/sms', { phone: '13800000000' });
+    const t = (await call<T.Tokens>('POST', '/auth/login', { phone: '13800000000', code: '123456', device })).data.access_token;
+    const courses = (await call<T.Course[]>('GET', '/courses', undefined, t)).data;
+    const math = courses.find((c) => c.name === '高等数学')!;
+    const os = courses.find((c) => c.name === '操作系统')!;
+
+    // 1. 同一门课先到期复习再排顺延，且按课程紧迫度排序（高等数学先于操作系统）
+    const today = (await call<T.Today>('GET', '/today', undefined, t)).data;
+    const mathTasks = today.tasks.filter((x) => x.course_id === math.id);
+    expect(mathTasks[0]!.kind).toBe('review');
+    expect(mathTasks[0]!.title).toBe('到期复习 2 道');
+    expect(mathTasks[0]!.minutes).toBe(3);
+    expect(mathTasks[1]!.moved_from).not.toBeNull();
+    const lastMathIdx = today.tasks.map((x) => x.course_id).lastIndexOf(math.id);
+    const firstOsIdx = today.tasks.findIndex((x) => x.course_id === os.id);
+    expect(lastMathIdx).toBeLessThan(firstOsIdx);
+
+    const mathHome = (await call<T.CourseHome>('GET', `/courses/${math.id}/home`, undefined, t)).data;
+    expect(mathHome.next[0]!.kind).toBe('review');
+
+    // 2. 练习中心到期复习按每题约 1.5 分钟计算
+    const hub = (await call<T.PracticeHub>('GET', '/practice', undefined, t)).data;
+    expect(hub.review).toEqual({ count: 5, minutes: 8 });
+
+    // 3. 提前交卷的复盘区分：未作答 / 部分作答全对 / 全部作答全对
+    const s0 = (await call<T.Session>('POST', '/sessions', { kind: 'quick', course_id: os.id, count: 5 }, t)).data;
+    settle(s0);
+    const r0 = (await call<T.Result>('POST', `/sessions/${s0.id}/finish`, {}, t)).data;
+    expect(r0.review?.text).toBe('这次没有作答。');
+
+    const answerCorrectly = async (q: T.Question) => {
+      const bank = db.bank.find((b) => b.id === q.bank_id)!;
+      const res = await call<T.AttemptResult>('POST', `/questions/${q.id}/attempt`, { response: bank.key ?? bank.answer }, t);
+      if (res.data.question.attempt?.state === 'needs_self_grade' && res.data.question.solution?.rubric) {
+        const marks = Object.fromEntries(res.data.question.solution.rubric.map((r) => [r.id, 'full']));
+        await call('POST', `/questions/${q.id}/grade`, { marks }, t);
+      }
+    };
+
+    const s1 = (await call<T.Session>('POST', '/sessions', { kind: 'quick', course_id: os.id, count: 5 }, t)).data;
+    settle(s1);
+    const ready1 = (await call<T.Session>('GET', `/sessions/${s1.id}`, undefined, t)).data;
+    await answerCorrectly(ready1.questions[0]!);
+    const r1 = (await call<T.Result>('POST', `/sessions/${s1.id}/finish`, {}, t)).data;
+    expect(r1.review?.text).toBe(`这次答了 1 道，另有 ${ready1.questions.length - 1} 道未答。可以继续复习相关知识点。`);
+
+    const s2 = (await call<T.Session>('POST', '/sessions', { kind: 'quick', course_id: os.id, count: 1 }, t)).data;
+    settle(s2);
+    const ready2 = (await call<T.Session>('GET', `/sessions/${s2.id}`, undefined, t)).data;
+    await answerCorrectly(ready2.questions[0]!);
+    const r2 = (await call<T.Result>('POST', `/sessions/${s2.id}/finish`, {}, t)).data;
+    expect(r2.review?.text).toContain('这组题全部做对了');
   });
 });
