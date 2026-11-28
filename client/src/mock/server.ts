@@ -12,7 +12,7 @@ import { addDays, byId, daysBetween, db, nowIso, persist, removeWhere, resetDb, 
 import { mockConfig, wait as pause } from './config';
 import { ApiErr } from './errors';
 import { continueJob, ingestEstimate, newJob, startIngest } from './jobs';
-import { planUser, replanTracked, scheduleView, taskView, todayView } from './plan';
+import { planUser, replanTracked, scheduleView, sortTasks, taskView, todayView } from './plan';
 import {
   attempt, createSession, finish, grade, hasAi, hint, insightView, kpQuizSession, mistakesView, practiceHub, questionView,
   report, sessionView, similarSession, summaryView,
@@ -432,7 +432,11 @@ add('GET', '/courses/{id}/home', ({ user, params }) => {
   const last = db.sessions.filter((s) => s.course_id === course.id).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
   return {
     course: courseView(course), map: mapView(course.id, states),
-    next: db.tasks.filter((t) => t.user_id === user.id && t.course_id === course.id && t.date === today() && t.status === 'todo').map(taskView),
+    next: sortTasks(
+      db.tasks.filter((t) => t.user_id === user.id && t.course_id === course.id && t.date === today() && t.status === 'todo'),
+      [course],
+      today(),
+    ).map(taskView),
     weak: weakKps(course.id, 3, states), last_session: last ? summaryView(last) : null,
   } satisfies T.CourseHome;
 });

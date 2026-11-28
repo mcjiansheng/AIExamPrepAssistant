@@ -86,8 +86,20 @@ export function planUser(user: UserRow, force = false) {
       const s = states.get(course.id)!;
       const daysLeft = course.exam_date ? daysBetween(date, course.exam_date) : null;
       if (i === 0) {
-        const due = db.kps.filter((k) => k.course_id === course.id && k.due && k.due <= date && s.get(k.id) !== 'new');
-        if (due.length) push({ kind: 'review', title: `到期复习 ${Math.min(due.length * 2, 20)} 道`, minutes: round5(due.length * 3), reason: '按记忆规律到期', kp_ids: due.map((k) => k.id), progress: null });
+        const reviewed = new Set(onDay.filter((t) => t.kind === 'review' && t.status !== 'skipped').flatMap((t) => t.kp_ids));
+        const due = db.kps
+          .filter((k) => k.course_id === course.id && k.level !== 'excluded' && k.due && k.due <= date && s.get(k.id) !== 'new' && !reviewed.has(k.id))
+          .slice(0, Math.min(20, Math.floor(share / 1.5)));
+        if (due.length) {
+          push({
+            kind: 'review',
+            title: `到期复习 ${due.length} 道`,
+            minutes: Math.ceil(1.5 * due.length),
+            reason: '按记忆规律到期',
+            kp_ids: due.map((k) => k.id),
+            progress: null,
+          });
+        }
       }
       if (daysLeft === 1) {
         push({ kind: 'mock', title: '模拟卷', minutes: Math.min(course.format.duration_min ?? 90, 90), reason: '明天考试，做一套整卷', kp_ids: [], progress: null });
@@ -126,13 +138,15 @@ function taskView(t: TaskRow): T.Task {
   return rest;
 }
 
-const kindRank: Record<T.TaskKind, number> = { review: 0, mistakes: 1, learn: 2, practice: 3, mock: 4 };
-function sortTasks(tasks: TaskRow[], courses: CourseRow[], date: string) {
+const kindRank: Record<T.TaskKind, number> = { review: 0, learn: 2, mock: 3, mistakes: 4, practice: 5 };
+function taskPriority(t: TaskRow) {
+  return t.moved_from && t.kind !== 'review' ? 1 : kindRank[t.kind];
+}
+export function sortTasks(tasks: TaskRow[], courses: CourseRow[], date: string) {
   const rank = new Map(courses.map((c) => [c.id, urgency(c, date)]));
   return [...tasks].sort((a, b) =>
-    Number(!!b.moved_from) - Number(!!a.moved_from) ||
     (rank.get(b.course_id) ?? 0) - (rank.get(a.course_id) ?? 0) ||
-    kindRank[a.kind] - kindRank[b.kind]);
+    taskPriority(a) - taskPriority(b));
 }
 
 export function todayView(user: UserRow): T.Today {
